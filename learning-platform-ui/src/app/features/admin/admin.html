@@ -1,0 +1,180 @@
+<div class="container">
+  <div class="admin-head">
+    <div>
+      <div class="kicker">Admin</div>
+      <h1 class="page-title">Moderation & Control</h1>
+      <p class="page-sub">Manage users and hide content that violates policy.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab" [class.active]="tab==='academies'" (click)="setTab('academies')">Academies</button>
+      <button class="tab" [class.active]="tab==='courses'" (click)="setTab('courses')">Courses</button>
+      <button class="tab" [class.active]="tab==='users'" (click)="setTab('users')">Users</button>
+    </div>
+  </div>
+
+  <div class="toolbar card" [formGroup]="form">
+    <div class="search">
+      <span class="icon">🔎</span>
+      <input class="input" formControlName="q" placeholder="Search…" />
+      <div class="hint muted small">Auto-search</div>
+    </div>
+
+    <ng-container *ngIf="tab !== 'users'">
+      <div class="field">
+        <label class="lbl">Status</label>
+        <select class="input" formControlName="status">
+          <option value="all">All</option>
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+          <option value="private">Private</option>
+          <option value="hidden">Hidden</option>
+        </select>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="tab === 'users'">
+      <div class="field">
+        <label class="lbl">Role</label>
+        <select class="input" formControlName="role">
+          <option value="all">All roles</option>
+          <option value="Student">Student</option>
+          <option value="Instructor">Instructor</option>
+          <option value="Admin">Admin</option>
+          <option value="Coordinator">Coordinator</option>
+        </select>
+      </div>
+    </ng-container>
+
+    <div class="toolbar-right">
+      <div class="pill">{{ page }} / {{ totalPages }}</div>
+      <button class="btn ghost small" type="button" (click)="prevPage()" [disabled]="loading || !canPrev">Prev</button>
+      <button class="btn ghost small" type="button" (click)="nextPage()" [disabled]="loading || !canNext">Next</button>
+    </div>
+  </div>
+
+  <div class="state muted" *ngIf="loading">Loading…</div>
+  <div class="alert" *ngIf="error">{{ error }}</div>
+
+  <!-- ✅ Moderation drawer (single, reused for academy/course) -->
+  <div class="card drawer" *ngIf="hideOpen && hideId">
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-title">Hide {{ hideKind }}</div>
+        <div class="muted small">Target: <span class="mono">{{ hideTitle }}</span></div>
+      </div>
+
+      <button class="btn ghost small" type="button" (click)="closeHideDrawer()">Close</button>
+    </div>
+
+    <div class="drawer-body">
+      <label class="lbl">Reason</label>
+      <textarea class="input area" [formControl]="reasonCtrl" rows="3" placeholder="Write a short reason…"></textarea>
+
+      <div class="reasons">
+        <button class="chip" type="button" *ngFor="let r of quickReasons" (click)="pickReason(r)">
+          {{ r }}
+        </button>
+      </div>
+
+      <div class="drawer-actions">
+        <button class="btn danger" type="button" (click)="confirmHide()" [disabled]="isBusy(hideId)">
+          {{ isBusy(hideId) ? 'Working…' : 'Confirm Hide' }}
+        </button>
+        <button class="btn ghost" type="button" (click)="closeHideDrawer()">Cancel</button>
+      </div>
+
+      <div class="muted small">
+        This content will be removed from public pages immediately.
+      </div>
+    </div>
+  </div>
+
+  <!-- Academies -->
+  <div class="grid" *ngIf="!loading && tab==='academies'">
+    <div class="item card" *ngFor="let a of academies">
+      <div class="item-top">
+        <div class="title">{{ a.name }}</div>
+        <span class="badge" [class.bad]="a.isHidden">
+          {{ a.isHidden ? 'Hidden' : (a.isPublished ? 'Published' : 'Draft') }}
+        </span>
+      </div>
+
+      <div class="muted small">Slug: {{ a.slug }}</div>
+      <div class="muted small">Owner: {{ a.ownerUserId }}</div>
+      <div class="muted small" *ngIf="a.isHidden">Reason: {{ a.hiddenReason || '—' }}</div>
+
+      <div class="actions">
+        <button class="btn ghost small" type="button"
+                *ngIf="!a.isHidden"
+                (click)="openHideDrawer('academy', a.id, a.name, a.hiddenReason)"
+                [disabled]="isBusy(a.id)">
+          Hide
+        </button>
+
+        <button class="btn ghost small" type="button"
+                *ngIf="a.isHidden"
+                (click)="unhideAcademy(a)"
+                [disabled]="isBusy(a.id)">
+          Unhide
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Courses -->
+  <div class="grid" *ngIf="!loading && tab==='courses'">
+    <div class="item card" *ngFor="let c of courses">
+      <div class="item-top">
+        <div class="title">{{ c.title }}</div>
+        <span class="badge" [class.bad]="c.isHidden">
+          {{ c.isHidden ? 'Hidden' : (c.status===1 ? 'Published' : c.status===2 ? 'Private' : 'Draft') }}
+        </span>
+      </div>
+
+      <div class="muted small">Category: {{ c.category || '—' }}</div>
+      <div class="muted small">AcademyId: {{ c.academyId }}</div>
+      <div class="muted small" *ngIf="c.isHidden">Reason: {{ c.hiddenReason || '—' }}</div>
+
+      <div class="actions">
+        <button class="btn ghost small" type="button"
+                *ngIf="!c.isHidden"
+                (click)="openHideDrawer('course', c.id, c.title, c.hiddenReason)"
+                [disabled]="isBusy(c.id)">
+          Hide
+        </button>
+
+        <button class="btn ghost small" type="button"
+                *ngIf="c.isHidden"
+                (click)="unhideCourse(c)"
+                [disabled]="isBusy(c.id)">
+          Unhide
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Users -->
+  <div class="grid" *ngIf="!loading && tab==='users'">
+    <div class="item card" *ngFor="let u of users">
+      <div class="item-top">
+        <div class="title">{{ u.email }}</div>
+        <span class="badge" [class.bad]="u.lockoutEnd">
+          {{ u.lockoutEnd ? 'Locked' : 'Active' }}
+        </span>
+      </div>
+
+      <div class="muted small">Name: {{ u.displayName || '—' }}</div>
+      <div class="muted small">Roles: {{ (u.roles || []).join(', ') }}</div>
+
+      <div class="actions">
+        <button class="btn ghost small" type="button" (click)="setRoles(u)" [disabled]="isBusy(u.id)">
+          Edit roles
+        </button>
+        <button class="btn ghost small" type="button" (click)="toggleLock(u)" [disabled]="isBusy(u.id)">
+          {{ u.lockoutEnd ? 'Unlock' : 'Lock' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

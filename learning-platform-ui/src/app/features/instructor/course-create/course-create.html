@@ -1,0 +1,241 @@
+<main class="page">
+  <header class="header">
+    <div>
+      <div class="kicker">Instructor • Courses</div>
+      <h1>Create course</h1>
+      <p>Create a draft course now, then build modules & lessons in the builder.</p>
+    </div>
+
+    <div class="head-actions">
+      <a class="btn ghost" [routerLink]="['/instructor/courses', academyId]">Back</a>
+    </div>
+  </header>
+
+  <section class="grid">
+    <!-- Form -->
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <h2>Course details</h2>
+          <p class="muted">Fields marked with <span class="req">*</span> are required.</p>
+        </div>
+
+        <div class="pill">
+          <span class="dot"></span>
+          Draft
+        </div>
+      </div>
+
+      <form class="form" [formGroup]="form" (ngSubmit)="submit()">
+        <!-- Basics -->
+        <div class="section">
+          <div class="section-title">Basics</div>
+
+          <div class="field">
+            <label>Title <span class="req">*</span></label>
+            <input class="input" formControlName="title" placeholder="e.g. Web Development Basics" />
+            <small class="hint error" *ngIf="titleCtrl?.touched && titleCtrl?.invalid">
+              Title is required (min 3 characters).
+            </small>
+          </div>
+
+          <div class="field">
+            <label>Short description</label>
+            <input class="input" formControlName="shortDescription" placeholder="A short summary (max 180 chars)" />
+            <div class="meta-row">
+              <small class="muted">Shown on the course card.</small>
+              <small class="muted">{{ shortCount() }}/{{ shortMax }}</small>
+            </div>
+            <small class="hint error" *ngIf="shortCtrl?.touched && shortCtrl?.hasError('maxlength')">
+              Keep it under {{ shortMax }} characters.
+            </small>
+          </div>
+
+          <div class="field">
+            <label>Full description</label>
+            <textarea class="input" formControlName="fullDescription" rows="6" placeholder="Course overview, outcomes, etc."></textarea>
+            <small class="muted">You can format this later in the builder (HTML supported).</small>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label>Category</label>
+              <input class="input" formControlName="category" placeholder="e.g. Web Development" />
+            </div>
+
+            <div class="field">
+              <label>Tags</label>
+              <div class="tag-row">
+                <input
+                  class="input"
+                  [value]="tagInput"
+                  (input)="tagInput = ($any($event.target).value)"
+                  (keydown.enter)="$event.preventDefault(); addTag()"
+                  placeholder="Type a tag then press Add"
+                />
+                <button type="button" class="btn ghost small" (click)="addTag()">Add</button>
+                <button type="button" class="btn ghost small" (click)="clearTags()" [disabled]="tags.length===0">Clear</button>
+              </div>
+
+              <div class="tags" *ngIf="tags.length > 0">
+                <span class="tag" *ngFor="let t of tags">
+                  {{ t }}
+                  <button type="button" (click)="removeTag(t)" aria-label="Remove tag">×</button>
+                </span>
+              </div>
+
+              <small class="muted">Up to 10 tags. Use short keywords.</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pricing -->
+        <div class="section">
+          <div class="section-title">Pricing</div>
+
+          <div class="pricing-head">
+            <label class="toggle">
+              <input type="checkbox" formControlName="isFree" />
+              <span>Free course</span>
+            </label>
+
+            <div class="price-preview">
+              <span class="muted">Preview:</span>
+              <span class="mono">{{ previewPrice() }}</span>
+            </div>
+          </div>
+
+          <div class="row" *ngIf="!form.value.isFree">
+            <div class="field">
+              <label>Price <span class="req">*</span></label>
+              <input class="input" type="number" formControlName="price" min="1" step="0.01" placeholder="e.g. 49.99" />
+              <small class="hint error" *ngIf="priceCtrl?.touched && priceInvalid()">
+                Price must be greater than 0.
+              </small>
+            </div>
+
+            <div class="field">
+              <label>Currency</label>
+              <select class="input" formControlName="currency">
+                <option value="EUR">EUR</option>
+                <option value="USD">USD</option>
+                <option value="GBP">GBP</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="muted small" *ngIf="!form.value.isFree">
+            Payments integration is coming next (PayPal/Stripe).
+          </div>
+        </div>
+
+        <!-- Thumbnail -->
+        <div class="section">
+          <div class="section-title">Thumbnail</div>
+
+          <div
+            class="drop"
+            (drop)="onThumbDrop($event)"
+            (dragover)="onThumbDragOver($event)"
+            [class.has]="!!thumbPreview"
+          >
+            <div class="drop-left">
+              <div class="thumb-mini">
+                <img *ngIf="thumbPreview" [src]="thumbPreview" alt="thumbnail preview" />
+                <span *ngIf="!thumbPreview">IMG</span>
+              </div>
+
+              <div class="drop-text">
+                <div class="drop-title">{{ thumbPreview ? 'Thumbnail selected' : 'Drag & drop an image here' }}</div>
+                <div class="drop-sub muted">PNG/JPG/WEBP • up to 5MB</div>
+                <div class="drop-sub muted" *ngIf="thumbName">File: <span class="mono">{{ thumbName }}</span></div>
+              </div>
+            </div>
+
+            <div class="drop-actions">
+              <label class="btn primary small">
+                <input
+                  #thumbInput
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  (change)="onThumbSelected($event)"
+                  hidden
+                />
+                {{ thumbPreview ? 'Replace' : 'Choose file' }}
+              </label>
+
+              <button class="btn ghost small" type="button" (click)="clearThumb(thumbInput)" [disabled]="!thumbPreview">
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Options -->
+        <div class="section">
+          <div class="section-title">Options</div>
+
+          <div class="options">
+            <label class="toggle">
+              <input type="checkbox" formControlName="publishNow" />
+              <span>Publish now</span>
+            </label>
+
+            <label class="toggle">
+              <input type="checkbox" formControlName="goToBuilder" />
+              <span>Go to Course Builder after create</span>
+            </label>
+          </div>
+
+          <div class="muted small">
+            Recommended: keep it draft, open Course Builder, add content, then publish.
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary" type="submit" [disabled]="loading || form.invalid">
+            {{ loading ? 'Creating…' : 'Create course' }}
+          </button>
+          <span class="muted" *ngIf="loading">Saving and uploading thumbnail…</span>
+        </div>
+
+        <div class="alert error" *ngIf="error">{{ error }}</div>
+      </form>
+    </div>
+
+    <!-- Preview -->
+    <aside class="card preview">
+      <div class="card-head">
+        <div>
+          <h2>Preview</h2>
+          <p class="muted">How it will appear to students.</p>
+        </div>
+      </div>
+
+      <div class="preview-card">
+        <div class="preview-thumb">
+          <img *ngIf="thumbPreview" [src]="thumbPreview" alt="thumbnail" />
+          <div class="thumb-fallback" *ngIf="!thumbPreview">Course</div>
+        </div>
+
+        <div class="preview-body">
+          <div class="preview-title">{{ form.value.title || 'Course title' }}</div>
+          <div class="preview-sub">{{ form.value.shortDescription || 'Short description…' }}</div>
+
+          <div class="preview-meta">
+            <span class="chip">{{ form.value.category || 'Category' }}</span>
+            <span class="chip price">{{ previewPrice() }}</span>
+          </div>
+
+          <div class="preview-tags" *ngIf="tags.length > 0">
+            <span class="chip" *ngFor="let t of tags">{{ t }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="muted small hint-box">
+        Tip: Use a clear title and a clean thumbnail to increase enrollments.
+      </div>
+    </aside>
+  </section>
+</main>

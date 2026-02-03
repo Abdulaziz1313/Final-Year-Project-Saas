@@ -1,0 +1,110 @@
+<div class="container">
+  <!-- Hero / Filters -->
+  <div class="hero card">
+    <div class="hero-left">
+      <h1 class="page-title">Explore Academies</h1>
+      <p class="page-sub">Browse published academies in Alef (الف).</p>
+    </div>
+
+    <div class="hero-right">
+      <div class="search">
+        <svg viewBox="0 0 24 24" class="search-ico" aria-hidden="true">
+          <path d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
+                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+        </svg>
+        <input
+          class="input"
+          [value]="q"
+          (input)="q = $any($event.target).value"
+          (keydown)="onEnter($event)"
+          placeholder="Search academies…"
+        />
+      </div>
+
+      <select class="input sort" [value]="sort" (change)="sort = $any($event.target).value">
+        <option value="newest">Newest</option>
+        <option value="name">Name</option>
+      </select>
+
+      <button class="btn primary" type="button" (click)="search()">Search</button>
+      <button class="btn ghost" type="button" (click)="reset()">Reset</button>
+    </div>
+  </div>
+
+  <ng-container *ngIf="state$ | async as st">
+    <!-- Loading skeleton -->
+    <div *ngIf="st.loading" class="grid">
+      <div class="academy sk" *ngFor="let _ of skeleton">
+        <div class="banner"></div>
+        <div class="row">
+          <div class="logo"></div>
+          <div class="body">
+            <div class="line w60"></div>
+            <div class="line w90"></div>
+            <div class="chips">
+              <div class="chip"></div>
+              <div class="chip"></div>
+            </div>
+          </div>
+          <div class="go">›</div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="st.error" class="alert">{{ st.error }}</div>
+
+    <div class="grid" *ngIf="!st.loading && !st.error && st.data.length > 0; else empty">
+      <a
+        class="academy"
+        *ngFor="let a of st.data"
+        [routerLink]="['/academy', a.slug]"
+        [style.--brand]="brand(a)"
+      >
+        <div
+          class="banner"
+          [class.has-img]="!!img(a.bannerUrl)"
+          [style.backgroundImage]="img(a.bannerUrl) ? 'url(' + img(a.bannerUrl) + ')' : null"
+        >
+          <div class="banner-overlay"></div>
+
+          <div class="top-badges">
+            <span class="pill new" *ngIf="isNew(a)">New</span>
+            <span class="pill">Published</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="logo">
+            <img *ngIf="img(a.logoUrl)" [src]="img(a.logoUrl)!" alt="logo" />
+            <div class="fallback" *ngIf="!img(a.logoUrl)">{{ a.name.slice(0,1).toUpperCase() }}</div>
+          </div>
+
+          <div class="body">
+            <div class="title">{{ a.name }}</div>
+            <div class="sub">{{ a.description || a.slug }}</div>
+
+            <div class="meta">
+              <span class="badge" [style.borderColor]="'color-mix(in oklch, ' + brand(a) + ' 35%, var(--border))'">
+                Explore
+              </span>
+              <span class="badge ghost" *ngIf="a.publishedAt">Updated</span>
+            </div>
+          </div>
+
+          <div class="go">›</div>
+        </div>
+      </a>
+    </div>
+
+    <ng-template #empty>
+      <div class="empty card">
+        <div class="empty-ic">🏫</div>
+        <div class="page-title" style="font-size:18px;">No academies found</div>
+        <p class="page-sub">Try a different search or reset filters.</p>
+        <div class="empty-actions">
+          <button class="btn ghost" type="button" (click)="reset()">Reset</button>
+        </div>
+      </div>
+    </ng-template>
+  </ng-container>
+</div>

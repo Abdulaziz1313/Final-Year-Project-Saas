@@ -1,0 +1,48 @@
+<div class="container">
+  <div class="head">
+    <div>
+      <h1 class="page-title">Enrollments</h1>
+      <p class="page-sub">Students enrolled in this course.</p>
+    </div>
+    <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
+  </div>
+
+  <ng-container *ngIf="state$ | async as st">
+    <div *ngIf="st.loading" class="muted">Loading…</div>
+    <div *ngIf="st.error" class="alert">{{ st.error }}</div>
+
+    <div *ngIf="st.data && !st.loading && !st.error" class="card">
+      <div class="summary">
+        <div><b>{{ st.data.course.title }}</b></div>
+        <div class="muted">Enrolled: {{ st.data.enrolledCount }} • Total lessons: {{ st.data.totalLessons }}</div>
+      </div>
+
+      <div class="list" *ngIf="st.data.students.length > 0; else empty">
+        <div class="row" *ngFor="let s of st.data.students">
+          <div class="who">
+            <div class="avatar">
+              <img *ngIf="avatar(s.student.profileImageUrl)" [src]="avatar(s.student.profileImageUrl)!" />
+              <div class="fallback" *ngIf="!avatar(s.student.profileImageUrl)">
+                {{ (s.student.email || 'S').slice(0,1).toUpperCase() }}
+              </div>
+            </div>
+
+            <div>
+              <div class="name">{{ s.student.displayName || s.student.email || s.student.id }}</div>
+              <div class="muted small">Enrolled: {{ s.enrolledAt | date:'medium' }}</div>
+            </div>
+          </div>
+
+          <div class="right">
+            <span class="badge">{{ s.progress.percent }}%</span>
+            <span class="badge">{{ s.progress.done }}/{{ s.progress.total }}</span>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #empty>
+        <div class="muted">No students enrolled yet.</div>
+      </ng-template>
+    </div>
+  </ng-container>
+</div>

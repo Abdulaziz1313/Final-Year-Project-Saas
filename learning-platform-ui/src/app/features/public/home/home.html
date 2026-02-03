@@ -1,0 +1,105 @@
+<div class="home">
+  <header class="topbar">
+    <a class="brand" routerLink="/home">
+      <span class="logo">الف</span>
+      <span class="name">Alef</span>
+    </a>
+
+    <nav class="nav">
+      <a routerLink="/academies">Explore</a>
+      <a routerLink="/login">Sign in</a>
+      <a class="btn primary small" routerLink="/register">Create account</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div class="hero-text">
+        <div class="kicker">Cloud Learning Platform</div>
+        <h1>Build your academy. Publish courses. Track progress.</h1>
+        <p class="sub">
+          Alef (الف) helps instructors launch a branded learning space and helps students
+          enroll, learn, and continue where they left off.
+        </p>
+
+        <div class="cta">
+          <a class="btn primary" routerLink="/register">Get started</a>
+          <a class="btn ghost" routerLink="/login">Sign in</a>
+          <a class="btn ghost" routerLink="/academies">Explore academies</a>
+        </div>
+
+        <div class="hint muted small">
+          OTP email verification • Role-based dashboards • Course builder • Student progress
+        </div>
+
+        <div class="dash-cta" *ngIf="isLoggedIn">
+          <a class="btn primary" *ngIf="isInstructor" routerLink="/instructor">Go to Instructor Dashboard</a>
+          <a class="btn primary" *ngIf="isStudent" routerLink="/my-learning">Go to My Learning</a>
+          <a class="btn primary" *ngIf="!isInstructor && !isStudent" routerLink="/me">Go to Account</a>
+        </div>
+      </div>
+
+      <div class="hero-card">
+        <div class="mock">
+          <div class="mock-top">
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          </div>
+          <div class="mock-body">
+            <div class="mock-line w80"></div>
+            <div class="mock-line w60"></div>
+
+            <div class="mock-grid">
+              <div class="mock-box"></div>
+              <div class="mock-box"></div>
+              <div class="mock-box"></div>
+              <div class="mock-box"></div>
+            </div>
+
+            <div class="mock-footer">
+              <div class="pill">Academy</div>
+              <div class="pill">Courses</div>
+              <div class="pill">Progress</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="note muted small">
+          Your academy branding (logo, banner, primary color, fonts) follows through public pages.
+        </div>
+      </div>
+    </section>
+
+    <section class="features">
+      <div class="f card">
+        <div class="t">For instructors</div>
+        <ul>
+          <li>Create academies with branding (logo/banner/colors/fonts)</li>
+          <li>Build courses with modules & lessons</li>
+          <li>Publish and track enrollments</li>
+        </ul>
+      </div>
+
+      <div class="f card">
+        <div class="t">For students</div>
+        <ul>
+          <li>Explore published academies and courses</li>
+          <li>Enroll in free courses (paid coming next)</li>
+          <li>Continue learning with last lesson tracking</li>
+        </ul>
+      </div>
+
+      <div class="f card">
+        <div class="t">Platform</div>
+        <ul>
+          <li>Angular standalone + hash routing</li>
+          <li>.NET 8 Web API + EF Core + Identity + JWT</li>
+          <li>Uploads for thumbnails, videos, docs</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer class="foot muted small">
+      © {{ year }} Alef • Built for a clean, professional SaaS learning experience
+    </footer>
+  </main>
+</div>

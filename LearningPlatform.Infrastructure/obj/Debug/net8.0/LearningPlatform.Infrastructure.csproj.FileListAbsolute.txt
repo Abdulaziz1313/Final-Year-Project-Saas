@@ -1,0 +1,17 @@
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\bin\Debug\net8.0\LearningPlatform.Infrastructure.deps.json
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\bin\Debug\net8.0\LearningPlatform.Infrastructure.runtimeconfig.json
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\bin\Debug\net8.0\LearningPlatform.Infrastructure.dll
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\bin\Debug\net8.0\LearningPlatform.Infrastructure.pdb
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\bin\Debug\net8.0\LearningPlatform.Domain.dll
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\bin\Debug\net8.0\LearningPlatform.Domain.pdb
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\LearningPlatform.Infrastructure.csproj.AssemblyReference.cache
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\LearningPlatform.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\LearningPlatform.Infrastructure.AssemblyInfoInputs.cache
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\LearningPlatform.Infrastructure.AssemblyInfo.cs
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\LearningPlatform.Infrastructure.csproj.CoreCompileInputs.cache
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\Learning.95B1B73E.Up2Date
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\LearningPlatform.Infrastructure.dll
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\refint\LearningPlatform.Infrastructure.dll
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\LearningPlatform.Infrastructure.pdb
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\LearningPlatform.Infrastructure.genruntimeconfig.cache
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\ref\LearningPlatform.Infrastructure.dll

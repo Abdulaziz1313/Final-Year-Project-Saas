@@ -1,0 +1,114 @@
+<div class="page" [style.--brand]="brandColor" [style.fontFamily]="brandFontFamily">
+  <div class="container">
+    <ng-container *ngIf="state$ | async as st">
+      <div *ngIf="st.error" class="alert">{{ st.error }}</div>
+
+      <div *ngIf="st.data">
+        <!-- Hero header -->
+        <header class="hero">
+          <div class="hero-left">
+            <div class="academy">
+              <div class="logo" *ngIf="img(st.data.academy.logoUrl); else letter">
+                <img [src]="img(st.data.academy.logoUrl)!" alt="logo" />
+              </div>
+              <ng-template #letter>
+                <div class="logo fallback">{{ st.data.academy.name.slice(0,1).toUpperCase() }}</div>
+              </ng-template>
+
+              <div class="hero-text">
+                <h1 class="page-title">{{ st.data.academy.name }}</h1>
+                <p class="page-sub">{{ st.data.academy.description || 'Explore courses from this academy.' }}</p>
+
+                <div class="hero-meta">
+                  <span class="chip">
+                    <span class="dot"></span>
+                    {{ st.data.items.length }} / {{ st.data.total }} courses
+                  </span>
+
+                  <a class="chip link" [routerLink]="['/academies']">Back to academies</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-right">
+            <button class="btn ghost" type="button" (click)="resetFilters()">Reset filters</button>
+          </div>
+        </header>
+
+        <!-- Filters -->
+        <section class="filters">
+          <div class="field">
+            <label class="lbl">Search</label>
+            <input class="input" [value]="q" (input)="onQInput($any($event.target).value)" placeholder="Search courses…" />
+            <div class="hint muted">Auto-search</div>
+          </div>
+
+          <div class="field">
+            <label class="lbl">Tag</label>
+            <input class="input" [value]="tag" (input)="onTagInput($any($event.target).value)" placeholder="e.g. html" />
+            <div class="hint muted">Auto-search</div>
+          </div>
+
+          <div class="field">
+            <label class="lbl">Sort</label>
+            <select class="input" [value]="sort" (change)="onSortChange($any($event.target).value)">
+              <option value="newest">Newest</option>
+              <option value="title">Title</option>
+              <option value="price">Price</option>
+            </select>
+          </div>
+
+          <div class="actions">
+            <div class="muted small" *ngIf="st.loading">Updating…</div>
+          </div>
+        </section>
+
+        <!-- Grid -->
+        <div class="grid" *ngIf="st.data.items.length > 0; else empty">
+          <a class="course" *ngFor="let c of st.data.items" [routerLink]="['/course', c.id]">
+            <div class="thumb">
+              <img *ngIf="img(c.thumbnailUrl)" [src]="img(c.thumbnailUrl)!" alt="thumb" />
+              <div class="thumb-fallback" *ngIf="!img(c.thumbnailUrl)">Course</div>
+              <div class="price-pill">{{ priceLabel(c) }}</div>
+            </div>
+
+            <div class="body">
+              <div class="title">{{ c.title }}</div>
+              <div class="sub">{{ c.shortDescription || 'No description yet.' }}</div>
+
+              <div class="meta">
+                <span class="badge">{{ c.category || 'General' }}</span>
+                <span class="badge ghost" *ngIf="c.tagsJson">Tagged</span>
+              </div>
+            </div>
+          </a>
+
+          <!-- Load more row -->
+          <div class="load-more">
+            <button class="btn ghost" type="button" (click)="loadMore()" [disabled]="!canLoadMore || st.loading">
+              {{ st.loading ? 'Loading…' : (canLoadMore ? 'Load more' : 'All loaded') }}
+            </button>
+            <div class="muted small">
+              Showing {{ st.data.items.length }} of {{ st.data.total }}
+            </div>
+          </div>
+        </div>
+
+        <ng-template #empty>
+          <div class="empty">
+            <div class="empty-ic">👜</div>
+            <div class="empty-title">No courses yet</div>
+            <p class="empty-sub">This academy is published, but hasn’t published any courses yet.</p>
+
+            <div class="empty-actions">
+              <a class="btn ghost" [routerLink]="['/academies']">Explore other academies</a>
+            </div>
+          </div>
+        </ng-template>
+      </div>
+
+      <div *ngIf="st.loading && !st.data" class="muted">Loading catalog…</div>
+    </ng-container>
+  </div>
+</div>

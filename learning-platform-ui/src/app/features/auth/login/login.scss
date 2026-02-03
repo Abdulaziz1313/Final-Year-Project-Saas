@@ -1,0 +1,234 @@
+.auth { color: var(--text); }
+
+.auth-main {
+  width: 100%;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #fff;
+}
+
+.auth-wrap {
+  width: 100%;
+  max-width: 1020px;
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 18px;
+  align-items: center;
+}
+
+.left {
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  padding: 18px;
+}
+
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.logo-badge {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  color: white;
+  background: var(--grad);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.12);
+  flex: 0 0 auto;
+}
+
+.left h1 {
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: -0.05em;
+  line-height: 1.05;
+}
+
+.muted { color: var(--muted); }
+
+.pill-group {
+  margin-top: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.mini {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.mini-title {
+  font-weight: 900;
+  font-size: .86rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.mini-text {
+  font-weight: 800;
+}
+
+.right { display: grid; }
+
+.auth-card {
+  width: 100%;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: #fff;
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+.card-head h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+}
+
+.form {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.auth-input {
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in oklch, black 12%, white);
+  background: #fff;
+  color: var(--text);
+  outline: none;
+}
+
+.auth-input:focus {
+  border-color: color-mix(in oklch, var(--primary) 70%, black);
+  box-shadow: var(--focus);
+}
+
+.pw { position: relative; }
+.pw .auth-input { padding-right: 78px; }
+
+.pw-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.hint {
+  display: block;
+  margin-top: 6px;
+  font-size: .86rem;
+  font-weight: 800;
+}
+.hint.error { color: #b00020; }
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.check {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.small { font-size: .86rem; }
+
+.auth-btn {
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-weight: 900;
+  cursor: pointer;
+  color: white;
+  background: var(--grad);
+}
+
+.auth-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.alert {
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 0.92rem;
+  border: 1px solid color-mix(in oklch, #ff0000 25%, white);
+  background: color-mix(in oklch, #ff0000 10%, white);
+  color: var(--text);
+}
+
+.card-foot {
+  margin-top: 14px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.card-foot a { color: var(--primary); font-weight: 900; }
+
+.inline {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-weight: 800;
+}
+
+.inline.success {
+  border-color: color-mix(in oklch, var(--primary) 25%, white);
+}
+
+/* Responsive */
+@media screen and (max-width: 900px) {
+  .auth-wrap {
+    grid-template-columns: 1fr;
+    max-width: 560px;
+  }
+  .left { order: 2; }
+  .right { order: 1; }
+}

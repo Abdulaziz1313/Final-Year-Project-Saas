@@ -1,0 +1,216 @@
+<div class="container">
+  <div class="header">
+    <div>
+      <h1 class="page-title">My Account</h1>
+      <p class="page-sub">Manage your profile, security, and preferences.</p>
+    </div>
+
+    <div class="actions">
+      <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
+      <button class="btn ghost" type="button" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <ng-container *ngIf="state$ | async as st">
+    <div class="state" *ngIf="st.loading">Loading…</div>
+    <div class="alert" *ngIf="st.error">{{ st.error }}</div>
+
+    <div class="layout" *ngIf="st.data && !st.loading && !st.error">
+      <!-- Left settings nav -->
+      <aside class="nav-card">
+        <div class="nav-title">Settings</div>
+
+        <button class="nav-item" type="button" [class.active]="activeSection==='profile'" (click)="goTo('profile')">
+          <span class="dot"></span>
+          Profile
+        </button>
+
+        <button class="nav-item" type="button" [class.active]="activeSection==='security'" (click)="goTo('security')">
+          <span class="dot"></span>
+          Security
+        </button>
+
+        <button class="nav-item" type="button" [class.active]="activeSection==='prefs'" (click)="goTo('prefs')">
+          <span class="dot"></span>
+          Preferences
+        </button>
+
+        <button class="nav-item danger" type="button" [class.active]="activeSection==='danger'" (click)="goTo('danger')">
+          <span class="dot"></span>
+          Danger zone
+        </button>
+
+        <div class="nav-foot">
+          <div class="muted">Signed in as</div>
+          <div class="mono">{{ st.data.userId }}</div>
+        </div>
+      </aside>
+
+      <!-- Right content -->
+      <section class="content">
+        <!-- Profile -->
+        <section class="card" id="sec-profile">
+          <div class="card-top">
+            <div>
+              <div class="card-title">Profile</div>
+              <div class="card-sub">Your account details and avatar</div>
+            </div>
+          </div>
+
+          <div class="profile-row">
+            <div class="avatar">
+              <img *ngIf="avatarUrl(st.data)" [src]="avatarUrl(st.data)!" alt="Avatar" />
+              <div class="avatar-fallback" *ngIf="!avatarUrl(st.data)">
+                {{ (st.data.email || 'U').slice(0,1).toUpperCase() }}
+              </div>
+            </div>
+
+            <div class="profile-meta">
+              <div class="email">{{ st.data.email }}</div>
+
+              <div class="roles">
+                <span class="badge" *ngFor="let r of st.data.roles">{{ r }}</span>
+              </div>
+
+              <div class="line">
+                <span class="muted">User ID</span>
+                <span class="mono">{{ st.data.userId }}</span>
+              </div>
+
+              <div class="upload-row">
+                <label class="btn primary small upload-btn">
+                  <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onPhotoSelected($event)" hidden />
+                  {{ photoUploading ? 'Uploading…' : 'Upload photo' }}
+                </label>
+                <span class="muted small">PNG/JPG/WEBP • Max 5MB</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- Display name -->
+          <div class="form">
+            <div class="field">
+              <label>Display name</label>
+              <input class="input" [value]="displayName" (input)="displayName = $any($event.target).value" placeholder="Your display name" />
+
+              <div class="actions-row">
+                <button class="btn primary small" type="button" [disabled]="nameWorking" (click)="saveName()">
+                  {{ nameWorking ? 'Saving…' : 'Save name' }}
+                </button>
+
+                <small class="muted" *ngIf="nameError" style="color:#b00020;">
+                  {{ nameError }}
+                </small>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Security -->
+        <section class="card" id="sec-security">
+          <div class="card-top">
+            <div>
+              <div class="card-title">Security</div>
+              <div class="card-sub">Change your password</div>
+            </div>
+          </div>
+
+          <form [formGroup]="pwForm" (ngSubmit)="changePassword()" class="form">
+            <div class="field">
+              <label>Current password</label>
+              <div class="pw-wrap">
+                <input class="input" [type]="showCurrent ? 'text' : 'password'" formControlName="currentPassword" />
+                <button class="pw-btn" type="button" (click)="toggleCurrent()">
+                  {{ showCurrent ? 'Hide' : 'Show' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>New password</label>
+              <div class="pw-wrap">
+                <input class="input" [type]="showNew ? 'text' : 'password'" formControlName="newPassword" />
+                <button class="pw-btn" type="button" (click)="toggleNew()">
+                  {{ showNew ? 'Hide' : 'Show' }}
+                </button>
+              </div>
+              <small class="muted">Min 6 characters.</small>
+            </div>
+
+            <div class="actions-row">
+              <button class="btn primary" type="submit" [disabled]="pwWorking">
+                {{ pwWorking ? 'Updating…' : 'Update password' }}
+              </button>
+              <span class="muted small">You’ll be logged out after changing.</span>
+            </div>
+
+            <div class="inline success" *ngIf="pwSuccess">{{ pwSuccess }}</div>
+            <div class="inline error" *ngIf="pwError">{{ pwError }}</div>
+          </form>
+        </section>
+
+        <!-- Preferences -->
+        <section class="card" id="sec-prefs">
+          <div class="card-top">
+            <div>
+              <div class="card-title">Preferences</div>
+              <div class="card-sub">Personal settings</div>
+            </div>
+          </div>
+
+          <div class="form">
+            <div class="field">
+              <label>Language</label>
+              <select class="input" [value]="lang" (change)="setLang($any($event.target).value)">
+                <option value="en">English</option>
+                <option value="ar">Arabic (LTR for now)</option>
+              </select>
+            </div>
+
+            <div class="prefs">
+              <label class="pref">
+                <input type="checkbox" disabled />
+                <span>Email notifications</span>
+              </label>
+
+              <label class="pref">
+                <input type="checkbox" disabled />
+                <span>Weekly summary</span>
+              </label>
+
+              <div class="muted small">
+                Coming soon: notification preferences & digest emails.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Danger zone -->
+        <section class="card danger-card" id="sec-danger">
+          <div class="card-top">
+            <div>
+              <div class="card-title">Danger zone</div>
+              <div class="card-sub">Permanent actions</div>
+            </div>
+          </div>
+
+          <form [formGroup]="deleteForm" (ngSubmit)="deleteAccount()" class="form">
+            <div class="field">
+              <label>Confirm password</label>
+              <input class="input" type="password" formControlName="password" />
+              <small class="muted">Required to delete your account.</small>
+            </div>
+
+            <button class="btn danger" type="submit" [disabled]="deleteWorking">
+              {{ deleteWorking ? 'Deleting…' : 'Delete my account' }}
+            </button>
+
+            <div class="inline error" *ngIf="deleteError">{{ deleteError }}</div>
+          </form>
+        </section>
+      </section>
+    </div>
+  </ng-container>
+</div>

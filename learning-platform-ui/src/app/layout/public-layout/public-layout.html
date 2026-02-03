@@ -1,0 +1,49 @@
+<div class="public">
+  <header class="pub-top">
+    <div class="left">
+      <a class="brand" routerLink="/home">
+        <span class="logo">الف</span>
+        <span class="name">Alef</span>
+      </a>
+
+      <span class="sep"></span>
+
+      <nav class="nav">
+        <a class="nav-link" routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          Home
+        </a>
+        <a class="nav-link" routerLink="/academies" routerLinkActive="active">
+          Explore
+        </a>
+      </nav>
+    </div>
+
+    <div class="right">
+      <!-- Logged out -->
+      <ng-container *ngIf="!loggedIn; else loggedInLinks">
+        <a class="btn ghost small" routerLink="/login">Sign in</a>
+        <a class="btn primary small" routerLink="/register">Create account</a>
+      </ng-container>
+
+      <!-- Logged in -->
+      <ng-template #loggedInLinks>
+        <a class="btn ghost small" routerLink="/me">Account</a>
+
+        <!-- Student -->
+        <a class="btn ghost small" *ngIf="isStudent" routerLink="/my-learning">My Learning</a>
+
+        <!-- Instructor/Admin -->
+        <a class="btn ghost small" *ngIf="isInstructor" routerLink="/instructor">Dashboard</a>
+        <a class="btn ghost small" *ngIf="isAdmin" routerLink="/admin">Admin</a>
+
+
+        <!-- ✅ Logout -->
+        <button class="btn ghost small" type="button" (click)="logout()">Logout</button>
+      </ng-template>
+    </div>
+  </header>
+
+  <main class="pub-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

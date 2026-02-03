@@ -1,0 +1,277 @@
+<main class="page">
+  <header class="topbar">
+    <div class="top-left">
+      <div class="kicker">Instructor • Builder</div>
+      <h1>Course Builder</h1>
+      <p class="muted">Build modules and lessons, upload content, then publish.</p>
+    </div>
+
+    <div class="top-actions">
+      <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
+      <a class="btn ghost" routerLink="/instructor">Dashboard</a>
+      <button class="btn ghost" type="button" (click)="resetDrafts()">Clear drafts</button>
+    </div>
+  </header>
+
+  <ng-container *ngIf="state$ | async as st">
+    <div class="state" *ngIf="st.loading">Loading course…</div>
+
+    <div class="alert error" *ngIf="st.error">
+      {{ st.error }}
+    </div>
+
+    <!-- ✅ Hidden banner -->
+    <div class="alert warn" *ngIf="st.data && st.data.isHidden">
+      <div class="warn-title">This course is hidden by admin</div>
+      <div class="muted">Reason: {{ st.data.hiddenReason || '—' }}</div>
+      <div class="muted small">You can still view content, but publishing and uploads are disabled.</div>
+    </div>
+
+    <section class="layout" *ngIf="st.data && !st.loading">
+      <!-- Left: summary + actions -->
+      <aside class="panel sticky">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Course</div>
+            <div class="muted small">ID: <span class="mono">{{ courseId }}</span></div>
+          </div>
+
+          <span class="status" [class.pub]="isPublished(st.data.status)">
+            <span class="dot"></span>
+            {{ statusLabel(st.data.status) }}
+          </span>
+        </div>
+
+        <div class="course-title">{{ st.data.title }}</div>
+        <div class="course-sub">{{ st.data.shortDescription || 'No short description yet.' }}</div>
+
+        <div class="tool-row">
+          <button
+            class="btn primary"
+            type="button"
+            [disabled]="publishing || isPublished(st.data.status) || st.data.isHidden"
+            (click)="publishCourse(st.data.id)"
+            [title]="st.data.isHidden ? 'Hidden by admin' : 'Publish'"
+          >
+            {{ publishing ? 'Publishing…' : (isPublished(st.data.status) ? 'Published' : 'Publish') }}
+          </button>
+
+          <button class="btn ghost" type="button" (click)="copy(publicCourseLink())">
+            Copy public link
+          </button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="section-title">Add module</div>
+        <form class="form" [formGroup]="moduleForm" (ngSubmit)="addModule()">
+          <div class="field">
+            <label>Module title</label>
+            <input class="input" formControlName="title"
+                   [disabled]="st.data.isHidden"
+                   placeholder="e.g. Module 1 - Introduction" />
+          </div>
+
+          <button class="btn primary" type="submit" [disabled]="moduleForm.invalid || st.data.isHidden">
+            Add module
+          </button>
+        </form>
+
+        <div class="divider"></div>
+
+        <div class="mini-actions">
+          <button class="btn ghost small" type="button" (click)="expandAll(st.data.modules || [])">Expand all</button>
+          <button class="btn ghost small" type="button" (click)="collapseAll(st.data.modules || [])">Collapse all</button>
+        </div>
+
+        <div class="hint muted small">
+          Tip: add modules first, then lessons. Upload video/file after creating a lesson.
+        </div>
+      </aside>
+
+      <!-- Right: modules -->
+      <section class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Modules</div>
+          <span class="muted">{{ st.data.modules?.length || 0 }} total</span>
+        </div>
+
+        <div class="empty" *ngIf="(st.data.modules?.length || 0) === 0">
+          <div class="empty-title">No modules yet</div>
+          <div class="empty-sub">Add your first module from the left panel.</div>
+        </div>
+
+        <div class="module-list" *ngIf="(st.data.modules?.length || 0) > 0">
+          <article class="module-card" *ngFor="let m of st.data.modules; let mi = index">
+            <div class="module-head">
+              <button class="module-toggle" type="button" (click)="toggleModule(m.id)">
+                <span class="chev">{{ isCollapsed(m.id) ? '▸' : '▾' }}</span>
+                <span class="module-name">{{ m.title }}</span>
+              </button>
+
+              <div class="module-right">
+                <button class="btn ghost small" type="button" title="Move up"
+                        [disabled]="reordering || mi===0 || st.data.isHidden"
+                        (click)="moveModule(st.data.modules, mi, -1)">
+                  ↑
+                </button>
+
+                <button class="btn ghost small" type="button" title="Move down"
+                        [disabled]="reordering || mi===(st.data.modules.length-1) || st.data.isHidden"
+                        (click)="moveModule(st.data.modules, mi, 1)">
+                  ↓
+                </button>
+
+                <span class="badge">{{ (m.lessons?.length || 0) }} lessons</span>
+
+                <button
+                  class="btn ghost small"
+                  type="button"
+                  [disabled]="(m.lessons?.length || 0) > 0 || st.data.isHidden"
+                  (click)="deleteModule(m.id, (m.lessons?.length || 0))"
+                  title="Delete lessons first"
+                >
+                  Delete module
+                </button>
+              </div>
+            </div>
+
+            <div class="module-body" *ngIf="!isCollapsed(m.id)">
+              <!-- lessons list -->
+              <div class="lessons" *ngIf="(m.lessons?.length || 0) > 0; else noLessons">
+                <div class="lesson" *ngFor="let l of m.lessons; let li = index">
+                  <div class="lesson-left">
+                    <span class="lesson-dot"></span>
+
+                    <div class="lesson-text">
+                      <div class="lesson-title">{{ l.title }}</div>
+                      <div class="lesson-sub">
+                        <span class="badge type" [class.video]="n(l.type)===0" [class.doc]="n(l.type)===1" [class.text]="n(l.type)===2">
+                          {{ n(l.type)===0 ? 'Video' : n(l.type)===1 ? 'Document' : n(l.type)===2 ? 'Text' : 'Other' }}
+                        </span>
+
+                        <span class="badge uploaded" *ngIf="l.contentUrl">Uploaded</span>
+                        <span class="badge uploaded" *ngIf="!l.contentUrl && (n(l.type)===0 || n(l.type)===1)">No file</span>
+
+                        <span class="badge" *ngIf="l.isPreviewFree">Preview</span>
+                        <span class="badge" *ngIf="l.isDownloadable">Downloadable</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="lesson-actions">
+                    <!-- Reorder buttons -->
+                    <button class="btn ghost small" type="button" title="Move up"
+                            [disabled]="reordering || li===0 || st.data.isHidden"
+                            (click)="moveLesson(m.id, m.lessons, li, -1)">
+                      ↑
+                    </button>
+                    <button class="btn ghost small" type="button" title="Move down"
+                            [disabled]="reordering || li===(m.lessons.length-1) || st.data.isHidden"
+                            (click)="moveLesson(m.id, m.lessons, li, 1)">
+                      ↓
+                    </button>
+
+                    <!-- Uploads (disabled if hidden) -->
+                    <label class="btn ghost small" *ngIf="n(l.type) === 0">
+                      <input type="file" accept="video/mp4,video/webm,video/quicktime" hidden
+                             [disabled]="st.data.isHidden"
+                             (change)="uploadVideo(l.id, $event)" />
+                      {{ st.data.isHidden ? 'Uploads disabled' : (isUploading(l.id) ? 'Uploading…' : 'Upload video') }}
+                    </label>
+
+                    <label class="btn ghost small" *ngIf="n(l.type) === 1">
+                      <input type="file" accept="application/pdf,image/*" hidden
+                             [disabled]="st.data.isHidden"
+                             (change)="uploadFile(l.id, $event)" />
+                      {{ st.data.isHidden ? 'Uploads disabled' : (isUploading(l.id) ? 'Uploading…' : 'Upload file') }}
+                    </label>
+
+                    <a class="btn ghost small" *ngIf="l.contentUrl" [href]="apiBase + l.contentUrl" target="_blank" rel="noopener">
+                      Open
+                    </a>
+
+                    <!-- Delete lesson (disabled if hidden) -->
+                    <button class="btn danger small" type="button"
+                            [disabled]="st.data.isHidden || deletingLessonIds.has(l.id) || reordering"
+                            (click)="deleteLesson(l.id, l.title)">
+                      {{ deletingLessonIds.has(l.id) ? 'Deleting…' : 'Delete' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <ng-template #noLessons>
+                <div class="empty-lessons">
+                  <div class="muted">No lessons yet.</div>
+                  <div class="muted small">Add your first lesson below.</div>
+                </div>
+              </ng-template>
+
+              <!-- add lesson (disabled if hidden) -->
+              <div class="add-lesson">
+                <div class="add-head">
+                  <div>
+                    <div class="add-title">Add lesson</div>
+                    <div class="muted small">Create a lesson then upload video/file if needed.</div>
+                  </div>
+                </div>
+
+                <form class="lesson-form" [formGroup]="ensureLessonForm(m.id)" (ngSubmit)="addLesson(m.id)">
+                  <div class="row">
+                    <div class="field">
+                      <label>Lesson title</label>
+                      <input class="input" formControlName="title"
+                             [disabled]="st.data.isHidden"
+                             placeholder="e.g. Lesson 1 - Welcome" />
+                    </div>
+
+                    <div class="field">
+                      <label>Type</label>
+                      <select class="input" formControlName="type" [disabled]="st.data.isHidden">
+                        <option [value]="2">Text</option>
+                        <option [value]="0">Video</option>
+                        <option [value]="1">Document</option>
+                        <option [value]="3">Quiz</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="field" *ngIf="ensureLessonForm(m.id).value.type == 2">
+                    <label>Text content (HTML)</label>
+                    <textarea class="input" formControlName="htmlContent" rows="4"
+                              [disabled]="st.data.isHidden"
+                              placeholder="<p>Lesson content...</p>"></textarea>
+                    <small class="muted">Rich text editor can be added later.</small>
+                  </div>
+
+                  <div class="checks">
+                    <label class="check">
+                      <input type="checkbox" formControlName="isPreviewFree" [disabled]="st.data.isHidden" />
+                      <span>Preview free</span>
+                    </label>
+                    <label class="check">
+                      <input type="checkbox" formControlName="isDownloadable" [disabled]="st.data.isHidden" />
+                      <span>Downloadable</span>
+                    </label>
+                  </div>
+
+                  <div class="form-actions">
+                    <button class="btn primary" type="submit"
+                            [disabled]="st.data.isHidden || ensureLessonForm(m.id).invalid">
+                      Add lesson
+                    </button>
+                  </div>
+
+                  <div class="muted small" *ngIf="st.data.isHidden">
+                    This course is hidden by admin. Editing is disabled.
+                  </div>
+                </form>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+    </section>
+  </ng-container>
+</main>

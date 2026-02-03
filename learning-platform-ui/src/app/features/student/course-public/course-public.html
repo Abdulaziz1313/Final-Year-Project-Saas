@@ -1,0 +1,131 @@
+<div class="page" [style.--brand]="brandColor" [style.fontFamily]="brandFontFamily">
+  <div class="container">
+    <ng-container *ngIf="state$ | async as st">
+      <div *ngIf="st.loading" class="muted">Loading…</div>
+
+      <!-- ✅ Pretty error state -->
+      <div *ngIf="st.error && !st.loading" class="error-card card">
+        <div class="error-top">
+          <div class="error-badge" [class.hidden]="(st.error || '').toLowerCase().includes('hidden by admin')">
+            {{ (st.error || '').toLowerCase().includes('hidden by admin') ? 'Hidden' : 'Unavailable' }}
+          </div>
+          <div class="error-title">This course is not available</div>
+          <div class="error-sub muted">
+            {{ st.error }}
+          </div>
+        </div>
+
+        <div class="error-actions">
+          <a class="btn primary" routerLink="/academies">Explore academies</a>
+          <a class="btn ghost" routerLink="/home">Go home</a>
+        </div>
+
+        <div class="muted small">
+          If you believe this is a mistake, contact the academy owner or support.
+        </div>
+      </div>
+
+      <div *ngIf="st.data && !st.loading && !st.error">
+        <!-- Banner -->
+        <div
+          class="banner"
+          *ngIf="st.data.academy?.bannerUrl"
+          [style.backgroundImage]="'url(' + img(st.data.academy?.bannerUrl) + ')'"
+        ></div>
+
+        <div class="layout">
+          <!-- Main -->
+          <div class="main">
+            <header class="hero">
+              <div class="thumb">
+                <img *ngIf="img(st.data.thumbnailUrl)" [src]="img(st.data.thumbnailUrl)!" alt="thumb" />
+                <div class="thumb-fallback" *ngIf="!img(st.data.thumbnailUrl)">Course</div>
+              </div>
+
+              <div class="info">
+                <div class="crumbs">
+                  <a class="crumb" routerLink="/academies">Academies</a>
+                  <span class="sep">/</span>
+                  <a class="crumb" *ngIf="st.data.academy?.slug" [routerLink]="['/academy', st.data.academy?.slug]">
+                    {{ st.data.academy?.name || 'Academy' }}
+                  </a>
+                </div>
+
+                <h1 class="page-title">{{ st.data.title }}</h1>
+                <p class="page-sub">{{ st.data.shortDescription || 'No short description yet.' }}</p>
+
+                <div class="meta">
+                  <span class="badge">{{ st.data.category || 'General' }}</span>
+                  <span class="badge price">{{ priceLabel(st.data) }}</span>
+                </div>
+              </div>
+            </header>
+
+            <section class="card" *ngIf="st.data.fullDescription">
+              <div class="card-title">About this course</div>
+              <div class="desc" [innerHTML]="st.data.fullDescription"></div>
+            </section>
+
+            <section class="card">
+              <div class="card-title">Curriculum</div>
+
+              <div class="module" *ngFor="let m of st.data.modules">
+                <div class="module-title">{{ m.title }}</div>
+
+                <div class="lesson" *ngFor="let l of m.lessons">
+                  <span class="dot" [class.preview]="l.isPreviewFree"></span>
+                  <span class="lesson-title">{{ l.title }}</span>
+                  <span class="muted small" *ngIf="l.isPreviewFree">Preview</span>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Sticky CTA -->
+          <aside class="side">
+            <div class="cta">
+              <div class="cta-top">
+                <div class="academy-mini" *ngIf="st.data.academy">
+                  <div class="mini-logo" *ngIf="img(st.data.academy.logoUrl); else miniLetter">
+                    <img [src]="img(st.data.academy.logoUrl)!" alt="logo" />
+                  </div>
+                  <ng-template #miniLetter>
+                    <div class="mini-logo fallback">{{ (st.data.academy.name || 'A').slice(0,1).toUpperCase() }}</div>
+                  </ng-template>
+
+                  <div class="mini-text">
+                    <div class="mini-name">{{ st.data.academy.name }}</div>
+                    <div class="mini-sub muted">Provider</div>
+                  </div>
+                </div>
+
+                <div class="cta-price">
+                  <div class="price-big">{{ priceLabel(st.data) }}</div>
+                  <div class="muted small" *ngIf="!st.data.isFree">Payment integration next (PayPal/Stripe).</div>
+                </div>
+              </div>
+
+              <button
+                class="btn primary wide"
+                type="button"
+                [disabled]="enrolling || !canEnroll(st.data)"
+                (click)="enroll(st.data.id)"
+                [style.background]="brandColor"
+              >
+                {{ ctaLabel(st.data) }}
+              </button>
+
+              <a class="btn ghost wide" *ngIf="st.data.academy?.slug" [routerLink]="['/academy', st.data.academy?.slug]">
+                Back to academy
+              </a>
+
+              <div class="cta-note muted">
+                Enroll to track progress and continue where you left off.
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

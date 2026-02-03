@@ -1,0 +1,38 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: grid;
+  place-items: center;
+  z-index: 9998;
+  padding: 18px;
+}
+
+.modal {
+  width: min(520px, 100%);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.title {
+  font-weight: 900;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.msg {
+  margin-top: 10px;
+  color: var(--muted);
+  line-height: 1.35rem;
+}
+
+.actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}

@@ -1,0 +1,7 @@
+<div class="toasts" *ngIf="toast.items$ | async as items">
+  <div class="toast" *ngFor="let t of items" [class.success]="t.type==='success'"
+       [class.error]="t.type==='error'" [class.info]="t.type==='info'">
+    <div class="msg">{{ t.message }}</div>
+    <button class="x" type="button" (click)="close(t.id)">×</button>
+  </div>
+</div>

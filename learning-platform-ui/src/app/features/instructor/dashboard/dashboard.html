@@ -1,0 +1,158 @@
+<div class="container">
+  <!-- Page header -->
+  <div class="dash-header">
+    <div>
+      <h1 class="page-title">Instructor Dashboard</h1>
+      <p class="page-sub">Manage your academies and courses in Alef (الف).</p>
+    </div>
+
+    <div class="dash-actions">
+      <button class="btn ghost" type="button" (click)="refreshAll()">Refresh</button>
+      <a class="btn primary" routerLink="/instructor/academy/create">+ Create Academy</a>
+      <button class="btn ghost" type="button" (click)="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="dash-grid">
+    <!-- Profile -->
+    <section class="card">
+      <div class="card-top">
+        <div>
+          <div class="card-title">Your profile</div>
+          <div class="card-sub">Avatar and account details</div>
+        </div>
+
+        <button class="btn ghost small" type="button" (click)="refreshProfile()">Reload</button>
+      </div>
+
+      <ng-container *ngIf="profileState$ | async as profileState">
+        <div *ngIf="profileState.loading" class="muted-line">Loading profile…</div>
+
+        <div *ngIf="profileState.error" class="alert">
+          {{ profileState.error }}
+        </div>
+
+        <div *ngIf="!profileState.loading && !profileState.error" class="profile-row">
+          <div class="avatar">
+            <img *ngIf="avatarUrl(profileState.data)" [src]="avatarUrl(profileState.data)!" alt="Avatar" />
+            <div class="avatar-fallback" *ngIf="!avatarUrl(profileState.data)">
+              {{ (profileState.data?.email || 'U').slice(0,1).toUpperCase() }}
+            </div>
+          </div>
+
+          <div class="profile-meta">
+            <div class="profile-email">{{ profileState.data?.email }}</div>
+
+            <div class="profile-roles">
+              <span class="badge" *ngFor="let r of (profileState.data?.roles || [])">{{ r }}</span>
+            </div>
+
+            <div class="profile-upload">
+              <label>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  (change)="onPhotoSelected($event)"
+                  hidden
+                />
+                <span class="btn primary small" [class.disabled]="photoUploading">
+                  {{ photoUploading ? 'Uploading…' : 'Upload photo' }}
+                </span>
+              </label>
+
+              <div class="profile-hint">PNG/JPG/WEBP • Max 5MB</div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </section>
+
+    <!-- Academies -->
+    <section class="card">
+      <div class="card-top">
+        <div>
+          <div class="card-title">Your academies</div>
+          <div class="card-sub">Click one to manage courses</div>
+        </div>
+
+        <button class="btn ghost small" type="button" (click)="refreshAcademies()">Reload</button>
+      </div>
+
+      <ng-container *ngIf="academiesState$ | async as academyState">
+        <div *ngIf="academyState.loading" class="muted-line">Loading academies…</div>
+
+        <div *ngIf="academyState.error" class="alert">
+          {{ academyState.error }}
+        </div>
+
+        <div *ngIf="!academyState.loading && !academyState.error">
+          <div class="empty" *ngIf="academyState.data.length === 0">
+            <div class="empty-title">No academies yet</div>
+            <div class="empty-sub">Create your first academy to start building courses.</div>
+            <a class="btn primary" routerLink="/instructor/academy/create">Create Academy</a>
+          </div>
+
+          <div class="academy-grid" *ngIf="academyState.data.length > 0">
+            <a
+              class="academy-card"
+              *ngFor="let a of academyState.data"
+              [routerLink]="['/instructor/courses', a.id]"
+            >
+              <div class="academy-left">
+                <div class="academy-badge">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
+
+                <div class="academy-text">
+                  <div class="academy-name">{{ a.name }}</div>
+
+                  <div class="academy-sub">
+                    {{ a.description || a.slug }}
+                  </div>
+
+                  <!-- ✅ Hidden reason shown to instructor -->
+                  <div class="academy-warning" *ngIf="a.isHidden">
+                    Hidden by admin: {{ a.hiddenReason || '—' }}
+                  </div>
+
+                  <div class="academy-meta">
+                    <!-- ✅ If hidden, show Hidden pill -->
+                    <span class="pill danger" *ngIf="a.isHidden">
+                      <span class="dot danger"></span>
+                      Hidden
+                    </span>
+
+                    <!-- ✅ Otherwise show publish/draft -->
+                    <span class="pill" *ngIf="!a.isHidden" [class.on]="a.isPublished">
+                      <span class="dot"></span>
+                      {{ a.isPublished ? 'Published' : 'Draft' }}
+                    </span>
+
+                    <span class="muted small" *ngIf="!a.isHidden && a.isPublished && a.publishedAt">
+                      • {{ a.publishedAt | date:'mediumDate' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="academy-right">
+                <!-- ✅ publish toggle disabled if hidden -->
+                <button
+                  class="toggle"
+                  type="button"
+                  [class.on]="a.isPublished"
+                  [disabled]="a.isHidden || isPublishing(a.id)"
+                  (click)="togglePublish($event, a)"
+                  title="Publish / Unpublish"
+                >
+                  <span class="knob"></span>
+                </button>
+
+                <span class="muted tiny" *ngIf="a.isHidden">Locked by admin</span>
+                <span class="muted tiny" *ngIf="!a.isHidden && isPublishing(a.id)">Updating…</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </ng-container>
+    </section>
+  </div>
+</div>

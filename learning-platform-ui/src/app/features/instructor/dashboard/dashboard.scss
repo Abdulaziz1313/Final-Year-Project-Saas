@@ -1,0 +1,278 @@
+/* Uses global .container/.card/.btn/.badge styles from styles.scss */
+
+.dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.dash-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 14px;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-weight: 900;
+  font-size: 1rem;
+}
+
+.card-sub {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: .92rem;
+}
+
+.muted-line {
+  color: var(--muted);
+  padding: 8px 0;
+}
+
+/* Profile */
+.profile-row {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 14px;
+  align-items: center;
+}
+
+.avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-fallback { font-weight: 900; font-size: 1.3rem; color: var(--text); }
+
+.profile-email { font-weight: 900; }
+.profile-roles { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+
+.profile-upload { margin-top: 10px; display: grid; gap: 6px; }
+.profile-hint { color: var(--muted); font-size: .85rem; }
+
+/* Academies */
+.empty {
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px dashed var(--border);
+  text-align: center;
+}
+
+.empty-title { font-weight: 900; }
+.empty-sub { margin-top: 6px; color: var(--muted); margin-bottom: 12px; }
+
+.academy-grid { display: grid; gap: 10px; }
+
+.academy-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.academy-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+}
+
+.academy-left { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.academy-badge {
+  width: 38px; height: 38px; border-radius: 14px;
+  display: grid; place-items: center;
+  background: var(--grad);
+  color: #fff;
+  font-weight: 900;
+}
+
+.academy-text { min-width: 0; }
+.academy-name { font-weight: 900; }
+.academy-sub {
+  color: var(--muted);
+  font-size: .9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 420px;
+}
+
+@media (max-width: 980px) {
+  .dash-grid { grid-template-columns: 1fr; }
+  .academy-sub { max-width: 100%; }
+}
+
+/* --- Polishing upgrades --- */
+
+.card {
+  position: relative;
+}
+
+.card-top {
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in oklch, black 8%, white);
+}
+
+.profile-row {
+  padding-top: 12px;
+}
+
+.academy-grid {
+  padding-top: 6px;
+}
+
+.academy-card {
+  will-change: transform;
+}
+
+.academy-card:active {
+  transform: translateY(0px) scale(0.99);
+}
+
+.academy-right .badge {
+  border: 1px solid color-mix(in oklch, black 10%, white);
+  background: color-mix(in oklch, black 3%, white);
+  color: var(--muted);
+}
+
+/* --- Publish/Draft pill (inside card) --- */
+.academy-meta {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklch, black 2%, white);
+  font-weight: 900;
+  font-size: .82rem;
+  color: var(--muted);
+}
+
+.pill .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #9ca3af; /* draft */
+}
+
+.pill.on .dot {
+  background: #22c55e; /* published */
+}
+
+.small { font-size: .86rem; }
+.tiny { font-size: .8rem; }
+
+/* --- Toggle switch --- */
+.toggle {
+  width: 46px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklch, black 5%, white);
+  position: relative;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, opacity .15s ease;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.toggle .knob {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid color-mix(in oklch, black 12%, white);
+  position: absolute;
+  left: 3px;
+  transition: left .15s ease, transform .15s ease;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.10);
+}
+
+.toggle.on {
+  background: color-mix(in oklch, #22c55e 20%, white);
+  border-color: color-mix(in oklch, #22c55e 35%, var(--border));
+}
+
+.toggle.on .knob {
+  left: 21px;
+}
+
+.toggle:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+.academy-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.academy-warning {
+  margin-top: 6px;
+  font-weight: 900;
+  font-size: .86rem;
+  color: color-mix(in oklch, #ff0000 45%, var(--text));
+}
+
+.badge.danger {
+  border-color: color-mix(in oklch, #ff0000 25%, white);
+  background: color-mix(in oklch, #ff0000 10%, white);
+  color: var(--text);
+}
+
+.academy-warning {
+  margin-top: 6px;
+  font-weight: 900;
+  font-size: .86rem;
+  color: color-mix(in oklch, #ff0000 45%, var(--text));
+}
+
+.pill.danger {
+  background: color-mix(in oklch, #ff0000 10%, white);
+  border-color: color-mix(in oklch, #ff0000 20%, var(--border));
+  color: var(--text);
+}
+
+.pill .dot.danger {
+  background: #ef4444;
+}

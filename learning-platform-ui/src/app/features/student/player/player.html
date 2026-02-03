@@ -1,0 +1,127 @@
+<div class="container">
+  <ng-container *ngIf="state$ | async as st">
+    <div *ngIf="st.loading" class="muted">Loading…</div>
+    <div *ngIf="st.error" class="alert">{{ st.error }}</div>
+
+    <div class="layout" *ngIf="st.data && !st.loading && !st.error">
+      <!-- Sidebar lessons -->
+      <aside class="card sidebar">
+        <div class="side-head">
+          <div>
+            <div class="side-title">{{ st.data.title }}</div>
+            <div class="muted small">Progress: {{ progressText(st.data) }}</div>
+          </div>
+
+          <button class="btn ghost small" type="button" (click)="reload()">Refresh</button>
+        </div>
+
+        <div class="side-sub muted">Pick a lesson to continue.</div>
+
+        <div class="module" *ngFor="let m of st.data.modules">
+          <div class="module-title">{{ m.title }}</div>
+
+          <button
+            type="button"
+            class="lesson"
+            *ngFor="let l of m.lessons"
+            [class.active]="l.id === activeLessonId(st.data)"
+            (click)="pickLesson(st.data.id, l.id)"
+          >
+            <span class="check" [class.done]="completed.has(l.id)">✓</span>
+            <span class="name">{{ l.title }}</span>
+            <span class="kind">
+              {{ isVideo(l.type) ? 'Video' : isDoc(l.type) ? 'Doc' : isText(l.type) ? 'Text' : 'Other' }}
+            </span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Content -->
+      <section class="card content">
+        <ng-container *ngIf="currentLesson(st.data) as lesson">
+          <div class="content-head">
+            <div class="now">
+              <div class="pill">Now learning</div>
+              <div class="lesson-title">{{ lesson.title }}</div>
+              <div class="muted small">
+                {{ isVideo(lesson.type) ? 'Video lesson' : isDoc(lesson.type) ? 'Document' : isText(lesson.type) ? 'Text lesson' : 'Lesson' }}
+              </div>
+            </div>
+
+            <div class="content-actions">
+              <button class="btn ghost" type="button" [disabled]="!hasPrev(st.data)" (click)="prev(st.data)">
+                ← Prev
+              </button>
+
+              <button class="btn ghost" type="button" [disabled]="!hasNext(st.data)" (click)="next(st.data)">
+                Next →
+              </button>
+
+              <button class="btn primary" type="button" [disabled]="completing" (click)="markComplete(lesson.id)">
+                {{ completing ? 'Saving…' : 'Mark complete' }}
+              </button>
+
+              <button class="btn primary" type="button" [disabled]="completing" (click)="markCompleteAndNext(st.data, lesson.id)">
+                {{ completing ? 'Saving…' : 'Complete & Next' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- VIDEO -->
+          <div class="media" *ngIf="isVideo(lesson.type)">
+            <ng-container *ngIf="assetUrl(lesson.contentUrl) as videoUrl; else noVideo">
+              <video class="video" [src]="videoUrl" controls playsinline preload="metadata"></video>
+              <div class="muted small tip">
+                If the video doesn’t play: ensure the API is running and static files are enabled.
+              </div>
+            </ng-container>
+
+            <ng-template #noVideo>
+              <div class="empty-box">
+                <div class="empty-title">No video uploaded yet</div>
+                <div class="muted">Instructor needs to upload a video for this lesson.</div>
+              </div>
+            </ng-template>
+          </div>
+
+          <!-- DOCUMENT -->
+          <div class="media" *ngIf="isDoc(lesson.type)">
+            <ng-container *ngIf="assetUrl(lesson.contentUrl) as docUrl; else noDoc">
+              <div class="doc-actions">
+                <a class="btn ghost small" [href]="docUrl" target="_blank" rel="noopener">Open</a>
+                <a class="btn ghost small" [href]="docUrl" download>Download</a>
+              </div>
+
+              <iframe class="doc" *ngIf="docUrl.toLowerCase().endsWith('.pdf')" [src]="docUrl"></iframe>
+
+              <div class="muted small" *ngIf="!docUrl.toLowerCase().endsWith('.pdf')">
+                Preview is available for PDFs. Use Open/Download for other files.
+              </div>
+            </ng-container>
+
+            <ng-template #noDoc>
+              <div class="empty-box">
+                <div class="empty-title">No file uploaded yet</div>
+                <div class="muted">Instructor needs to upload a document for this lesson.</div>
+              </div>
+            </ng-template>
+          </div>
+
+          <!-- TEXT -->
+          <div class="text" *ngIf="isText(lesson.type)">
+            <div class="prose" [innerHTML]="lesson.htmlContent || '<p>No content</p>'"></div>
+          </div>
+
+          <!-- OTHER -->
+          <div class="empty-box" *ngIf="!isVideo(lesson.type) && !isDoc(lesson.type) && !isText(lesson.type)">
+            <div class="empty-title">Not supported yet</div>
+            <div class="muted">This lesson type is not implemented in the player yet.</div>
+            <a class="btn ghost small" *ngIf="assetUrl(lesson.contentUrl)" [href]="assetUrl(lesson.contentUrl)!" target="_blank" rel="noopener">
+              Open resource
+            </a>
+          </div>
+        </ng-container>
+      </section>
+    </div>
+  </ng-container>
+</div>

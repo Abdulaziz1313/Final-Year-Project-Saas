@@ -1,0 +1,348 @@
+<main class="page">
+  <div class="editor">
+    <!-- Settings column -->
+    <section class="settings">
+      <header class="settings-head">
+        <div>
+          <h1>Academy details & branding</h1>
+          <p>Make your academy look professional with custom branding.</p>
+
+          <!-- ✅ Draft / Publish control -->
+          <div class="statusbar">
+            <div class="seg">
+              <button type="button" class="seg-btn" [class.active]="!published" (click)="setPublished(false)">
+                Draft
+              </button>
+              <button type="button" class="seg-btn" [class.active]="published" (click)="setPublished(true)">
+                Published
+              </button>
+            </div>
+
+            <button type="button" class="btn ghost small" (click)="resetBranding()" [disabled]="loading">
+              Reset branding
+            </button>
+          </div>
+        </div>
+
+        <a class="btn ghost small" routerLink="/instructor">Back</a>
+      </header>
+
+      <!-- ✅ One form wrapper -->
+      <form class="accordion" [formGroup]="form">
+        <!-- DETAILS -->
+        <div class="acc-item" [class.open]="isOpen('details')">
+          <button class="acc-head" type="button" (click)="openSection('details')">
+            <span class="acc-title">Academy details</span>
+            <span class="acc-chev">▾</span>
+          </button>
+
+          <div class="acc-body" *ngIf="isOpen('details')">
+            <div class="field">
+              <label>Name <span class="req">*</span></label>
+              <input class="input" formControlName="name" placeholder="e.g. Alef Academy" autocomplete="organization" />
+              <div class="help error" *ngIf="nameCtrl?.touched && nameCtrl?.invalid">
+                Name is required (min 3 characters).
+              </div>
+              <div class="help muted" *ngIf="!(nameCtrl?.touched && nameCtrl?.invalid)">
+                This appears publicly on your academy and course pages.
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="row-label">
+                <span>Slug <span class="req">*</span></span>
+                <button class="link" type="button" (click)="resetSlugToAuto()" [disabled]="loading">Reset</button>
+              </label>
+
+              <div class="slug">
+                <span class="slug-prefix">/academy/</span>
+                <input
+                  class="input"
+                  formControlName="slug"
+                  placeholder="e.g. alef-academy"
+                  spellcheck="false"
+                  autocomplete="off"
+                  (input)="onSlugInput()"
+                  (blur)="onSlugBlur()"
+                />
+              </div>
+
+              <div class="help error" *ngIf="slugCtrl?.touched && slugCtrl?.invalid">
+                Slug is required (min 3 characters).
+              </div>
+
+              <div class="help muted" *ngIf="!(slugCtrl?.touched && slugCtrl?.invalid)">
+                Public URL:
+                <span class="mono urlchip">{{ academyUrlPreview }}</span>
+                <button class="copy" type="button" (click)="copyPreviewUrl()" [disabled]="loading">
+                  {{ copied ? 'Copied' : 'Copy' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Description</label>
+              <textarea
+                class="input"
+                formControlName="description"
+                rows="4"
+                placeholder="What is your academy about? Who is it for?"
+              ></textarea>
+
+              <div class="meta-row">
+                <div class="help muted">Short and clear = higher trust.</div>
+                <div class="counter" [class.over]="descriptionCount > descMax">
+                  {{ descriptionCount }}/{{ descMax }}
+                </div>
+              </div>
+
+              <div class="help error" *ngIf="descCtrl?.touched && descCtrl?.hasError('maxlength')">
+                Description is too long. Keep it under {{ descMax }} characters.
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Website</label>
+              <input
+                class="input"
+                formControlName="website"
+                placeholder="https://example.com"
+                inputmode="url"
+                autocomplete="url"
+                (blur)="normalizeWebsiteOnBlur()"
+              />
+              <div class="help error" *ngIf="websiteCtrl?.touched && !isWebsiteValid">
+                Please enter a valid URL (example: https://example.com)
+              </div>
+              <div class="help muted" *ngIf="!(websiteCtrl?.touched && !isWebsiteValid)">
+                Optional — shown on your public academy page.
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Logo</label>
+
+              <div class="drop" (drop)="onDropLogo($event)" (dragover)="onDragOver($event)" [class.has]="!!logoPreview">
+                <div class="drop-left">
+                  <div class="logo" [style.background]="primaryColor">
+                    <img *ngIf="logoPreview" [src]="logoPreview" alt="Logo preview" />
+                    <span *ngIf="!logoPreview">{{ (form.value.name || 'A').slice(0,1).toUpperCase() }}</span>
+                  </div>
+
+                  <div class="drop-text">
+                    <div class="drop-title">
+                      <span *ngIf="!logoPreview">Drag & drop your logo</span>
+                      <span *ngIf="logoPreview">Logo ready</span>
+                    </div>
+                    <div class="drop-sub muted">
+                      PNG/JPG/WEBP • up to 5MB
+                      <span class="file" *ngIf="logoFile">• {{ logoFile.name }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="drop-actions">
+                  <label class="btn primary small">
+                    <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onLogoSelected($event)" hidden />
+                    {{ logoPreview ? 'Replace' : 'Choose file' }}
+                  </label>
+
+                  <button class="btn ghost small" type="button" (click)="removeLogo()" [disabled]="!logoPreview || loading">
+                    Remove
+                  </button>
+                </div>
+              </div>
+
+              <div class="help muted">Recommended: square logo (512×512).</div>
+            </div>
+
+            <!-- Banner -->
+            <div class="field">
+              <label>Banner</label>
+
+              <div class="bannerbox" [class.has]="!!bannerPreview">
+                <div
+                  class="bannerprev"
+                  *ngIf="bannerPreview"
+                  [style.backgroundImage]="'url(' + bannerPreview + ')'"
+                ></div>
+
+                <div class="bannerempty muted" *ngIf="!bannerPreview">
+                  Recommended size: 1600×400 (JPG/PNG/WEBP)
+                </div>
+
+                <div class="banner-actions">
+                  <label class="btn primary small">
+                    <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onBannerSelected($event)" hidden />
+                    {{ bannerPreview ? 'Replace' : 'Choose file' }}
+                  </label>
+
+                  <button class="btn ghost small" type="button" (click)="removeBanner()" [disabled]="!bannerPreview || loading">
+                    Remove
+                  </button>
+                </div>
+              </div>
+
+              <div class="help muted">Shows at the top of your public academy page.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLOR -->
+        <div class="acc-item" [class.open]="isOpen('color')">
+          <button class="acc-head" type="button" (click)="openSection('color')">
+            <span class="acc-title">Academy color</span>
+            <span class="acc-chev">▾</span>
+          </button>
+
+          <div class="acc-body" *ngIf="isOpen('color')">
+            <div class="field">
+              <label>Primary color</label>
+              <div class="colorline">
+                <input class="color" type="color" formControlName="primaryColor" />
+                <div class="mono muted">{{ form.value.primaryColor }}</div>
+              </div>
+              <div class="help muted">Used for buttons, accents, and the header.</div>
+
+              <div class="palette">
+                <button type="button" class="sw" style="background:#7c3aed" (click)="form.get('primaryColor')?.setValue('#7c3aed')"></button>
+                <button type="button" class="sw" style="background:#2563eb" (click)="form.get('primaryColor')?.setValue('#2563eb')"></button>
+                <button type="button" class="sw" style="background:#0ea5e9" (click)="form.get('primaryColor')?.setValue('#0ea5e9')"></button>
+                <button type="button" class="sw" style="background:#10b981" (click)="form.get('primaryColor')?.setValue('#10b981')"></button>
+                <button type="button" class="sw" style="background:#f59e0b" (click)="form.get('primaryColor')?.setValue('#f59e0b')"></button>
+                <button type="button" class="sw" style="background:#ef4444" (click)="form.get('primaryColor')?.setValue('#ef4444')"></button>
+                <button type="button" class="sw" style="background:#111827" (click)="form.get('primaryColor')?.setValue('#111827')"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- FONT -->
+        <div class="acc-item" [class.open]="isOpen('font')">
+          <button class="acc-head" type="button" (click)="openSection('font')">
+            <span class="acc-title">Academy font</span>
+            <span class="acc-chev">▾</span>
+          </button>
+
+          <div class="acc-body" *ngIf="isOpen('font')">
+            <div class="field">
+              <label>Font</label>
+              <select class="input" formControlName="fontKey">
+                <option *ngFor="let f of fontPresets" [value]="f.key">
+                  {{ f.label }}{{ f.note ? ' — ' + f.note : '' }}
+                </option>
+              </select>
+              <div class="help muted">
+                If you want the same look for everyone, upload a custom font.
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Upload custom font</label>
+
+              <div class="fontbox" [style.fontFamily]="previewFontFamily">
+                <div class="font-sample">
+                  <div class="s1">Alef Academy</div>
+                  <div class="s2">أكاديمية ألف</div>
+                  <div class="s3">Headings • Buttons • Body text</div>
+                </div>
+
+                <div class="font-actions">
+                  <label class="btn primary small">
+                    <input type="file" accept=".woff2,.woff,.ttf,.otf" (change)="onFontSelected($event)" hidden />
+                    Upload font
+                  </label>
+
+                  <button class="btn ghost small" type="button" (click)="removeCustomFont()" [disabled]="!customFontFile">
+                    Remove
+                  </button>
+                </div>
+              </div>
+
+              <div class="help muted" *ngIf="customFontFile">
+                Selected: <span class="mono">{{ customFontFile.name }}</span>
+              </div>
+              <div class="help muted" *ngIf="!customFontFile">
+                Supported: .woff2 (best), .woff, .ttf, .otf
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <!-- Sticky save bar like Salla -->
+      <div class="savebar">
+        <button class="btn primary wide" type="button" (click)="submit()" [disabled]="!canSubmit">
+          <span class="spinner" *ngIf="loading"></span>
+          {{ loading ? 'Saving…' : (published ? 'Create & publish' : 'Create academy') }}
+        </button>
+
+        <div class="savehint muted" *ngIf="!loading">
+          Required: <span class="req">*</span> Name, Slug • Status: <b>{{ published ? 'Published' : 'Draft' }}</b>
+        </div>
+
+        <div class="alert error" *ngIf="error">{{ error }}</div>
+      </div>
+    </section>
+
+    <!-- Preview column -->
+    <section class="preview" [style.--brand]="primaryColor" [style.fontFamily]="previewFontFamily">
+      <div class="preview-topbar">
+        <div class="left">
+          <!-- ✅ click pill to toggle -->
+          <button type="button" class="pill" [class.on]="published" (click)="togglePublished()">
+            <span class="dot"></span>
+            {{ published ? 'Published' : 'Draft' }}
+          </button>
+        </div>
+        <div class="right">
+          <div class="search">
+            <span class="icon">🔍</span>
+            <input placeholder="Search…" disabled />
+          </div>
+        </div>
+      </div>
+
+      <div class="preview-canvas">
+        <div class="site">
+          <div class="site-header">
+            <div class="brand">
+              <div class="brand-logo" [style.background]="primaryColor">
+                <img *ngIf="logoPreview" [src]="logoPreview" alt="logo" />
+                <span *ngIf="!logoPreview">{{ (form.value.name || 'A').slice(0,1).toUpperCase() }}</span>
+              </div>
+
+              <div class="brand-text">
+                <div class="b1">{{ form.value.name || 'Academy Name' }}</div>
+                <div class="b2 mono">{{ academyUrlPreview }}</div>
+              </div>
+            </div>
+
+            <button class="btn primary" type="button" disabled [style.background]="primaryColor">
+              View academy
+            </button>
+          </div>
+
+          <div class="site-banner" *ngIf="bannerPreview" [style.backgroundImage]="'url(' + bannerPreview + ')'"></div>
+
+          <div class="hero">
+            <div class="hero-title">Latest courses</div>
+            <div class="hero-sub muted">
+              {{ form.value.description || 'Add a short description to introduce your academy and build trust.' }}
+            </div>
+          </div>
+
+          <div class="empty">
+            <div class="empty-ic">👜</div>
+            <div class="empty-title">No courses yet</div>
+            <div class="empty-sub muted">Create your first course to start selling and teaching.</div>
+          </div>
+
+          <div class="footer muted">
+            Links • Contact • Terms
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>

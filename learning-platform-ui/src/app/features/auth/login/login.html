@@ -1,0 +1,101 @@
+<div class="auth">
+  <main class="auth-main">
+    <div class="auth-wrap">
+      <!-- Left marketing (kept, cleaner) -->
+      <section class="left">
+        <div class="brand">
+          <div class="logo-badge">الف</div>
+          <div>
+            <h1>Alef</h1>
+            <p class="muted">Sign in to manage academies, courses, and students.</p>
+          </div>
+        </div>
+
+        <div class="pill-group">
+          <span class="pill">Academies</span>
+          <span class="pill">Courses</span>
+          <span class="pill">Progress</span>
+          <span class="pill">Branding</span>
+        </div>
+
+        <div class="mini">
+          <div class="mini-title">Tip</div>
+          <div class="mini-text">Use your Instructor account to create and publish courses.</div>
+        </div>
+      </section>
+
+      <!-- Right card -->
+      <section class="right">
+        <div class="auth-card">
+          <div class="card-head">
+            <h2>Welcome back</h2>
+            <p class="muted">Log in to continue.</p>
+          </div>
+
+          <div class="inline success" *ngIf="loginNotice">{{ loginNotice }}</div>
+
+          <form class="form" [formGroup]="form" (ngSubmit)="submit()">
+            <!-- Email -->
+            <div class="field">
+              <label>Email</label>
+              <input
+                type="email"
+                formControlName="email"
+                placeholder="you@example.com"
+                class="auth-input"
+                autocomplete="email"
+                inputmode="email"
+              />
+              <small class="hint error" *ngIf="emailCtrl?.touched && emailCtrl?.invalid">
+                Please enter a valid email.
+              </small>
+            </div>
+
+            <!-- Password -->
+            <div class="field">
+              <label>Password</label>
+
+              <div class="pw">
+                <input
+                  [type]="showPassword ? 'text' : 'password'"
+                  formControlName="password"
+                  placeholder="••••••••"
+                  class="auth-input"
+                  autocomplete="current-password"
+                />
+                <button class="pw-btn" type="button" (click)="togglePassword()">
+                  {{ showPassword ? 'Hide' : 'Show' }}
+                </button>
+              </div>
+
+              <small class="hint error" *ngIf="passCtrl?.touched && passCtrl?.invalid">
+                Password is required (min 6 characters).
+              </small>
+            </div>
+
+            <!-- Row -->
+            <div class="row">
+              <label class="check">
+                <input type="checkbox" [checked]="rememberMe" (change)="setRemember($any($event.target).checked)" />
+                <span>Remember me</span>
+              </label>
+
+              <span class="muted small">Forgot password (soon)</span>
+            </div>
+
+            <button class="auth-btn" type="submit" [disabled]="loading || form.invalid">
+              {{ loading ? 'Logging in…' : 'Log in' }}
+            </button>
+
+            <div class="alert error" *ngIf="error">{{ error }}</div>
+          </form>
+
+          <div class="card-foot">
+            <span class="muted">New here?</span>
+            <a routerLink="/register">Create an account</a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>

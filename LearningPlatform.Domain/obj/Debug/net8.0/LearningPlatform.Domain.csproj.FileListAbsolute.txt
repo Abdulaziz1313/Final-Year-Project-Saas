@@ -1,0 +1,11 @@
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\bin\Debug\net8.0\LearningPlatform.Domain.deps.json
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\bin\Debug\net8.0\LearningPlatform.Domain.dll
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\bin\Debug\net8.0\LearningPlatform.Domain.pdb
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\obj\Debug\net8.0\LearningPlatform.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\obj\Debug\net8.0\LearningPlatform.Domain.AssemblyInfoInputs.cache
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\obj\Debug\net8.0\LearningPlatform.Domain.AssemblyInfo.cs
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\obj\Debug\net8.0\LearningPlatform.Domain.csproj.CoreCompileInputs.cache
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\obj\Debug\net8.0\LearningPlatform.Domain.dll
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\obj\Debug\net8.0\refint\LearningPlatform.Domain.dll
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\obj\Debug\net8.0\LearningPlatform.Domain.pdb
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\obj\Debug\net8.0\ref\LearningPlatform.Domain.dll

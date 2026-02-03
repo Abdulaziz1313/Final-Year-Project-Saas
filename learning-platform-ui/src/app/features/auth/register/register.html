@@ -1,0 +1,138 @@
+<div class="auth">
+  <main class="auth-main">
+    <div class="auth-wrap">
+      <!-- Left -->
+      <section class="left">
+        <div class="brand">
+          <div class="logo-badge">الف</div>
+          <div>
+            <h1>Alef</h1>
+            <p class="muted">Create an account to start learning or manage academies.</p>
+          </div>
+        </div>
+
+        <div class="pill-group">
+          <span class="pill">Student</span>
+          <span class="pill">Instructor</span>
+          <span class="pill">OTP Email</span>
+        </div>
+
+        <div class="mini">
+          <div class="mini-title">Note</div>
+          <div class="mini-text">We’ll email you a code before creating the account.</div>
+        </div>
+      </section>
+
+      <!-- Right -->
+      <section class="right">
+        <div class="auth-card">
+          <div class="card-head">
+            <h2>{{ step === 'start' ? 'Create account' : 'Verify email' }}</h2>
+            <p class="muted">
+              {{ step === 'start'
+                ? 'Enter your details. We’ll send a verification code.'
+                : 'Enter the 6-digit code we sent to your email.' }}
+            </p>
+
+            <!-- Stepper -->
+            <div class="stepper">
+              <div class="step" [class.on]="step === 'start'"><span class="n">1</span> Details</div>
+              <div class="line"></div>
+              <div class="step" [class.on]="step === 'verify'"><span class="n">2</span> Verify</div>
+            </div>
+          </div>
+
+          <!-- Step 1 -->
+          <form class="form" *ngIf="step === 'start'" [formGroup]="startForm" (ngSubmit)="submitStart()">
+            <div class="field">
+              <label>Email</label>
+              <input type="email" formControlName="email" placeholder="you@example.com" class="auth-input" autocomplete="email" />
+              <small class="hint error" *ngIf="emailCtrl?.touched && emailCtrl?.invalid">
+                Please enter a valid email.
+              </small>
+            </div>
+
+            <div class="field">
+              <label>Password</label>
+              <div class="pw">
+                <input
+                  class="auth-input"
+                  [type]="showPassword ? 'text' : 'password'"
+                  formControlName="password"
+                  placeholder="At least 6 characters"
+                  autocomplete="new-password"
+                />
+                <button class="pw-btn" type="button" (click)="togglePassword()">
+                  {{ showPassword ? 'Hide' : 'Show' }}
+                </button>
+              </div>
+              <small class="hint error" *ngIf="passCtrl?.touched && passCtrl?.invalid">
+                Password is required (min 6 characters).
+              </small>
+            </div>
+
+            <div class="field">
+              <label>Role</label>
+              <select formControlName="role" class="auth-input">
+                <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
+              </select>
+              <small class="hint muted">Choose Student to learn, Instructor to create courses.</small>
+            </div>
+
+            <button class="auth-btn" type="submit" [disabled]="loading || startForm.invalid">
+              {{ loading ? 'Sending…' : 'Send code' }}
+            </button>
+
+            <div class="inline error" *ngIf="error">{{ error }}</div>
+          </form>
+
+          <!-- Step 2 -->
+          <form class="form" *ngIf="step === 'verify'" [formGroup]="verifyForm" (ngSubmit)="submitVerify()">
+            <div class="field">
+              <label>Verification code</label>
+
+              <div class="code" (paste)="onCodePaste($event)">
+                <input #codeInput maxlength="1" inputmode="numeric" autocomplete="one-time-code"
+                       (input)="onDigitInput(0, $event)" (keydown)="onDigitKeyDown(0, $event)" class="code-box" />
+                <input #codeInput maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(1, $event)" (keydown)="onDigitKeyDown(1, $event)" class="code-box" />
+                <input #codeInput maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(2, $event)" (keydown)="onDigitKeyDown(2, $event)" class="code-box" />
+                <input #codeInput maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(3, $event)" (keydown)="onDigitKeyDown(3, $event)" class="code-box" />
+                <input #codeInput maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(4, $event)" (keydown)="onDigitKeyDown(4, $event)" class="code-box" />
+                <input #codeInput maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(5, $event)" (keydown)="onDigitKeyDown(5, $event)" class="code-box" />
+              </div>
+
+              <small class="muted">
+                Sent to: <b>{{ startForm.value.email }}</b>
+                <button class="link" type="button" (click)="changeEmail()">Change</button>
+              </small>
+            </div>
+
+            <button class="auth-btn" type="submit" [disabled]="loading || verifyForm.invalid">
+              {{ loading ? 'Verifying…' : 'Verify & create account' }}
+            </button>
+
+            <div class="row-actions">
+              <button class="btn ghost small" type="button" (click)="backToStart()">Back</button>
+
+              <button class="btn ghost small" type="button" (click)="resendCode()" [disabled]="resendIn > 0 || loading">
+                Resend {{ resendIn > 0 ? '(' + resendIn + 's)' : '' }}
+              </button>
+            </div>
+
+            <div class="inline error" *ngIf="error">{{ error }}</div>
+          </form>
+
+          <div class="card-foot">
+            <span class="muted">Already have an account?</span>
+            <a routerLink="/login">Log in</a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>

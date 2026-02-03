@@ -1,0 +1,97 @@
+<div class="container">
+  <div class="head">
+    <div>
+      <h1 class="page-title">My Learning</h1>
+      <p class="page-sub">Your enrolled courses and progress.</p>
+    </div>
+
+    <div class="head-actions">
+      <select class="input sort" [value]="sort" (change)="sort = $any($event.target).value">
+        <option value="recent">Most recent</option>
+        <option value="progress">Highest progress</option>
+        <option value="title">Title</option>
+      </select>
+
+      <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
+    </div>
+  </div>
+
+  <ng-container *ngIf="state$ | async as st">
+    <div *ngIf="st.loading" class="muted">Loading…</div>
+    <div *ngIf="st.error" class="alert">{{ st.error }}</div>
+
+    <div class="grid" *ngIf="!st.loading && !st.error && st.data.length > 0; else empty">
+      <div class="course-card" *ngFor="let x of sorted(st.data)" (click)="continue(x)">
+        <div class="thumb">
+          <img *ngIf="img(x.course.thumbnailUrl)" [src]="img(x.course.thumbnailUrl)!" alt="thumb" />
+          <div class="thumb-fallback" *ngIf="!img(x.course.thumbnailUrl)">Course</div>
+        </div>
+
+        <div class="info">
+          <div class="toprow">
+            <div class="title">{{ x.course.title }}</div>
+
+            <div class="right-badges">
+              <span class="badge danger" *ngIf="x.course.isHidden">Hidden</span>
+
+              <div class="ring" *ngIf="!x.course.isHidden" [attr.aria-label]="x.progress.percent + '% progress'">
+                <svg viewBox="0 0 36 36">
+                  <path class="bg"
+                    d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32" />
+                  <path class="fg"
+                    [attr.stroke-dasharray]="ringDash(x.progress.percent)"
+                    d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32" />
+                </svg>
+                <div class="ring-text">{{ x.progress.percent }}%</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub">{{ x.course.shortDescription || '—' }}</div>
+
+          <!-- ✅ Hidden reason -->
+          <div class="hidden-note" *ngIf="x.course.isHidden">
+            This course is unavailable. Hidden by admin.
+            <div class="muted small">Reason: {{ x.course.hiddenReason || '—' }}</div>
+          </div>
+
+          <div class="meta">
+            <span class="badge">{{ x.course.category || 'General' }}</span>
+            <span class="badge ghost" *ngIf="!x.course.isHidden">{{ progressText(x) }}</span>
+            <span class="muted small">Enrolled: {{ x.enrollment.enrolledAt | date:'mediumDate' }}</span>
+          </div>
+
+          <div class="bar" *ngIf="!x.course.isHidden">
+            <div class="fill" [style.width.%]="x.progress.percent"></div>
+          </div>
+
+          <div class="actions">
+            <button
+              class="btn primary"
+              type="button"
+              [disabled]="x.course.isHidden"
+              (click)="$event.preventDefault(); $event.stopPropagation(); continue(x)"
+            >
+              {{ ctaLabel(x) }}
+            </button>
+
+            <a class="btn ghost" [routerLink]="['/course', x.course.id]" (click)="$event.stopPropagation()">
+              View details
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #empty>
+      <div class="empty card">
+        <div class="empty-ic">🎓</div>
+        <div class="page-title" style="font-size:18px;">No enrollments yet</div>
+        <p class="page-sub">Browse academies and enroll in a free course to start learning.</p>
+        <div class="empty-actions">
+          <a class="btn primary" routerLink="/academies">Explore academies</a>
+        </div>
+      </div>
+    </ng-template>
+  </ng-container>
+</div>
