@@ -1,89 +1,196 @@
 <div class="auth">
   <main class="auth-main">
+    <!-- subtle background -->
+    <div class="bg">
+      <span class="blob b1"></span>
+      <span class="blob b2"></span>
+      <span class="grid"></span>
+    </div>
+
     <div class="auth-wrap">
       <!-- Left -->
-      <section class="left">
+      <section class="left card">
         <div class="brand">
           <div class="logo-badge">الف</div>
-          <div>
-            <h1>Alef</h1>
-            <p class="muted">Create an account to start learning or manage academies.</p>
+          <div class="brand-text">
+            <h1 class="auth-title">Alef</h1>
+            <p class="muted">Create your account in minutes.</p>
           </div>
         </div>
 
         <div class="pill-group">
-          <span class="pill">Student</span>
-          <span class="pill">Instructor</span>
-          <span class="pill">OTP Email</span>
+          <span class="pill-chip">
+            <span class="dot"></span>
+            OTP verification
+          </span>
+          <span class="pill-chip soft">Secure access</span>
         </div>
 
         <div class="mini">
-          <div class="mini-title">Note</div>
-          <div class="mini-text">We’ll email you a code before creating the account.</div>
+          <div class="mini-title">Phone verification</div>
+          <div class="mini-text">
+            We’ll send a 6-digit code to your phone.
+            <span class="ex">Example: +353851234567</span>
+          </div>
         </div>
       </section>
 
       <!-- Right -->
       <section class="right">
-        <div class="auth-card">
+        <div class="auth-card card">
           <div class="card-head">
-            <h2>{{ step === 'start' ? 'Create account' : 'Verify email' }}</h2>
-            <p class="muted">
-              {{ step === 'start'
-                ? 'Enter your details. We’ll send a verification code.'
-                : 'Enter the 6-digit code we sent to your email.' }}
-            </p>
+            <div class="head-row">
+              <div>
+                <h2 class="card-title">{{ step === 'start' ? 'Create account' : 'Verify phone' }}</h2>
+                <p class="muted">
+                  {{ step === 'start' ? 'Enter your details.' : 'Enter the code we sent.' }}
+                </p>
+              </div>
+
+              <a class="back-home" routerLink="/home" aria-label="Back to home">← Home</a>
+            </div>
 
             <!-- Stepper -->
             <div class="stepper">
-              <div class="step" [class.on]="step === 'start'"><span class="n">1</span> Details</div>
+              <div class="step" [class.on]="step === 'start'">
+                <span class="n">1</span>
+                <span>Details</span>
+              </div>
               <div class="line"></div>
-              <div class="step" [class.on]="step === 'verify'"><span class="n">2</span> Verify</div>
+              <div class="step" [class.on]="step === 'verify'">
+                <span class="n">2</span>
+                <span>Verify</span>
+              </div>
             </div>
           </div>
 
           <!-- Step 1 -->
           <form class="form" *ngIf="step === 'start'" [formGroup]="startForm" (ngSubmit)="submitStart()">
+            <!-- Email -->
             <div class="field">
               <label>Email</label>
-              <input type="email" formControlName="email" placeholder="you@example.com" class="auth-input" autocomplete="email" />
+              <input
+                type="email"
+                formControlName="email"
+                placeholder="you@example.com"
+                class="input"
+                autocomplete="email"
+                inputmode="email"
+              />
               <small class="hint error" *ngIf="emailCtrl?.touched && emailCtrl?.invalid">
-                Please enter a valid email.
+                Enter a valid email.
               </small>
             </div>
 
-            <div class="field">
-              <label>Password</label>
-              <div class="pw">
-                <input
-                  class="auth-input"
-                  [type]="showPassword ? 'text' : 'password'"
-                  formControlName="password"
-                  placeholder="At least 6 characters"
-                  autocomplete="new-password"
-                />
-                <button class="pw-btn" type="button" (click)="togglePassword()">
-                  {{ showPassword ? 'Hide' : 'Show' }}
-                </button>
-              </div>
-              <small class="hint error" *ngIf="passCtrl?.touched && passCtrl?.invalid">
-                Password is required (min 6 characters).
-              </small>
-            </div>
-
+            <!-- Role Tiles (minimal text) -->
             <div class="field">
               <label>Role</label>
-              <select formControlName="role" class="auth-input">
-                <option *ngFor="let r of roles" [value]="r">{{ r }}</option>
-              </select>
-              <small class="hint muted">Choose Student to learn, Instructor to create courses.</small>
+
+              <div class="role-grid" role="radiogroup" aria-label="Role">
+                <button
+                  type="button"
+                  class="role-tile"
+                  [class.active]="startForm.value.role === 'Student'"
+                  (click)="startForm.patchValue({ role: 'Student' })"
+                  aria-pressed="{{ startForm.value.role === 'Student' }}"
+                >
+                  <div class="rt-top">
+                    <div class="rt-ico">🎓</div>
+                    <div class="rt-title">Student</div>
+                  </div>
+                  <div class="rt-sub muted">Learn & track progress</div>
+                </button>
+
+                <button
+                  type="button"
+                  class="role-tile"
+                  [class.active]="startForm.value.role === 'Instructor'"
+                  (click)="startForm.patchValue({ role: 'Instructor' })"
+                  aria-pressed="{{ startForm.value.role === 'Instructor' }}"
+                >
+                  <div class="rt-top">
+                    <div class="rt-ico">🧑‍🏫</div>
+                    <div class="rt-title">Instructor</div>
+                  </div>
+                  <div class="rt-sub muted">Create & publish courses</div>
+                </button>
+              </div>
             </div>
 
-            <button class="auth-btn" type="submit" [disabled]="loading || startForm.invalid">
+            <!-- Phone -->
+            <div class="field">
+              <label>Phone</label>
+              <input
+                type="tel"
+                formControlName="phone"
+                placeholder="+353 85 123 4567"
+                class="input"
+                autocomplete="tel"
+                inputmode="tel"
+              />
+              <small class="hint error" *ngIf="phoneCtrl?.touched && phoneCtrl?.invalid">
+                Enter a valid phone number.
+              </small>
+            </div>
+
+            <!-- Passwords -->
+            <div class="grid2">
+              <div class="field">
+                <label>Password</label>
+                <div class="pw">
+                  <input
+                    class="input"
+                    [type]="showPassword ? 'text' : 'password'"
+                    formControlName="password"
+                    placeholder="At least 6 characters"
+                    autocomplete="new-password"
+                  />
+                  <button class="pw-btn" type="button" (click)="togglePassword()">
+                    {{ showPassword ? 'Hide' : 'Show' }}
+                  </button>
+                </div>
+                <small class="hint error" *ngIf="passCtrl?.touched && passCtrl?.invalid">
+                  Min 6 characters.
+                </small>
+              </div>
+
+              <div class="field">
+                <label>Confirm</label>
+                <div class="pw">
+                  <input
+                    class="input"
+                    [type]="showConfirmPassword ? 'text' : 'password'"
+                    formControlName="confirmPassword"
+                    placeholder="Repeat password"
+                    autocomplete="new-password"
+                  />
+                  <button class="pw-btn" type="button" (click)="toggleConfirmPassword()">
+                    {{ showConfirmPassword ? 'Hide' : 'Show' }}
+                  </button>
+                </div>
+
+                <small class="hint error" *ngIf="confirmPassCtrl?.touched && confirmPassCtrl?.invalid">
+                  Required.
+                </small>
+
+                <small
+                  class="hint error"
+                  *ngIf="passwordsMismatch && !(confirmPassCtrl?.touched && confirmPassCtrl?.invalid)"
+                >
+                  Passwords don’t match.
+                </small>
+              </div>
+            </div>
+
+            <button class="btn primary wide" type="submit" [disabled]="loading || startForm.invalid">
               {{ loading ? 'Sending…' : 'Send code' }}
             </button>
 
             <div class="inline error" *ngIf="error">{{ error }}</div>
+
+            <div class="terms muted tiny">
+              By continuing, you agree to our <span class="fake-link">Terms</span> & <span class="fake-link">Privacy</span>.
+            </div>
           </form>
 
           <!-- Step 2 -->
@@ -106,14 +213,14 @@
                        (input)="onDigitInput(5, $event)" (keydown)="onDigitKeyDown(5, $event)" class="code-box" />
               </div>
 
-              <small class="muted">
-                Sent to: <b>{{ startForm.value.email }}</b>
+              <div class="sent-to muted small">
+                Sent to <b>{{ startForm.value.phone }}</b>
                 <button class="link" type="button" (click)="changeEmail()">Change</button>
-              </small>
+              </div>
             </div>
 
-            <button class="auth-btn" type="submit" [disabled]="loading || verifyForm.invalid">
-              {{ loading ? 'Verifying…' : 'Verify & create account' }}
+            <button class="btn primary wide" type="submit" [disabled]="loading || verifyForm.invalid">
+              {{ loading ? 'Verifying…' : 'Create account' }}
             </button>
 
             <div class="row-actions">

@@ -1,0 +1,204 @@
+<div class="card quiz">
+  <!-- Top head (sticky inside card) -->
+  <div class="head">
+    <div class="head-left">
+      <div class="title-row">
+        <div class="title">{{ quiz?.title || 'Quiz' }}</div>
+
+        <span class="badge" *ngIf="reviewMode">Read-only</span>
+        <span class="badge warn" *ngIf="!reviewMode && needsReview">Needs review</span>
+      </div>
+
+      <div class="muted small" *ngIf="!reviewMode">
+        Answer all questions, then submit. You can save a draft anytime.
+      </div>
+
+      <div class="muted small" *ngIf="reviewMode">
+        Review mode — this quiz was submitted and is locked.
+      </div>
+
+      <!-- progress -->
+      <div class="progress-row" *ngIf="quiz && (quiz?.questions?.length ?? 0) > 0">
+        <div class="muted small">
+          Answered:
+          <span class="mono">{{ answeredCount() }}</span>/<span class="mono">{{ totalCount() }}</span>
+        </div>
+
+        <div class="progressbar" aria-hidden="true">
+          <div class="progressbar-fill" [style.width.%]="progressPercent()"></div>
+        </div>
+      </div>
+
+      <!-- ✅ Premium inline confirm (no alerts) -->
+      <div class="confirm" *ngIf="showRetakeConfirm">
+        <div class="confirm-ic" aria-hidden="true">↻</div>
+
+        <div class="confirm-txt">
+          <div class="confirm-title">Start a new attempt?</div>
+          <div class="confirm-sub muted small">
+            This will clear your current answers and unlock the quiz.
+          </div>
+        </div>
+
+        <div class="confirm-actions">
+          <button
+            class="btn ghost small"
+            type="button"
+            (click)="cancelRetake()"
+            [disabled]="retaking"
+          >
+            Cancel
+          </button>
+
+          <!-- ✅ fixed sizing + no wrap + premium look -->
+          <button
+            class="btn danger small confirm-primary"
+            type="button"
+            (click)="confirmRetake()"
+            [disabled]="retaking"
+          >
+            {{ retaking ? 'Restarting…' : 'Start new attempt' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="head-actions">
+      <button
+        class="btn ghost small"
+        type="button"
+        (click)="load()"
+        [disabled]="loading || submitting || retaking"
+      >
+        Reload
+      </button>
+
+      <button
+        class="btn ghost small"
+        type="button"
+        (click)="saveDraft({ showToastOnSuccess: true }).subscribe()"
+        [disabled]="loading || submitting || reviewMode || retaking"
+        title="Save your answers without submitting"
+      >
+        Save draft
+      </button>
+
+      <!-- ✅ Premium redo icon button -->
+      <button
+        class="btn ghost small redo-btn"
+        type="button"
+        *ngIf="reviewMode"
+        (click)="openRetakeConfirm()"
+        [disabled]="loading || submitting || retaking"
+        title="Start a new attempt"
+      >
+        <span class="redo-ic" aria-hidden="true">↻</span>
+        <span>Redo quiz</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="muted" *ngIf="loading">Loading quiz…</div>
+
+  <div class="muted" *ngIf="!loading && quiz && (quiz?.questions?.length ?? 0) === 0">
+    This quiz has no questions yet.
+  </div>
+
+  <form
+    *ngIf="!loading && quiz && (quiz?.questions?.length ?? 0) > 0"
+    [formGroup]="form"
+    (ngSubmit)="submit()"
+    class="form"
+  >
+    <div class="lock" *ngIf="reviewMode" aria-hidden="true"></div>
+
+    <div formArrayName="answers" class="qs">
+      <div
+        class="q"
+        *ngFor="let _ of answers.controls; let i = index"
+        [formGroupName]="i"
+        [class.answered]="isAnswered(i)"
+      >
+        <div class="q-head">
+          <div class="q-num">Q{{ i + 1 }}</div>
+          <div class="q-prompt">{{ qAt(i)?.prompt }}</div>
+
+          <div class="q-meta">
+            <span class="pill">
+              {{ typeLabel(qAt(i)?.type) }}
+            </span>
+
+            <span class="pill ghost">
+              {{ qAt(i)?.points }} pts
+            </span>
+          </div>
+        </div>
+
+        <!-- MCQ / TF -->
+        <div class="opts" *ngIf="qAt(i)?.type !== 2">
+          <div class="muted small" style="margin-bottom: 6px;">Select one option:</div>
+
+          <label
+            class="opt"
+            *ngFor="let c of (qAt(i)?.choices ?? [])"
+            [class.selected]="answers.at(i).get('selectedChoiceId')?.value === c.id"
+            [class.disabled]="reviewMode"
+          >
+            <input
+              type="radio"
+              [value]="c.id"
+              formControlName="selectedChoiceId"
+              [disabled]="reviewMode"
+            />
+            <span class="opt-text">{{ c.text }}</span>
+          </label>
+        </div>
+
+        <!-- Short Answer -->
+        <div *ngIf="qAt(i)?.type === 2" class="short">
+          <textarea
+            class="input"
+            rows="3"
+            formControlName="answerText"
+            placeholder="Type your answer..."
+            [readonly]="reviewMode"
+          ></textarea>
+
+          <div class="muted small" style="margin-top: 6px;">
+            Keep it concise. (Auto-trimmed on submit)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- actions -->
+    <div class="actions" *ngIf="!reviewMode">
+      <button class="btn primary" type="submit" [disabled]="submitting">
+        {{ submitting ? 'Submitting…' : 'Submit quiz' }}
+      </button>
+
+      <button
+        class="btn ghost"
+        type="button"
+        (click)="saveDraft({ showToastOnSuccess: true }).subscribe()"
+        [disabled]="submitting"
+      >
+        Save draft
+      </button>
+    </div>
+
+    <!-- result -->
+    <div class="result" *ngIf="result">
+      <div class="result-top">
+        <div>
+          <div class="result-title">Result</div>
+          <div class="muted">Score: {{ result.score }}/{{ result.maxScore }}</div>
+          <div class="muted small" *ngIf="needsReview">Some answers require review.</div>
+        </div>
+
+        <span class="badge ok" *ngIf="!needsReview">Submitted</span>
+        <span class="badge warn" *ngIf="needsReview">Pending review</span>
+      </div>
+    </div>
+  </form>
+</div>

@@ -20,6 +20,7 @@ export class CourseCreateComponent {
   thumbPreview: string | null = null;
   thumbFile: File | null = null;
   thumbName: string | null = null;
+  dragThumb = false;
 
   // Tags
   tags: string[] = [];
@@ -66,7 +67,7 @@ export class CourseCreateComponent {
     return (this.form.value.shortDescription || '').length;
   }
 
-  // ✅ safe price validation for strict templates
+  // price validation
   priceInvalid(): boolean {
     if (this.form.value.isFree) return false;
     const v = Number(this.priceCtrl?.value);
@@ -75,13 +76,18 @@ export class CourseCreateComponent {
 
   // ---------- Tags ----------
   addTag() {
-    const t = (this.tagInput || '').trim().toLowerCase();
-    if (!t) return;
-    if (this.tags.includes(t)) return;
-    if (this.tags.length >= 10) return;
+    const raw = (this.tagInput || '').trim().toLowerCase();
+    if (!raw) return;
 
-    const safe = t.replace(/[^a-z0-9-_]/g, '').slice(0, 24);
+    // sanitize
+    const safe = raw.replace(/[^a-z0-9-_]/g, '').slice(0, 24);
     if (!safe) return;
+
+    if (this.tags.includes(safe)) {
+      this.tagInput = '';
+      return;
+    }
+    if (this.tags.length >= 10) return;
 
     this.tags.push(safe);
     this.tagInput = '';
@@ -106,6 +112,7 @@ export class CourseCreateComponent {
 
   onThumbDrop(ev: DragEvent) {
     ev.preventDefault();
+    this.dragThumb = false;
     const file = ev.dataTransfer?.files?.[0];
     if (!file) return;
     this.acceptThumb(file);
@@ -139,6 +146,7 @@ export class CourseCreateComponent {
     this.thumbFile = null;
     this.thumbPreview = null;
     this.thumbName = null;
+    this.dragThumb = false;
     if (fileInput) fileInput.value = '';
   }
 
@@ -163,13 +171,13 @@ export class CourseCreateComponent {
 
     const payload = {
       academyId: this.academyId,
-      title: v.title,
-      shortDescription: v.shortDescription,
-      fullDescription: v.fullDescription,
-      isFree: v.isFree,
+      title: (v.title || '').trim(),
+      shortDescription: (v.shortDescription || '').trim(),
+      fullDescription: (v.fullDescription || '').trim(),
+      isFree: !!v.isFree,
       price: v.isFree ? null : v.price,
-      currency: v.currency,
-      category: v.category,
+      currency: v.currency || 'EUR',
+      category: (v.category || '').trim(),
       tagsJson: JSON.stringify(this.tags),
     };
 
@@ -210,6 +218,12 @@ export class CourseCreateComponent {
 
   previewPrice(): string {
     const v = this.form.value;
-    return v.isFree ? 'Free' : `${v.price || 0} ${v.currency || 'EUR'}`;
+    if (v.isFree) return 'Free';
+
+    const currency = (v.currency || 'EUR').toUpperCase();
+    const priceNum = Number(v.price);
+    const price = Number.isFinite(priceNum) ? priceNum.toFixed(2) : '0.00';
+
+    return `${currency} ${price}`;
   }
 }

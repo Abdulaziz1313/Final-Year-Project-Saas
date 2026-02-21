@@ -1,101 +1,142 @@
-<div class="auth">
-  <main class="auth-main">
-    <div class="auth-wrap">
-      <!-- Left marketing (kept, cleaner) -->
-      <section class="left">
-        <div class="brand">
-          <div class="logo-badge">الف</div>
-          <div>
-            <h1>Alef</h1>
-            <p class="muted">Sign in to manage academies, courses, and students.</p>
-          </div>
-        </div>
+<div class="login">
+  <!-- Background blobs (same as Home) -->
+  <div class="bg">
+    <span class="blob b1"></span>
+    <span class="blob b2"></span>
+    <span class="blob b3"></span>
+    <span class="grid"></span>
+  </div>
 
-        <div class="pill-group">
-          <span class="pill">Academies</span>
-          <span class="pill">Courses</span>
-          <span class="pill">Progress</span>
-          <span class="pill">Branding</span>
-        </div>
+  <!-- Top bar (same as Home) -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" routerLink="/home">
+        <span class="logo">الف</span>
+        <span class="name">Alef</span>
+        <span class="tag">Learning Commerce</span>
+      </a>
 
-        <div class="mini">
-          <div class="mini-title">Tip</div>
-          <div class="mini-text">Use your Instructor account to create and publish courses.</div>
-        </div>
-      </section>
+      <nav class="nav">
+        <a class="nav-link" routerLink="/academies">Explore</a>
 
-      <!-- Right card -->
-      <section class="right">
-        <div class="auth-card">
-          <div class="card-head">
-            <h2>Welcome back</h2>
-            <p class="muted">Log in to continue.</p>
-          </div>
+        <ng-container *ngIf="!isLoggedIn; else loggedNav">
+          <a class="nav-link" routerLink="/login">Sign in</a>
+          <a class="btn primary pill" routerLink="/register">Create account</a>
+        </ng-container>
 
-          <div class="inline success" *ngIf="loginNotice">{{ loginNotice }}</div>
+        <ng-template #loggedNav>
+          <a class="nav-link" routerLink="/me">Account</a>
 
-          <form class="form" [formGroup]="form" (ngSubmit)="submit()">
-            <!-- Email -->
-            <div class="field">
-              <label>Email</label>
-              <input
-                type="email"
-                formControlName="email"
-                placeholder="you@example.com"
-                class="auth-input"
-                autocomplete="email"
-                inputmode="email"
-              />
-              <small class="hint error" *ngIf="emailCtrl?.touched && emailCtrl?.invalid">
-                Please enter a valid email.
-              </small>
-            </div>
-
-            <!-- Password -->
-            <div class="field">
-              <label>Password</label>
-
-              <div class="pw">
-                <input
-                  [type]="showPassword ? 'text' : 'password'"
-                  formControlName="password"
-                  placeholder="••••••••"
-                  class="auth-input"
-                  autocomplete="current-password"
-                />
-                <button class="pw-btn" type="button" (click)="togglePassword()">
-                  {{ showPassword ? 'Hide' : 'Show' }}
-                </button>
-              </div>
-
-              <small class="hint error" *ngIf="passCtrl?.touched && passCtrl?.invalid">
-                Password is required (min 6 characters).
-              </small>
-            </div>
-
-            <!-- Row -->
-            <div class="row">
-              <label class="check">
-                <input type="checkbox" [checked]="rememberMe" (change)="setRemember($any($event.target).checked)" />
-                <span>Remember me</span>
-              </label>
-
-              <span class="muted small">Forgot password (soon)</span>
-            </div>
-
-            <button class="auth-btn" type="submit" [disabled]="loading || form.invalid">
-              {{ loading ? 'Logging in…' : 'Log in' }}
-            </button>
-
-            <div class="alert error" *ngIf="error">{{ error }}</div>
-          </form>
-
-          <div class="card-foot">
-            <span class="muted">New here?</span>
-            <a routerLink="/register">Create an account</a>
-          </div>
-        </div>
-      </section>
+          <a class="btn primary pill" *ngIf="isInstructor" routerLink="/instructor">Dashboard</a>
+          <a class="btn primary pill" *ngIf="isStudent" routerLink="/my-learning">My Learning</a>
+          <a class="btn primary pill" *ngIf="!isInstructor && !isStudent" routerLink="/me">Go to Account</a>
+        </ng-template>
+      </nav>
     </div>
+  </header>
+
+  <main class="wrap">
+    <section class="grid2">
+      <!-- Left: Salla-ish copy -->
+      <div class="hero">
+        <div class="pill-row">
+          <span class="pill-chip">
+            <span class="dot"></span>
+            Secure sign in
+          </span>
+          <span class="pill-chip soft">Role dashboards</span>
+          <span class="pill-chip soft">OTP enabled</span>
+        </div>
+
+        <h1 class="title">
+          Welcome back to Alef.
+        </h1>
+
+        <p class="sub">
+          Sign in to manage your academies and courses, or continue your learning as a student.
+        </p>
+
+        <div class="bullets">
+          <div class="b"><span class="b-dot"></span><span>Instructor & Student experiences</span></div>
+          <div class="b"><span class="b-dot"></span><span>Identity + JWT + roles</span></div>
+          <div class="b"><span class="b-dot"></span><span>SMS OTP</span></div>
+        </div>
+
+        <div class="mini-card card">
+          <div class="mini-title">Tip</div>
+          <div class="mini-text">Use your Instructor account to publish courses and track enrollments.</div>
+        </div>
+      </div>
+
+      <!-- Right: login card -->
+      <div class="card login-card">
+        <div class="head">
+          <h2 class="card-title">Log in</h2>
+          <p class="muted">Enter your email and password to continue.</p>
+        </div>
+
+        <div class="inline success" *ngIf="loginNotice">{{ loginNotice }}</div>
+
+        <form class="form" [formGroup]="form" (ngSubmit)="submit()">
+          <div class="field">
+            <label>Email</label>
+            <input
+              type="email"
+              formControlName="email"
+              placeholder="you@example.com"
+              class="input"
+              autocomplete="email"
+              inputmode="email"
+            />
+            <small class="hint error" *ngIf="emailCtrl?.touched && emailCtrl?.invalid">
+              Please enter a valid email.
+            </small>
+          </div>
+
+          <div class="field">
+            <label>Password</label>
+            <div class="pw">
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                formControlName="password"
+                placeholder="••••••••"
+                class="input"
+                autocomplete="current-password"
+              />
+              <button class="pw-btn" type="button" (click)="togglePassword()">
+                {{ showPassword ? 'Hide' : 'Show' }}
+              </button>
+            </div>
+            <small class="hint error" *ngIf="passCtrl?.touched && passCtrl?.invalid">
+              Password is required (min 6 characters).
+            </small>
+          </div>
+
+          <div class="row">
+            <label class="check">
+              <input type="checkbox" [checked]="rememberMe" (change)="setRemember($any($event.target).checked)" />
+              <span>Remember me</span>
+            </label>
+
+            <button class="link" type="button" (click)="forgotPassword()">Forgot password?</button>
+          </div>
+
+          <button class="btn primary wide pill" type="submit" [disabled]="loading || form.invalid">
+            {{ loading ? 'Logging in…' : 'Log in' }}
+          </button>
+
+          <div class="alert error" *ngIf="error">{{ error }}</div>
+        </form>
+
+        <div class="foot">
+          <span class="muted">New here?</span>
+          <a routerLink="/register">Create an account</a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot2">
+      <div class="muted small">© {{ year }} Alef</div>
+    </footer>
   </main>
 </div>

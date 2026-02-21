@@ -22,6 +22,9 @@ export class MyLearningComponent {
 
   sort: SortKey = 'recent';
 
+  query = '';
+  hideUnavailable = false;
+
   private reload$ = new BehaviorSubject<void>(undefined);
   state$: Observable<LoadState<MyLearningItem[]>>;
 
@@ -44,14 +47,15 @@ export class MyLearningComponent {
     );
   }
 
-  reload() { this.reload$.next(); }
+  reload() {
+    this.reload$.next();
+  }
 
   img(url?: string | null) {
     if (!url) return null;
     return `${this.api}${url}`;
   }
 
-  // ✅ Prevent opening hidden courses
   continue(item: MyLearningItem) {
     if (item.course.isHidden) {
       const reason = item.course.hiddenReason || 'Policy violation';
@@ -66,8 +70,24 @@ export class MyLearningComponent {
     return x.enrollment.lastLessonId ? 'Continue' : 'Start';
   }
 
+  visible(items: MyLearningItem[]) {
+    const q = (this.query || '').trim().toLowerCase();
+
+    return (items || []).filter((x) => {
+      if (this.hideUnavailable && x.course.isHidden) return false;
+
+      if (!q) return true;
+
+      const title = (x.course.title || '').toLowerCase();
+      const desc = (x.course.shortDescription || '').toLowerCase();
+      const cat = (x.course.category || '').toLowerCase();
+
+      return title.includes(q) || desc.includes(q) || cat.includes(q);
+    });
+  }
+
   sorted(items: MyLearningItem[]) {
-    const arr = items.slice();
+    const arr = (items || []).slice();
     switch (this.sort) {
       case 'title':
         return arr.sort((a, b) => (a.course.title || '').localeCompare(b.course.title || ''));
@@ -75,8 +95,8 @@ export class MyLearningComponent {
         return arr.sort((a, b) => (b.progress.percent ?? 0) - (a.progress.percent ?? 0));
       default:
         return arr.sort((a, b) => {
-          const ad = new Date(a.enrollment.enrolledAt).getTime() || 0;
-          const bd = new Date(b.enrollment.enrolledAt).getTime() || 0;
+          const ad = Date.parse(a.enrollment.enrolledAt as any) || 0;
+          const bd = Date.parse(b.enrollment.enrolledAt as any) || 0;
           return bd - ad;
         });
     }
@@ -91,5 +111,20 @@ export class MyLearningComponent {
     const circ = 2 * Math.PI * 14;
     const filled = (p / 100) * circ;
     return `${filled} ${circ - filled}`;
+  }
+
+  hiddenCount(items: MyLearningItem[]) {
+    return (items || []).filter((x) => x.course.isHidden).length;
+  }
+
+  activeCount(items: MyLearningItem[]) {
+    return (items || []).filter((x) => !x.course.isHidden).length;
+  }
+
+  avgProgress(items: MyLearningItem[]) {
+    const active = (items || []).filter((x) => !x.course.isHidden);
+    if (active.length === 0) return 0;
+    const sum = active.reduce((acc, x) => acc + (x.progress.percent ?? 0), 0);
+    return Math.round(sum / active.length);
   }
 }

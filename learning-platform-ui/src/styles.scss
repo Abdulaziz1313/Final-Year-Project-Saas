@@ -1,140 +1,421 @@
-:root{
+/* ============================
+   Alef Design System (Modern SaaS)
+   - Global tokens + base elements
+   - Reusable components: buttons, inputs, cards, badges, pills, alerts, toggles
+   - Works across all pages with minimal per-page CSS
+   ============================ */
+
+/* Optional: if you already include fonts elsewhere, remove this */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+/* ---------- Tokens ---------- */
+:root {
+  /* Typography */
+  --font-sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
   /* Brand */
-  --brand: #6d28d9;                /* accent (used for focus) */
-  --grad: linear-gradient(90deg,#F0070C 0%,#CC26D5 55%,#7702FF 100%);
+  --brand: #7c3aed; /* violet */
+  --grad: linear-gradient(90deg, #F0070C 0%, #CC26D5 55%, #7702FF 100%);
 
   /* Surfaces */
-  --bg: #ffffff;
+  --bg: #fbfbfd;
   --surface: #ffffff;
-  --surface-2: #f7f7fb;
-  --surface-3: #f2f3f7;
+  --surface-2: #f4f6fb;
+  --surface-3: #eef2ff;
 
   /* Text */
-  --text: #111225;
-  --muted: rgba(17,18,37,.65);
+  --text: #111827;
+  --muted: #6b7280;
 
-  /* Border */
-  --border: rgba(20, 20, 40, 0.10);
+  /* Border + focus */
+  --border: rgba(17, 24, 39, 0.12);
+  --border-strong: rgba(17, 24, 39, 0.18);
+  --focus-ring: 0 0 0 4px rgba(124, 58, 237, 0.18);
 
-  /* Radius */
-  --r-xl: 22px;
-  --r-lg: 18px;
+  /* Radii */
+  --r-sm: 10px;
   --r-md: 14px;
-  --r-sm: 12px;
+  --r-lg: 18px;
+  --r-xl: 22px;
 
-  /* Shadows (soft, Salla-like) */
-  --shadow-sm: 0 8px 22px rgba(0,0,0,.06);
-  --shadow-md: 0 16px 52px rgba(0,0,0,.08);
+  /* Shadows */
+  --shadow-sm: 0 10px 25px rgba(0,0,0,0.06);
+  --shadow-md: 0 14px 45px rgba(0,0,0,0.08);
+  --shadow-lg: 0 22px 60px rgba(0,0,0,0.10);
 
-  /* Focus ring */
-  --focus: 0 0 0 4px color-mix(in srgb, var(--brand) 18%, transparent);
+  /* Status colors */
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #0ea5e9;
 
-  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  /* Motion */
+  --ease: cubic-bezier(.2,.9,.2,1);
+}
+
+/* Optional dark mode hook: apply class="theme-dark" to body later */
+.theme-dark {
+  --bg: #0b1220;
+  --surface: #0f172a;
+  --surface-2: #111c33;
+  --surface-3: #142041;
+  --text: #e5e7eb;
+  --muted: #9ca3af;
+  --border: rgba(229, 231, 235, 0.14);
+  --border-strong: rgba(229, 231, 235, 0.22);
+  --focus-ring: 0 0 0 4px rgba(124, 58, 237, 0.28);
+  --shadow-sm: 0 10px 25px rgba(0,0,0,0.35);
+  --shadow-md: 0 14px 45px rgba(0,0,0,0.42);
+  --shadow-lg: 0 22px 60px rgba(0,0,0,0.55);
+}
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--text);
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-*{ box-sizing:border-box; }
-html,body{ height:100%; }
-body{ margin:0; background:var(--bg); color:var(--text); }
+a { color: inherit; }
 
-/* Layout container */
-.container{
+.muted { color: var(--muted); }
+.small { font-size: .86rem; }
+.tiny  { font-size: .78rem; }
+.mono  { font-family: var(--font-mono); }
+
+.container {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 28px;
+  padding: 14px 16px;
 }
 
-/* Typography */
-.page-title{ font-size: 26px; margin:0; letter-spacing:-.02em; font-weight: 900; }
-.page-sub{ margin-top:6px; color:var(--muted); }
+.page-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
 
-/* Card */
-.card{
+.page-sub {
+  margin: 6px 0 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ---------- Cards ---------- */
+.card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-md);
-  padding: 18px;
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-sm);
 }
 
-/* Sections inside card */
-.card-top{ display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:12px; }
-.card-title{ font-weight: 900; }
-.card-sub{ margin-top:6px; color:var(--muted); font-size:.92rem; }
+.card-title {
+  font-weight: 950;
+  letter-spacing: -0.01em;
+}
 
-/* Buttons */
-.btn{
+/* ---------- Inputs ---------- */
+.input, input.input, textarea.input, select.input {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: var(--r-md);
+  outline: none;
+  transition: border-color .12s var(--ease), box-shadow .12s var(--ease), transform .12s var(--ease);
+}
+
+input.input, select.input {
+  height: 42px;
+  padding: 0 12px;
+}
+
+textarea.input {
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.input:focus {
+  border-color: rgba(124, 58, 237, 0.55);
+  box-shadow: var(--focus-ring);
+}
+
+.input.small {
+  height: 36px;
+  border-radius: 12px;
+  padding: 0 10px;
+  font-size: .92rem;
+}
+
+/* Better placeholder */
+.input::placeholder { color: color-mix(in srgb, var(--muted) 80%, transparent); }
+
+/* ---------- Buttons (Salla-like) ---------- */
+.btn {
   height: 40px;
   padding: 0 14px;
+
+  /* more “Salla” */
   border-radius: 999px;
-  border: 1px solid transparent;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+
+  background: #fff;
+  color: var(--text);
+
+  font-weight: 950;
+  letter-spacing: -0.01em;
+
   cursor: pointer;
-  font-weight: 900;
-  letter-spacing: -.01em;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--surface-2);
-  color: var(--text);
   text-decoration: none;
-}
-.btn.primary{ background: var(--grad); color:#fff; }
-.btn.ghost{ background: transparent; border-color: var(--border); }
-.btn.small{ height: 34px; padding:0 12px; font-size:.92rem; }
-.btn:disabled{ opacity:.55; cursor:not-allowed; }
+  user-select: none;
 
-/* Danger */
-.btn.danger{
-  background: color-mix(in oklch, #ff0000 10%, white);
-  border: 1px solid color-mix(in oklch, #ff0000 25%, white);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+  transition:
+    transform .12s var(--ease),
+    box-shadow .12s var(--ease),
+    background .12s var(--ease),
+    border-color .12s var(--ease),
+    opacity .12s var(--ease);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.10);
+  border-color: color-mix(in srgb, var(--border-strong) 75%, transparent);
+}
+
+.btn:active {
+  transform: translateY(0px) scale(0.99);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+}
+
+.btn:disabled,
+.btn.disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn.primary {
+  background: var(--grad);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 14px 34px rgba(0,0,0,0.12);
+}
+
+.btn.primary:hover {
+  box-shadow: 0 18px 42px rgba(0,0,0,0.16);
+}
+
+.btn.ghost {
+  background: transparent;
   color: var(--text);
+  border-color: color-mix(in srgb, var(--border) 85%, transparent);
+  box-shadow: none;
 }
-.btn.danger:hover{ background: color-mix(in oklch, #ff0000 14%, white); }
 
-/* Inputs */
-.input, select.input, textarea.input{
-  width:100%;
-  padding:12px 12px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--border);
-  background:#fff;
+.btn.ghost:hover {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  box-shadow: none;
+}
+
+.btn.danger {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--danger) 20%, var(--surface));
   color: var(--text);
-  outline:none;
-}
-.input:focus, select.input:focus, textarea.input:focus{
-  border-color: color-mix(in srgb, var(--brand) 45%, var(--border));
-  box-shadow: var(--focus);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
 }
 
-/* Badge */
-.badge{
+.btn.danger:hover {
+  background: color-mix(in srgb, var(--danger) 16%, var(--surface));
+}
+
+.btn.small { height: 34px; padding: 0 12px; font-size: .92rem; }
+.btn.wide  { width: 100%; }
+
+/* Optional size helpers (use if needed) */
+.btn.big { height: 44px; padding: 0 16px; font-size: .98rem; }
+.btn.pill { border-radius: 999px; }
+
+/* ---------- Badges / pills ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: var(--surface-3);
-  font-weight: 900;
-  font-size: .82rem;
+  background: color-mix(in srgb, var(--text) 2%, var(--surface));
   color: var(--muted);
+  font-weight: 950;
+  font-size: .82rem;
 }
 
-/* Alerts */
-.alert{
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
   border: 1px solid var(--border);
-  background: var(--surface-2);
-  border-radius: var(--r-md);
-  padding: 10px 12px;
-}
-.alert.error{
-  border-color: color-mix(in oklch, #ff0000 25%, white);
-  background: color-mix(in oklch, #ff0000 10%, white);
-}
-.alert.success{
-  border-color: color-mix(in oklch, #00aa55 25%, white);
-  background: color-mix(in oklch, #00aa55 10%, white);
+  background: color-mix(in srgb, var(--text) 2%, var(--surface));
+  color: var(--muted);
+  font-weight: 950;
+  font-size: .82rem;
 }
 
-/* Helpers */
-.muted{ color: var(--muted); }
-.small{ font-size:.86rem; }
-.mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+.pill .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #9ca3af;
+}
+
+.pill.on {
+  background: color-mix(in srgb, var(--success) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--success) 18%, var(--surface));
+  color: var(--text);
+}
+
+.pill.on .dot { background: var(--success); }
+
+.pill.danger {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--danger) 18%, var(--surface));
+  color: var(--text);
+}
+.pill.danger .dot { background: var(--danger); }
+
+/* ---------- Alerts ---------- */
+.alert {
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.alert.error {
+  border-color: color-mix(in srgb, var(--danger) 25%, var(--surface));
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+}
+
+.alert.warn {
+  border-color: color-mix(in srgb, var(--warning) 25%, var(--surface));
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+}
+
+.alert.success {
+  border-color: color-mix(in srgb, var(--success) 25%, var(--surface));
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
+}
+
+/* ---------- Toggle ---------- */
+.toggle {
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--text) 6%, var(--surface));
+  position: relative;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  transition: background .12s var(--ease), border-color .12s var(--ease);
+}
+
+.toggle .knob {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transform: translateX(0);
+  transition: transform .12s var(--ease);
+}
+
+.toggle.on {
+  background: color-mix(in srgb, var(--success) 18%, var(--surface));
+  border-color: color-mix(in srgb, var(--success) 25%, var(--surface));
+}
+
+.toggle.on .knob { transform: translateX(20px); }
+
+/* ---------- Segmented control ---------- */
+.seg {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--text) 2%, var(--surface));
+  flex-wrap: wrap;
+}
+
+.seg-btn {
+  border: 0;
+  background: transparent;
+  padding: 8px 10px;
+  border-radius: 999px;
+  font-weight: 950;
+  font-size: .85rem;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background .12s var(--ease), color .12s var(--ease), box-shadow .12s var(--ease);
+}
+
+.seg-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.seg-btn.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+
+.seg-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ---------- Utility spacing ---------- */
+.divider {
+  border-top: 1px solid var(--border);
+  margin: 14px 0;
+}
+
+/* ---------- Remove old banner (safe) ----------
+   If you had an old global promo/notice/banner element, hide it.
+   This won’t affect your new Home because it uses its own layout.
+*/
+.banner,
+.top-banner,
+.site-banner,
+.promo-banner,
+.announcement,
+.notice-banner,
+.hero-banner,
+.global-banner {
+  display: none !important;
+}
+
+/* ---------- Optional RTL hook (future) ----------
+   When you switch Arabic UI to RTL, set <body class="rtl">
+*/
+body.rtl { direction: rtl; }
+body.rtl .mono { direction: ltr; unicode-bidi: plaintext; }

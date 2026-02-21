@@ -1,0 +1,357 @@
+.quiz { padding: 14px; position: relative; }
+
+.form { position: relative; }
+
+.head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: #fff;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.head-left { min-width: 0; }
+
+.title-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-weight: 950;
+  font-size: 1.12rem;
+  letter-spacing: -0.01em;
+}
+
+.head-actions {
+  display: inline-flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.head-actions .btn { white-space: nowrap; }
+
+/* ✅ Premium redo icon button */
+.redo-btn {
+  padding-left: 10px;
+  padding-right: 12px;
+  gap: 8px;
+}
+
+.redo-ic {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklch, black 3%, white);
+  display: grid;
+  place-items: center;
+  font-weight: 950;
+  line-height: 1;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.redo-btn:hover .redo-ic {
+  transform: rotate(-10deg);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.08);
+  border-color: color-mix(in oklch, black 16%, white);
+}
+
+.redo-btn:disabled .redo-ic {
+  box-shadow: none;
+  transform: none;
+  opacity: .7;
+}
+
+.badge {
+  border: 1px solid var(--border);
+  background: color-mix(in oklch, black 3%, white);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 950;
+  font-size: .78rem;
+  color: var(--muted);
+}
+.badge.ok {
+  border-color: color-mix(in oklch, #22c55e 35%, var(--border));
+  background: color-mix(in oklch, #22c55e 14%, white);
+  color: color-mix(in oklch, #22c55e 50%, black);
+}
+.badge.warn {
+  border-color: color-mix(in oklch, oklch(63.32% 0.24 31.68) 35%, var(--border));
+  background: color-mix(in oklch, oklch(63.32% 0.24 31.68) 12%, white);
+  color: var(--text);
+}
+
+.progress-row {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.progressbar {
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.progressbar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--grad);
+  border-radius: 999px;
+}
+
+/* ✅ Premium inline confirm (replaces alert/confirm) */
+@keyframes slideDownSoft {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.confirm {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in oklch, black 10%, white);
+  background:
+    radial-gradient(600px 120px at 0% 0%, color-mix(in oklch, oklch(63.32% 0.24 31.68) 10%, white), transparent 55%),
+    #fff;
+  box-shadow: 0 16px 34px rgba(0,0,0,0.06);
+
+  display: flex;
+  gap: 12px;
+  align-items: center;
+
+  animation: slideDownSoft 180ms ease-out;
+  transform-origin: top;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirm { animation: none; }
+}
+
+.confirm-ic {
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklch, black 3%, white);
+  display: grid;
+  place-items: center;
+  font-weight: 950;
+}
+
+.confirm-txt { min-width: 0; display: grid; gap: 2px; }
+.confirm-title { font-weight: 950; letter-spacing: -0.01em; }
+
+/* ✅ FIX: align + prevent wrapping + premium button sizing */
+.confirm-actions {
+  display: inline-flex;
+  gap: 10px;
+  margin-left: auto;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.confirm-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 12px;
+  line-height: 1;
+  border-radius: 999px;
+}
+
+.confirm-primary {
+  white-space: nowrap;
+  min-width: 160px;
+}
+
+/* If you don't already have .btn.danger in global styles, keep this local fallback */
+.btn.danger {
+  border: 1px solid color-mix(in oklch, oklch(63.32% 0.24 31.68) 30%, var(--border));
+  background:
+    radial-gradient(120px 60px at 30% 20%, color-mix(in oklch, oklch(63.32% 0.24 31.68) 18%, white), transparent 60%),
+    color-mix(in oklch, oklch(63.32% 0.24 31.68) 10%, white);
+  color: var(--text);
+}
+.btn.danger:hover {
+  background:
+    radial-gradient(120px 60px at 30% 20%, color-mix(in oklch, oklch(63.32% 0.24 31.68) 22%, white), transparent 60%),
+    color-mix(in oklch, oklch(63.32% 0.24 31.68) 14%, white);
+}
+
+.qs { display: grid; gap: 12px; }
+
+/* Question card */
+.q {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+}
+
+.q:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in oklch, black 16%, white);
+}
+
+.q.answered {
+  border-color: color-mix(in oklch, #22c55e 30%, var(--border));
+}
+
+.q-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 10px;
+}
+
+.q-num {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: color-mix(in oklch, black 3%, white);
+  display: grid;
+  place-items: center;
+  font-weight: 950;
+}
+
+.q-prompt {
+  font-weight: 950;
+  line-height: 1.35;
+  padding-top: 2px;
+}
+
+.q-meta {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.pill {
+  border: 1px solid var(--border);
+  background: color-mix(in oklch, black 2%, white);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-weight: 950;
+  font-size: .78rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.pill.ghost { background: #fff; }
+
+.opts { display: grid; gap: 10px; }
+
+.opt {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+
+  padding: 10px 12px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-2) 70%, #fff);
+
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease, background .12s ease;
+}
+
+.opt:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+  border-color: color-mix(in oklch, black 16%, white);
+}
+
+.opt.selected {
+  border-color: color-mix(in oklch, var(--brand, #7c3aed) 35%, var(--border));
+  background: color-mix(in oklch, var(--brand, #7c3aed) 10%, white);
+}
+
+.opt.disabled {
+  cursor: default;
+  opacity: .8;
+}
+
+.opt input { margin: 0; }
+.opt-text { font-weight: 850; }
+
+/* short answer */
+.short .input {
+  width: 100%;
+  border-radius: 16px;
+}
+
+/* actions */
+.actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* result */
+.result {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px dashed var(--border);
+  background: color-mix(in srgb, var(--surface-2) 70%, #fff);
+}
+
+.result-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.result-title { font-weight: 950; margin-bottom: 6px; }
+
+/* review lock overlay */
+.lock {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.45);
+  backdrop-filter: blur(2px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* misc */
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+/* optional: make confirm buttons stack nicely on very small screens */
+@media (max-width: 520px) {
+  .confirm-actions { width: 100%; margin-left: 0; justify-content: flex-end; }
+  .confirm-primary { width: 100%; min-width: 0; }
+}
+
+@media (max-width: 680px) {
+  .q-head { grid-template-columns: auto 1fr; }
+  .q-meta { grid-column: 1 / -1; justify-content: flex-start; }
+  .confirm { align-items: flex-start; }
+  .confirm-actions { width: 100%; margin-left: 0; justify-content: flex-end; }
+}

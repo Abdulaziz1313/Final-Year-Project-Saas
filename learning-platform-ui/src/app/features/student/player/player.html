@@ -1,127 +1,274 @@
-<div class="container">
-  <ng-container *ngIf="state$ | async as st">
-    <div *ngIf="st.loading" class="muted">Loading…</div>
-    <div *ngIf="st.error" class="alert">{{ st.error }}</div>
+<div class="player">
+  <!-- Background (same as Home / My Learning) -->
+  <div class="bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="bg-grid"></div>
+  </div>
 
-    <div class="layout" *ngIf="st.data && !st.loading && !st.error">
-      <!-- Sidebar lessons -->
-      <aside class="card sidebar">
-        <div class="side-head">
-          <div>
-            <div class="side-title">{{ st.data.title }}</div>
-            <div class="muted small">Progress: {{ progressText(st.data) }}</div>
-          </div>
+  <div class="wrap">
+    <div class="container">
+      <ng-container *ngIf="state$ | async as st">
+        <div *ngIf="st.loading" class="muted">Loading…</div>
+        <div *ngIf="st.error" class="alert">{{ st.error }}</div>
 
-          <button class="btn ghost small" type="button" (click)="reload()">Refresh</button>
-        </div>
+        <ng-container *ngIf="st.data && !st.loading && !st.error">
+          <!-- ✅ Sticky topbar (match Home: topbar + topbar-inner) -->
+          <header class="topbar">
+            <div class="topbar-inner">
+              <div class="top-left">
+                <div class="kicker">Student • Player</div>
+                <div class="top-title" [title]="st.data.title">{{ st.data.title }}</div>
 
-        <div class="side-sub muted">Pick a lesson to continue.</div>
+                <div class="top-sub muted">
+                  <span class="chip">
+                    Progress
+                    <span class="mono">{{ progressText(st.data) }}</span>
+                  </span>
 
-        <div class="module" *ngFor="let m of st.data.modules">
-          <div class="module-title">{{ m.title }}</div>
+                  <span class="chip ghost">
+                    Lessons
+                    <span class="mono">{{ flat(st.data).length }}</span>
+                  </span>
 
-          <button
-            type="button"
-            class="lesson"
-            *ngFor="let l of m.lessons"
-            [class.active]="l.id === activeLessonId(st.data)"
-            (click)="pickLesson(st.data.id, l.id)"
-          >
-            <span class="check" [class.done]="completed.has(l.id)">✓</span>
-            <span class="name">{{ l.title }}</span>
-            <span class="kind">
-              {{ isVideo(l.type) ? 'Video' : isDoc(l.type) ? 'Doc' : isText(l.type) ? 'Text' : 'Other' }}
-            </span>
-          </button>
-        </div>
-      </aside>
+                  <span class="chip ghost" *ngIf="currentLesson(st.data) as cl">
+                    Now
+                    <span class="mono">{{ cl.title }}</span>
+                  </span>
+                </div>
+              </div>
 
-      <!-- Content -->
-      <section class="card content">
-        <ng-container *ngIf="currentLesson(st.data) as lesson">
-          <div class="content-head">
-            <div class="now">
-              <div class="pill">Now learning</div>
-              <div class="lesson-title">{{ lesson.title }}</div>
-              <div class="muted small">
-                {{ isVideo(lesson.type) ? 'Video lesson' : isDoc(lesson.type) ? 'Document' : isText(lesson.type) ? 'Text lesson' : 'Lesson' }}
+              <div class="top-actions">
+                <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
+
+                <button class="btn ghost" type="button" (click)="toggleSidebar()">
+                  {{ sidebarOpen ? 'Hide lessons' : 'Show lessons' }}
+                </button>
               </div>
             </div>
+          </header>
 
-            <div class="content-actions">
-              <button class="btn ghost" type="button" [disabled]="!hasPrev(st.data)" (click)="prev(st.data)">
-                ← Prev
-              </button>
+          <!-- ✅ Overlay for mobile drawer -->
+          <div class="overlay" *ngIf="sidebarOpen && isMobile" (click)="toggleSidebar(false)"></div>
 
-              <button class="btn ghost" type="button" [disabled]="!hasNext(st.data)" (click)="next(st.data)">
-                Next →
-              </button>
+          <div class="layout">
+            <!-- ✅ Sidebar lessons -->
+            <aside class="card sidebar" [class.open]="sidebarOpen" [class.drawer]="isMobile">
+              <div class="side-head">
+                <div class="course-meta">
+                  <div class="side-title">Lessons</div>
 
-              <button class="btn primary" type="button" [disabled]="completing" (click)="markComplete(lesson.id)">
-                {{ completing ? 'Saving…' : 'Mark complete' }}
-              </button>
+                  <div class="progress-row">
+                    <div class="muted small">Progress: {{ progressText(st.data) }}</div>
 
-              <button class="btn primary" type="button" [disabled]="completing" (click)="markCompleteAndNext(st.data, lesson.id)">
-                {{ completing ? 'Saving…' : 'Complete & Next' }}
-              </button>
-            </div>
-          </div>
+                    <div class="progressbar" aria-hidden="true">
+                      <div
+                        class="progressbar-fill"
+                        [style.width.%]="(completed.size / (flat(st.data).length || 1)) * 100"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
 
-          <!-- VIDEO -->
-          <div class="media" *ngIf="isVideo(lesson.type)">
-            <ng-container *ngIf="assetUrl(lesson.contentUrl) as videoUrl; else noVideo">
-              <video class="video" [src]="videoUrl" controls playsinline preload="metadata"></video>
-              <div class="muted small tip">
-                If the video doesn’t play: ensure the API is running and static files are enabled.
-              </div>
-            </ng-container>
-
-            <ng-template #noVideo>
-              <div class="empty-box">
-                <div class="empty-title">No video uploaded yet</div>
-                <div class="muted">Instructor needs to upload a video for this lesson.</div>
-              </div>
-            </ng-template>
-          </div>
-
-          <!-- DOCUMENT -->
-          <div class="media" *ngIf="isDoc(lesson.type)">
-            <ng-container *ngIf="assetUrl(lesson.contentUrl) as docUrl; else noDoc">
-              <div class="doc-actions">
-                <a class="btn ghost small" [href]="docUrl" target="_blank" rel="noopener">Open</a>
-                <a class="btn ghost small" [href]="docUrl" download>Download</a>
+                <button class="btn ghost small" type="button" (click)="toggleSidebar(false)" *ngIf="isMobile">
+                  ✕
+                </button>
               </div>
 
-              <iframe class="doc" *ngIf="docUrl.toLowerCase().endsWith('.pdf')" [src]="docUrl"></iframe>
-
-              <div class="muted small" *ngIf="!docUrl.toLowerCase().endsWith('.pdf')">
-                Preview is available for PDFs. Use Open/Download for other files.
+              <!-- ✅ search -->
+              <div class="search">
+                <span class="icon">🔎</span>
+                <input
+                  class="input"
+                  [(ngModel)]="lessonQuery"
+                  placeholder="Search lessons..."
+                  aria-label="Search lessons"
+                />
+                <button class="clear" type="button" *ngIf="lessonQuery" (click)="lessonQuery=''">×</button>
               </div>
-            </ng-container>
 
-            <ng-template #noDoc>
-              <div class="empty-box">
-                <div class="empty-title">No file uploaded yet</div>
-                <div class="muted">Instructor needs to upload a document for this lesson.</div>
+              <div class="side-sub muted">Pick a lesson to continue.</div>
+
+              <div class="module" *ngFor="let m of filteredModules(st.data)">
+                <button type="button" class="module-toggle" (click)="toggleModule(m.id)">
+                  <span class="module-title">{{ m.title }}</span>
+                  <span class="module-right">
+                    <span class="mini muted">{{ m.lessons?.length || 0 }} lessons</span>
+                    <span class="chev">{{ isModuleOpen(m.id) ? '▾' : '▸' }}</span>
+                  </span>
+                </button>
+
+                <div class="module-body" *ngIf="isModuleOpen(m.id)">
+                  <button
+                    type="button"
+                    class="lesson"
+                    *ngFor="let l of m.lessons"
+                    [class.active]="l.id === activeLessonId(st.data)"
+                    [class.done]="completed.has(l.id)"
+                    (click)="pickLesson(st.data.id, l.id)"
+                  >
+                    <span class="check" aria-hidden="true">
+                      <span class="check-dot"></span>
+                      <span class="check-tick">✓</span>
+                    </span>
+
+                    <span class="name" [title]="l.title">{{ l.title }}</span>
+
+                    <span
+                      class="kind"
+                      [attr.data-kind]="isVideo(l.type) ? 'video' : isDoc(l.type) ? 'doc' : isText(l.type) ? 'text' : isQuiz(l.type) ? 'quiz' : 'other'"
+                    >
+                      <span class="k-ico" aria-hidden="true">
+                        {{ isVideo(l.type) ? '▶' : isDoc(l.type) ? '📄' : isText(l.type) ? '✎' : isQuiz(l.type) ? '🧩' : '•' }}
+                      </span>
+                      <span class="k-txt">
+                        {{ isVideo(l.type) ? 'Video' : isDoc(l.type) ? 'Doc' : isText(l.type) ? 'Text' : isQuiz(l.type) ? 'Quiz' : 'Other' }}
+                      </span>
+                    </span>
+                  </button>
+                </div>
               </div>
-            </ng-template>
-          </div>
+            </aside>
 
-          <!-- TEXT -->
-          <div class="text" *ngIf="isText(lesson.type)">
-            <div class="prose" [innerHTML]="lesson.htmlContent || '<p>No content</p>'"></div>
-          </div>
+            <!-- ✅ Content -->
+            <section class="card content">
+              <ng-container *ngIf="currentLesson(st.data) as lesson">
+                <div class="content-head">
+                  <div class="now">
+                    <div class="crumbs muted small">
+                      <span>Course</span>
+                      <span class="sep">/</span>
+                      <span>{{ moduleTitleForLesson(st.data, lesson.id) }}</span>
+                    </div>
 
-          <!-- OTHER -->
-          <div class="empty-box" *ngIf="!isVideo(lesson.type) && !isDoc(lesson.type) && !isText(lesson.type)">
-            <div class="empty-title">Not supported yet</div>
-            <div class="muted">This lesson type is not implemented in the player yet.</div>
-            <a class="btn ghost small" *ngIf="assetUrl(lesson.contentUrl)" [href]="assetUrl(lesson.contentUrl)!" target="_blank" rel="noopener">
-              Open resource
-            </a>
+                    <div class="title-row">
+                      <div class="pill">Now learning</div>
+
+                      <span
+                        class="type-badge"
+                        [attr.data-kind]="isVideo(lesson.type) ? 'video' : isDoc(lesson.type) ? 'doc' : isText(lesson.type) ? 'text' : isQuiz(lesson.type) ? 'quiz' : 'other'"
+                      >
+                        {{ isVideo(lesson.type) ? 'Video' : isDoc(lesson.type) ? 'Document' : isText(lesson.type) ? 'Text' : isQuiz(lesson.type) ? 'Quiz' : 'Lesson' }}
+                      </span>
+
+                      <span class="done-badge" *ngIf="completed.has(lesson.id)">✓ Completed</span>
+                    </div>
+
+                    <div class="lesson-title">{{ lesson.title }}</div>
+
+                    <div class="muted small">
+                      {{
+                        isVideo(lesson.type) ? 'Watch and continue to the next lesson.'
+                        : isDoc(lesson.type) ? 'Read the document inline or open it in a new tab.'
+                        : isText(lesson.type) ? 'Read the lesson content below.'
+                        : isQuiz(lesson.type) ? 'Complete the quiz to mark this lesson complete.'
+                        : 'Lesson'
+                      }}
+                    </div>
+                  </div>
+
+                  <div class="content-actions">
+                    <button class="btn ghost" type="button" [disabled]="!hasPrev(st.data)" (click)="prev(st.data)">
+                      ← Prev
+                    </button>
+
+                    <button class="btn ghost" type="button" [disabled]="!hasNext(st.data)" (click)="next(st.data)">
+                      Next →
+                    </button>
+
+                    <button class="btn primary" type="button" [disabled]="completing" (click)="markComplete(st.data, lesson.id)">
+                      {{ completing ? 'Saving…' : (completed.has(lesson.id) ? 'Completed' : 'Mark complete') }}
+                    </button>
+
+                    <button
+                      class="btn primary"
+                      type="button"
+                      [disabled]="completing"
+                      (click)="markCompleteAndNext(st.data, lesson.id)"
+                    >
+                      {{ completing ? 'Saving…' : 'Complete & Next' }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- VIDEO -->
+                <div class="media" *ngIf="isVideo(lesson.type)">
+                  <ng-container *ngIf="assetUrl(lesson.contentUrl) as videoUrl; else noVideo">
+                    <div class="media-frame video-frame">
+                      <video class="video" [src]="videoUrl" controls playsinline preload="metadata"></video>
+                    </div>
+                    <div class="muted small tip">
+                      If the video doesn’t play: ensure the API is running and static files are enabled.
+                    </div>
+                  </ng-container>
+
+                  <ng-template #noVideo>
+                    <div class="empty-box">
+                      <div class="empty-title">No video uploaded yet</div>
+                      <div class="muted">Instructor needs to upload a video for this lesson.</div>
+                    </div>
+                  </ng-template>
+                </div>
+
+                <!-- DOCUMENT -->
+                <div class="media" *ngIf="isDoc(lesson.type)">
+                  <ng-container *ngIf="assetUrl(lesson.contentUrl) as docUrl; else noDoc">
+                    <div class="doc-actions">
+                      <a class="btn ghost small" [href]="docUrl" target="_blank" rel="noopener">Open</a>
+                      <a class="btn ghost small" [href]="docUrl" download>Download</a>
+                    </div>
+
+                    <!-- ✅ fixed preview frame -->
+                    <div class="media-frame doc-frame">
+                      <iframe class="doc" [src]="safePdfUrl(docUrl)" title="Document preview"></iframe>
+                    </div>
+
+                    <div class="muted small tip">
+                      Preview shows the uploaded PDF directly in the lesson card.
+                    </div>
+                  </ng-container>
+
+                  <ng-template #noDoc>
+                    <div class="empty-box">
+                      <div class="empty-title">No file uploaded yet</div>
+                      <div class="muted">Instructor needs to upload a document for this lesson.</div>
+                    </div>
+                  </ng-template>
+                </div>
+
+                <!-- TEXT -->
+                <div class="text" *ngIf="isText(lesson.type)">
+                  <div class="prose" [innerHTML]="lesson.htmlContent || '<p>No content</p>'"></div>
+                </div>
+
+                <!-- QUIZ -->
+                <div class="quiz" *ngIf="isQuiz(lesson.type)">
+                  <app-quiz-player #qp [lessonId]="lesson.id"></app-quiz-player>
+                </div>
+
+                <!-- OTHER -->
+                <div
+                  class="empty-box"
+                  *ngIf="!isVideo(lesson.type) && !isDoc(lesson.type) && !isText(lesson.type) && !isQuiz(lesson.type)"
+                >
+                  <div class="empty-title">Not supported yet</div>
+                  <div class="muted">This lesson type is not implemented in the player yet.</div>
+                  <a
+                    class="btn ghost small"
+                    *ngIf="assetUrl(lesson.contentUrl)"
+                    [href]="assetUrl(lesson.contentUrl)!"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    Open resource
+                  </a>
+                </div>
+              </ng-container>
+            </section>
           </div>
         </ng-container>
-      </section>
+      </ng-container>
     </div>
-  </ng-container>
+  </div>
 </div>

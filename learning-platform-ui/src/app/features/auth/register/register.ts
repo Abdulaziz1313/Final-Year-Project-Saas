@@ -1,6 +1,14 @@
 import { Component, OnDestroy, QueryList, ViewChildren, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 
@@ -8,6 +16,14 @@ import { Auth, Role } from '../../../core/services/auth';
 import { ToastService } from '../../../shared/ui/toast.service';
 
 type Step = 'start' | 'verify';
+
+/** Cross-field validator: password must match confirmPassword */
+const passwordsMatchValidator: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
+  const pass = group.get('password')?.value;
+  const confirm = group.get('confirmPassword')?.value;
+  if (!pass || !confirm) return null;
+  return pass === confirm ? null : { passwordsMismatch: true };
+};
 
 @Component({
   selector: 'app-register',
@@ -25,13 +41,14 @@ export class RegisterComponent implements OnDestroy {
   roles: Role[] = ['Student', 'Instructor'];
 
   showPassword = false;
+  showConfirmPassword = false;
 
   // resend cooldown
   resendIn = 0;
   private resendTimer: any = null;
 
-  startForm;
-  verifyForm;
+  startForm: FormGroup;
+  verifyForm: FormGroup;
 
   // 6-digit OTP inputs
   codeDigits: string[] = Array(6).fill('');
@@ -44,11 +61,25 @@ export class RegisterComponent implements OnDestroy {
     private router: Router,
     private toast: ToastService
   ) {
-    this.startForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      role: ['Student' as Role, [Validators.required]],
-    });
+    this.startForm = this.fb.group(
+      {
+        email: ['', [Validators.required, Validators.email]],
+        phone: [
+          '',
+          [
+            Validators.required,
+            Validators.minLength(7),
+            Validators.maxLength(20),
+            // allows +, digits, spaces, hyphens, parentheses
+            Validators.pattern(/^[+0-9()\-\s]+$/),
+          ],
+        ],
+        password: ['', [Validators.required, Validators.minLength(6)]],
+        confirmPassword: ['', [Validators.required]],
+        role: ['Student' as Role, [Validators.required]],
+      },
+      { validators: passwordsMatchValidator }
+    );
 
     // keep verifyForm for validation + submit
     this.verifyForm = this.fb.group({
@@ -62,6 +93,10 @@ export class RegisterComponent implements OnDestroy {
 
   togglePassword() {
     this.showPassword = !this.showPassword;
+  }
+
+  toggleConfirmPassword() {
+    this.showConfirmPassword = !this.showConfirmPassword;
   }
 
   private startCooldown(seconds: number) {
@@ -78,61 +113,64 @@ export class RegisterComponent implements OnDestroy {
   }
 
   submitStart() {
-    this.error = null;
+  this.error = null;
 
-    if (this.startForm.invalid) {
-      this.startForm.markAllAsTouched();
-      return;
-    }
-
-    const { email, password, role } = this.startForm.value;
-
-    this.loading = true;
-
-    this.auth.registerStart(email!, password!, role!)
-      .pipe(finalize(() => this.loading = false))
-      .subscribe({
-        next: () => {
-          this.toast.success('Verification code sent to your email.');
-          this.step = 'verify';
-          this.startCooldown(30);
-
-          // reset code UI
-          this.codeDigits = Array(6).fill('');
-          this.verifyForm.setValue({ code: '' });
-
-          // focus first input after render
-          setTimeout(() => this.focusCode(0), 0);
-        },
-        error: (err) => {
-          this.error = typeof err?.error === 'string' ? err.error : 'Failed to send code.';
-        }
-      });
+  if (this.startForm.invalid) {
+    this.startForm.markAllAsTouched();
+    return;
   }
 
-  resendCode() {
-    if (this.resendIn > 0) return;
+  const { email, phone, password, role } = this.startForm.value;
 
-    const { email, password, role } = this.startForm.value;
-    if (!email || !password || !role) return;
+  this.loading = true;
 
-    this.loading = true;
+  this.auth
+    .registerStart(email!, password!, role!, phone!)
+    .pipe(finalize(() => (this.loading = false)))
+    .subscribe({
+      next: () => {
+        this.toast.success('Verification code sent to your phone.');
+        this.step = 'verify';
+        this.startCooldown(30);
 
-    this.auth.registerStart(email, password, role)
-      .pipe(finalize(() => this.loading = false))
-      .subscribe({
-        next: () => {
-          this.toast.success('New code sent.');
-          this.startCooldown(30);
-          this.codeDigits = Array(6).fill('');
-          this.verifyForm.setValue({ code: '' });
-          setTimeout(() => this.focusCode(0), 0);
-        },
-        error: (err) => {
-          this.error = typeof err?.error === 'string' ? err.error : 'Failed to resend code.';
-        }
-      });
-  }
+        this.codeDigits = Array(6).fill('');
+        this.verifyForm.setValue({ code: '' });
+
+        setTimeout(() => this.focusCode(0), 0);
+      },
+      error: (err: any) => {
+        this.error = typeof err?.error === 'string' ? err.error : 'Failed to send code.';
+      },
+    });
+}
+
+
+ resendCode() {
+  if (this.resendIn > 0) return;
+
+  const { email, phone, password, role } = this.startForm.value;
+  if (!email || !password || !role || !phone) return;
+
+  this.loading = true;
+
+  this.auth
+    .registerStart(email, password, role, phone)
+    .pipe(finalize(() => (this.loading = false)))
+    .subscribe({
+      next: () => {
+        this.toast.success('New code sent to your phone.');
+        this.startCooldown(30);
+
+        this.codeDigits = Array(6).fill('');
+        this.verifyForm.setValue({ code: '' });
+
+        setTimeout(() => this.focusCode(0), 0);
+      },
+      error: (err: any) => {
+        this.error = typeof err?.error === 'string' ? err.error : 'Failed to resend code.';
+      },
+    });
+}
 
   // --- OTP input handling ---
   onDigitInput(index: number, ev: Event) {
@@ -233,22 +271,23 @@ export class RegisterComponent implements OnDestroy {
       return;
     }
 
-    const email = this.startForm.value.email!;
-    const code = this.verifyForm.value.code!;
+    const email = (this.startForm.value as any).email as string;
+    const code = (this.verifyForm.value as any).code as string;
 
     this.loading = true;
 
-    this.auth.registerConfirm(email, code)
-      .pipe(finalize(() => this.loading = false))
+    this.auth
+      .registerConfirm(email, code)
+      .pipe(finalize(() => (this.loading = false)))
       .subscribe({
-        next: (res) => {
+        next: (res: any) => {
           const msg = res?.message || 'Account created. Please login.';
           sessionStorage.setItem('login_notice', msg);
           this.router.navigateByUrl('/login');
         },
-        error: (err) => {
+        error: (err: any) => {
           this.error = typeof err?.error === 'string' ? err.error : 'Invalid code.';
-        }
+        },
       });
   }
 
@@ -264,7 +303,26 @@ export class RegisterComponent implements OnDestroy {
   }
 
   // convenient getters
-  get emailCtrl() { return this.startForm.get('email'); }
-  get passCtrl() { return this.startForm.get('password'); }
-  get roleCtrl() { return this.startForm.get('role'); }
+  get emailCtrl() {
+    return this.startForm.get('email');
+  }
+  get phoneCtrl() {
+    return this.startForm.get('phone');
+  }
+  get passCtrl() {
+    return this.startForm.get('password');
+  }
+  get confirmPassCtrl() {
+    return this.startForm.get('confirmPassword');
+  }
+  get roleCtrl() {
+    return this.startForm.get('role');
+  }
+
+  get passwordsMismatch(): boolean {
+    return (
+      !!this.startForm.errors?.['passwordsMismatch'] &&
+      (!!this.confirmPassCtrl?.touched || !!this.passCtrl?.touched)
+    );
+  }
 }

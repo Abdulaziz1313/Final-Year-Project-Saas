@@ -1,110 +1,257 @@
-<div class="container">
-  <!-- Hero / Filters -->
-  <div class="hero card">
-    <div class="hero-left">
-      <h1 class="page-title">Explore Academies</h1>
-      <p class="page-sub">Browse published academies in Alef (الف).</p>
-    </div>
-
-    <div class="hero-right">
-      <div class="search">
-        <svg viewBox="0 0 24 24" class="search-ico" aria-hidden="true">
-          <path d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
-                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-        </svg>
-        <input
-          class="input"
-          [value]="q"
-          (input)="q = $any($event.target).value"
-          (keydown)="onEnter($event)"
-          placeholder="Search academies…"
-        />
-      </div>
-
-      <select class="input sort" [value]="sort" (change)="sort = $any($event.target).value">
-        <option value="newest">Newest</option>
-        <option value="name">Name</option>
-      </select>
-
-      <button class="btn primary" type="button" (click)="search()">Search</button>
-      <button class="btn ghost" type="button" (click)="reset()">Reset</button>
-    </div>
+<!-- academies.html -->
+<div class="academies">
+  <!-- Background (same as Home / My Learning) -->
+  <div class="bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="bg-grid"></div>
   </div>
 
-  <ng-container *ngIf="state$ | async as st">
-    <!-- Loading skeleton -->
-    <div *ngIf="st.loading" class="grid">
-      <div class="academy sk" *ngFor="let _ of skeleton">
-        <div class="banner"></div>
-        <div class="row">
-          <div class="logo"></div>
-          <div class="body">
-            <div class="line w60"></div>
-            <div class="line w90"></div>
-            <div class="chips">
-              <div class="chip"></div>
-              <div class="chip"></div>
-            </div>
-          </div>
-          <div class="go">›</div>
-        </div>
+  <div class="wrap container">
+    <!-- Hero / Filters -->
+    <div class="hero card">
+      <div class="hero-left">
+        <h1 class="page-title">Explore Academies</h1>
+        <p class="page-sub">Browse published academies in Alef (الف).</p>
       </div>
-    </div>
 
-    <div *ngIf="st.error" class="alert">{{ st.error }}</div>
+      <div class="hero-right">
+        <div class="search">
+          <svg viewBox="0 0 24 24" class="search-ico" aria-hidden="true">
+            <path
+              d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            ></path>
+          </svg>
 
-    <div class="grid" *ngIf="!st.loading && !st.error && st.data.length > 0; else empty">
-      <a
-        class="academy"
-        *ngFor="let a of st.data"
-        [routerLink]="['/academy', a.slug]"
-        [style.--brand]="brand(a)"
-      >
-        <div
-          class="banner"
-          [class.has-img]="!!img(a.bannerUrl)"
-          [style.backgroundImage]="img(a.bannerUrl) ? 'url(' + img(a.bannerUrl) + ')' : null"
+          <input
+            class="input"
+            [value]="q"
+            (input)="onSearchInput($any($event.target).value)"
+            (keydown)="onEnter($event)"
+            placeholder="Search academies…"
+          />
+
+          <button
+            class="clear"
+            type="button"
+            *ngIf="q"
+            (click)="clearQuery()"
+            aria-label="Clear search"
+            title="Clear"
+          >
+            ×
+          </button>
+        </div>
+
+        <select class="input sort" [value]="sort" (change)="onSortChange($any($event.target).value)">
+          <option value="newest">Newest</option>
+          <option value="name">Name</option>
+        </select>
+
+        <button
+          class="only-new"
+          type="button"
+          [class.on]="onlyNew"
+          (click)="toggleOnlyNew()"
+          [attr.aria-pressed]="onlyNew"
         >
-          <div class="banner-overlay"></div>
+          <span class="ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M20 6L9 17l-5-5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </span>
 
-          <div class="top-badges">
-            <span class="pill new" *ngIf="isNew(a)">New</span>
-            <span class="pill">Published</span>
-          </div>
-        </div>
+          <span class="txt">Only New</span>
+          <span class="pill-badge" *ngIf="onlyNew">On</span>
+        </button>
 
-        <div class="row">
-          <div class="logo">
-            <img *ngIf="img(a.logoUrl)" [src]="img(a.logoUrl)!" alt="logo" />
-            <div class="fallback" *ngIf="!img(a.logoUrl)">{{ a.name.slice(0,1).toUpperCase() }}</div>
-          </div>
-
-          <div class="body">
-            <div class="title">{{ a.name }}</div>
-            <div class="sub">{{ a.description || a.slug }}</div>
-
-            <div class="meta">
-              <span class="badge" [style.borderColor]="'color-mix(in oklch, ' + brand(a) + ' 35%, var(--border))'">
-                Explore
-              </span>
-              <span class="badge ghost" *ngIf="a.publishedAt">Updated</span>
-            </div>
-          </div>
-
-          <div class="go">›</div>
-        </div>
-      </a>
-    </div>
-
-    <ng-template #empty>
-      <div class="empty card">
-        <div class="empty-ic">🏫</div>
-        <div class="page-title" style="font-size:18px;">No academies found</div>
-        <p class="page-sub">Try a different search or reset filters.</p>
-        <div class="empty-actions">
+        <div class="btns">
+          <button class="btn primary" type="button" (click)="search()">Search</button>
           <button class="btn ghost" type="button" (click)="reset()">Reset</button>
         </div>
       </div>
-    </ng-template>
-  </ng-container>
+    </div>
+
+    <ng-container *ngIf="state$ | async as st">
+      <!-- Loading skeleton -->
+      <div *ngIf="st.loading" class="grid">
+        <div class="academy sk" *ngFor="let _ of skeleton">
+          <div class="banner"></div>
+          <div class="row">
+            <div class="logo"></div>
+            <div class="body">
+              <div class="line w60"></div>
+              <div class="line w90"></div>
+              <div class="chips">
+                <div class="chip"></div>
+                <div class="chip"></div>
+              </div>
+            </div>
+            <div class="go">›</div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="st.error" class="alert">{{ st.error }}</div>
+
+      <ng-container *ngIf="!st.loading && !st.error && st.data as vm">
+        <!-- Featured sections (only show if not searching) -->
+        <ng-container *ngIf="!q">
+          <!-- New -->
+          <section class="section" *ngIf="vm.newItems.length > 0">
+            <div class="section-head">
+              <div>
+                <div class="section-title">New this week</div>
+                <div class="muted small">Recently published academies</div>
+              </div>
+              <button class="btn ghost small" type="button" (click)="toggleOnlyNew()">View only new</button>
+            </div>
+
+            <div class="rail">
+              <a
+                class="mini"
+                *ngFor="let a of vm.newItems"
+                [routerLink]="['/academy', a.slug]"
+                [style.--brand]="brand(a)"
+              >
+                <div
+                  class="mini-banner"
+                  [class.has-img]="!!img(a.bannerUrl)"
+                  [style.backgroundImage]="img(a.bannerUrl) ? 'url(' + img(a.bannerUrl) + ')' : null"
+                ></div>
+
+                <div class="mini-body">
+                  <div class="mini-top">
+                    <div class="mini-logo">
+                      <img *ngIf="img(a.logoUrl) as l" [src]="l" alt="logo" />
+                      <div class="mini-fallback" *ngIf="!img(a.logoUrl)">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
+                    </div>
+
+                    <span class="pill new">New</span>
+                  </div>
+
+                  <div class="mini-title">{{ a.name }}</div>
+                  <div class="mini-sub muted">{{ subtitle(a) }}</div>
+                </div>
+              </a>
+            </div>
+          </section>
+
+          <!-- Recent -->
+          <section class="section" *ngIf="vm.recentItems.length > 0">
+            <div class="section-head">
+              <div>
+                <div class="section-title">Recently updated</div>
+                <div class="muted small">Latest published updates</div>
+              </div>
+            </div>
+
+            <div class="rail">
+              <a
+                class="mini"
+                *ngFor="let a of vm.recentItems"
+                [routerLink]="['/academy', a.slug]"
+                [style.--brand]="brand(a)"
+              >
+                <div
+                  class="mini-banner"
+                  [class.has-img]="!!img(a.bannerUrl)"
+                  [style.backgroundImage]="img(a.bannerUrl) ? 'url(' + img(a.bannerUrl) + ')' : null"
+                ></div>
+
+                <div class="mini-body">
+                  <div class="mini-top">
+                    <div class="mini-logo">
+                      <img *ngIf="img(a.logoUrl) as l" [src]="l" alt="logo" />
+                      <div class="mini-fallback" *ngIf="!img(a.logoUrl)">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
+                    </div>
+
+                    <span class="pill">Published</span>
+                  </div>
+
+                  <div class="mini-title">{{ a.name }}</div>
+                  <div class="mini-sub muted">{{ subtitle(a) }}</div>
+                </div>
+              </a>
+            </div>
+          </section>
+        </ng-container>
+
+        <!-- All results -->
+        <div class="results muted" *ngIf="vm.total > 0">
+          Showing <b>{{ vm.showing }}</b> of {{ vm.total }} academies
+        </div>
+
+        <div class="grid" *ngIf="vm.filtered.length > 0; else empty">
+          <a
+            class="academy"
+            *ngFor="let a of vm.filtered"
+            [routerLink]="['/academy', a.slug]"
+            [style.--brand]="brand(a)"
+          >
+            <div
+              class="banner"
+              [class.has-img]="!!img(a.bannerUrl)"
+              [style.backgroundImage]="img(a.bannerUrl) ? 'url(' + img(a.bannerUrl) + ')' : null"
+            >
+              <div class="banner-overlay"></div>
+
+              <div class="top-badges">
+                <span class="pill new" *ngIf="isNew(a)">New</span>
+                <span class="pill">Published</span>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="logo">
+                <img *ngIf="img(a.logoUrl) as l" [src]="l" alt="logo" />
+                <div class="fallback" *ngIf="!img(a.logoUrl)">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
+              </div>
+
+              <div class="body">
+                <div class="title">{{ a.name }}</div>
+                <div class="sub">{{ subtitle(a) }}</div>
+
+                <div class="meta">
+                  <span
+                    class="badge"
+                    [style.borderColor]="'color-mix(in oklch, ' + brand(a) + ' 35%, var(--border))'"
+                  >
+                    Explore
+                  </span>
+
+                  <span class="badge ghost" *ngIf="updatedLabel(a)">Updated</span>
+                </div>
+              </div>
+
+              <div class="go">›</div>
+            </div>
+          </a>
+        </div>
+
+        <ng-template #empty>
+          <div class="empty card">
+            <div class="empty-ic">🏫</div>
+            <div class="page-title" style="font-size:18px;">No academies found</div>
+            <p class="page-sub">Try a different search or reset filters.</p>
+            <div class="empty-actions">
+              <button class="btn ghost" type="button" (click)="reset()">Reset</button>
+            </div>
+          </div>
+        </ng-template>
+      </ng-container>
+    </ng-container>
+  </div>
 </div>

@@ -9,3 +9,4 @@ C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\obj\Deb
 C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\obj\Debug\net8.0\refint\LearningPlatform.Domain.dll
 C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\obj\Debug\net8.0\LearningPlatform.Domain.pdb
 C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\obj\Debug\net8.0\ref\LearningPlatform.Domain.dll
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Domain\obj\Debug\net8.0\LearningPlatform.Domain.sourcelink.json

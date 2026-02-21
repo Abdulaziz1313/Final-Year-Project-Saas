@@ -1,4 +1,14 @@
+<!-- course-builder.html (FULL UPDATED) -->
+
 <main class="page">
+  <!-- Background blobs (same as home/courses) -->
+  <div class="bg" aria-hidden="true">
+    <span class="blob b1"></span>
+    <span class="blob b2"></span>
+    <span class="blob b3"></span>
+    <span class="grid"></span>
+  </div>
+
   <header class="topbar">
     <div class="top-left">
       <div class="kicker">Instructor • Builder</div>
@@ -45,6 +55,23 @@
         <div class="course-title">{{ st.data.title }}</div>
         <div class="course-sub">{{ st.data.shortDescription || 'No short description yet.' }}</div>
 
+        <div class="summary">
+          <div class="chip">
+            <div class="k">Modules</div>
+            <div class="v">{{ st.data.modules?.length || 0 }}</div>
+          </div>
+
+          <div class="chip">
+            <div class="k">Lessons</div>
+            <div class="v">{{ countLessons(st.data.modules || []) }}</div>
+          </div>
+
+          <div class="chip">
+            <div class="k">Uploads</div>
+            <div class="v">{{ countUploads(st.data.modules || []) }}</div>
+          </div>
+        </div>
+
         <div class="tool-row">
           <button
             class="btn primary"
@@ -67,9 +94,12 @@
         <form class="form" [formGroup]="moduleForm" (ngSubmit)="addModule()">
           <div class="field">
             <label>Module title</label>
-            <input class="input" formControlName="title"
-                   [disabled]="st.data.isHidden"
-                   placeholder="e.g. Module 1 - Introduction" />
+            <input
+              class="input"
+              formControlName="title"
+              [disabled]="st.data.isHidden"
+              placeholder="e.g. Module 1 - Introduction"
+            />
           </div>
 
           <button class="btn primary" type="submit" [disabled]="moduleForm.invalid || st.data.isHidden">
@@ -85,7 +115,7 @@
         </div>
 
         <div class="hint muted small">
-          Tip: add modules first, then lessons. Upload video/file after creating a lesson.
+          Tip: add modules first, then lessons. Upload video/PDF after creating a lesson. For quiz lessons, click “Edit quiz”.
         </div>
       </aside>
 
@@ -110,15 +140,23 @@
               </button>
 
               <div class="module-right">
-                <button class="btn ghost small" type="button" title="Move up"
-                        [disabled]="reordering || mi===0 || st.data.isHidden"
-                        (click)="moveModule(st.data.modules, mi, -1)">
+                <button
+                  class="btn ghost small"
+                  type="button"
+                  title="Move up"
+                  [disabled]="reordering || mi===0 || st.data.isHidden"
+                  (click)="moveModule(st.data.modules, mi, -1)"
+                >
                   ↑
                 </button>
 
-                <button class="btn ghost small" type="button" title="Move down"
-                        [disabled]="reordering || mi===(st.data.modules.length-1) || st.data.isHidden"
-                        (click)="moveModule(st.data.modules, mi, 1)">
+                <button
+                  class="btn ghost small"
+                  type="button"
+                  title="Move down"
+                  [disabled]="reordering || mi===(st.data.modules.length-1) || st.data.isHidden"
+                  (click)="moveModule(st.data.modules, mi, 1)"
+                >
                   ↓
                 </button>
 
@@ -145,13 +183,22 @@
 
                     <div class="lesson-text">
                       <div class="lesson-title">{{ l.title }}</div>
+
                       <div class="lesson-sub">
-                        <span class="badge type" [class.video]="n(l.type)===0" [class.doc]="n(l.type)===1" [class.text]="n(l.type)===2">
-                          {{ n(l.type)===0 ? 'Video' : n(l.type)===1 ? 'Document' : n(l.type)===2 ? 'Text' : 'Other' }}
+                        <span
+                          class="badge type"
+                          [class.video]="n(l.type)===0"
+                          [class.doc]="n(l.type)===1"
+                          [class.text]="n(l.type)===2"
+                          [class.quiz]="n(l.type)===3"
+                        >
+                          {{ lessonTypeLabel(l.type) }}
                         </span>
 
-                        <span class="badge uploaded" *ngIf="l.contentUrl">Uploaded</span>
-                        <span class="badge uploaded" *ngIf="!l.contentUrl && (n(l.type)===0 || n(l.type)===1)">No file</span>
+                        <ng-container *ngIf="isUploadType(l.type)">
+                          <span class="badge uploaded" *ngIf="l.contentUrl">Uploaded</span>
+                          <span class="badge uploaded" *ngIf="!l.contentUrl">No file</span>
+                        </ng-container>
 
                         <span class="badge" *ngIf="l.isPreviewFree">Preview</span>
                         <span class="badge" *ngIf="l.isDownloadable">Downloadable</span>
@@ -160,41 +207,75 @@
                   </div>
 
                   <div class="lesson-actions">
-                    <!-- Reorder buttons -->
-                    <button class="btn ghost small" type="button" title="Move up"
-                            [disabled]="reordering || li===0 || st.data.isHidden"
-                            (click)="moveLesson(m.id, m.lessons, li, -1)">
+                    <button
+                      class="btn ghost small"
+                      type="button"
+                      title="Move up"
+                      [disabled]="reordering || li===0 || st.data.isHidden"
+                      (click)="moveLesson(m.id, m.lessons, li, -1)"
+                    >
                       ↑
                     </button>
-                    <button class="btn ghost small" type="button" title="Move down"
-                            [disabled]="reordering || li===(m.lessons.length-1) || st.data.isHidden"
-                            (click)="moveLesson(m.id, m.lessons, li, 1)">
+
+                    <button
+                      class="btn ghost small"
+                      type="button"
+                      title="Move down"
+                      [disabled]="reordering || li===(m.lessons.length-1) || st.data.isHidden"
+                      (click)="moveLesson(m.id, m.lessons, li, 1)"
+                    >
                       ↓
                     </button>
 
-                    <!-- Uploads (disabled if hidden) -->
                     <label class="btn ghost small" *ngIf="n(l.type) === 0">
-                      <input type="file" accept="video/mp4,video/webm,video/quicktime" hidden
-                             [disabled]="st.data.isHidden"
-                             (change)="uploadVideo(l.id, $event)" />
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime"
+                        hidden
+                        [disabled]="st.data.isHidden"
+                        (change)="uploadVideo(l.id, $event)"
+                      />
                       {{ st.data.isHidden ? 'Uploads disabled' : (isUploading(l.id) ? 'Uploading…' : 'Upload video') }}
                     </label>
 
                     <label class="btn ghost small" *ngIf="n(l.type) === 1">
-                      <input type="file" accept="application/pdf,image/*" hidden
-                             [disabled]="st.data.isHidden"
-                             (change)="uploadFile(l.id, $event)" />
-                      {{ st.data.isHidden ? 'Uploads disabled' : (isUploading(l.id) ? 'Uploading…' : 'Upload file') }}
+                      <input
+                        type="file"
+                        accept="application/pdf,.pdf"
+                        hidden
+                        [disabled]="st.data.isHidden"
+                        (change)="uploadFile(l.id, $event)"
+                      />
+                      {{ st.data.isHidden ? 'Uploads disabled' : (isUploading(l.id) ? 'Uploading…' : 'Upload PDF') }}
                     </label>
 
-                    <a class="btn ghost small" *ngIf="l.contentUrl" [href]="apiBase + l.contentUrl" target="_blank" rel="noopener">
+                    <button
+                      class="btn ghost small"
+                      type="button"
+                      *ngIf="n(l.type) === 3"
+                      [disabled]="st.data.isHidden"
+                      (click)="openQuizEditor(l.id)"
+                      [title]="st.data.isHidden ? 'Hidden by admin' : 'Edit quiz questions'"
+                    >
+                      Edit quiz
+                    </button>
+
+                    <a
+                      class="btn ghost small"
+                      *ngIf="l.contentUrl && isUploadType(l.type)"
+                      [href]="apiBase + l.contentUrl"
+                      target="_blank"
+                      rel="noopener"
+                    >
                       Open
                     </a>
 
-                    <!-- Delete lesson (disabled if hidden) -->
-                    <button class="btn danger small" type="button"
-                            [disabled]="st.data.isHidden || deletingLessonIds.has(l.id) || reordering"
-                            (click)="deleteLesson(l.id, l.title)">
+                    <button
+                      class="btn danger small"
+                      type="button"
+                      [disabled]="st.data.isHidden || deletingLessonIds.has(l.id) || reordering"
+                      (click)="deleteLesson(l.id, l.title)"
+                    >
                       {{ deletingLessonIds.has(l.id) ? 'Deleting…' : 'Delete' }}
                     </button>
                   </div>
@@ -208,12 +289,12 @@
                 </div>
               </ng-template>
 
-              <!-- add lesson (disabled if hidden) -->
+              <!-- add lesson -->
               <div class="add-lesson">
                 <div class="add-head">
                   <div>
                     <div class="add-title">Add lesson</div>
-                    <div class="muted small">Create a lesson then upload video/file if needed.</div>
+                    <div class="muted small">Create a lesson then upload video/PDF if needed (quiz has its own editor).</div>
                   </div>
                 </div>
 
@@ -221,9 +302,12 @@
                   <div class="row">
                     <div class="field">
                       <label>Lesson title</label>
-                      <input class="input" formControlName="title"
-                             [disabled]="st.data.isHidden"
-                             placeholder="e.g. Lesson 1 - Welcome" />
+                      <input
+                        class="input"
+                        formControlName="title"
+                        [disabled]="st.data.isHidden"
+                        placeholder="e.g. Lesson 1 - Welcome"
+                      />
                     </div>
 
                     <div class="field">
@@ -231,7 +315,7 @@
                       <select class="input" formControlName="type" [disabled]="st.data.isHidden">
                         <option [value]="2">Text</option>
                         <option [value]="0">Video</option>
-                        <option [value]="1">Document</option>
+                        <option [value]="1">Document (PDF)</option>
                         <option [value]="3">Quiz</option>
                       </select>
                     </div>
@@ -239,9 +323,13 @@
 
                   <div class="field" *ngIf="ensureLessonForm(m.id).value.type == 2">
                     <label>Text content (HTML)</label>
-                    <textarea class="input" formControlName="htmlContent" rows="4"
-                              [disabled]="st.data.isHidden"
-                              placeholder="<p>Lesson content...</p>"></textarea>
+                    <textarea
+                      class="input"
+                      formControlName="htmlContent"
+                      rows="4"
+                      [disabled]="st.data.isHidden"
+                      placeholder="<p>Lesson content...</p>"
+                    ></textarea>
                     <small class="muted">Rich text editor can be added later.</small>
                   </div>
 
@@ -257,8 +345,11 @@
                   </div>
 
                   <div class="form-actions">
-                    <button class="btn primary" type="submit"
-                            [disabled]="st.data.isHidden || ensureLessonForm(m.id).invalid">
+                    <button
+                      class="btn primary"
+                      type="submit"
+                      [disabled]="st.data.isHidden || ensureLessonForm(m.id).invalid"
+                    >
                       Add lesson
                     </button>
                   </div>

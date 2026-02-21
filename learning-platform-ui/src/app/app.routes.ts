@@ -27,18 +27,16 @@ import { CoursePublicComponent } from './features/student/course-public/course-p
 import { MyLearningComponent } from './features/student/my-learning/my-learning';
 import { PlayerComponent } from './features/student/player/player';
 
-// ✅ NEW: Home page (create this component)
+// ✅ NEW: Home page
 import { HomeComponent } from './features/public/home/home';
 import { adminGuard } from './core/guards/admin.guard';
 import { AdminComponent } from './features/admin/admin';
+import { InstructorAcademiesManageComponent } from './features/instructor/academies-manage/academies-manage';
 
-
-
-
-
+// ✅ NEW: Quiz editor page (we will create it)
+import { QuizEditorComponent } from './features/instructor/quiz-editor/quiz-editor';
 
 export const routes: Routes = [
-  // ✅ Default goes to Home now
   { path: '', pathMatch: 'full', redirectTo: 'home' },
 
   // Auth (no sidebar)
@@ -51,15 +49,12 @@ export const routes: Routes = [
     ],
   },
 
-  // Public (no sidebar) — must be BEFORE AppShell
+  // Public (no sidebar)
   {
     path: '',
     component: PublicLayoutComponent,
     children: [
-      // ✅ Home route
       { path: 'home', component: HomeComponent },
-
-      // Public catalog
       { path: 'academies', component: AcademiesComponent },
       { path: 'academy/:slug', component: AcademyCatalogComponent },
       { path: 'course/:id', component: CoursePublicComponent },
@@ -80,16 +75,18 @@ export const routes: Routes = [
       { path: 'instructor/course/create/:academyId', component: CourseCreateComponent, canActivate: [instructorGuard] },
       { path: 'instructor/course-builder/:courseId', component: CourseBuilderComponent, canActivate: [instructorGuard] },
       { path: 'instructor/course-enrollments/:courseId', component: CourseEnrollmentsComponent, canActivate: [instructorGuard] },
+      { path: 'instructor/academies', component: InstructorAcademiesManageComponent, canActivate: [instructorGuard] },
+
+      // ✅ NEW: quiz editor route (matches course-builder.ts openQuizEditor())
+      { path: 'instructor/lessons/:lessonId/quiz', component: QuizEditorComponent, canActivate: [instructorGuard] },
 
       // student (shell only)
       { path: 'my-learning', component: MyLearningComponent, canActivate: [studentGuard] },
       { path: 'learn/:courseId', component: PlayerComponent, canActivate: [studentGuard] },
+
       { path: 'admin', component: AdminComponent, canActivate: [adminGuard] },
-      
-      
     ],
   },
 
-  // ✅ Unknown routes go Home (not login)
   { path: '**', redirectTo: 'home' },
 ];

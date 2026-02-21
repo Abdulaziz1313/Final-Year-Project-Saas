@@ -137,50 +137,50 @@ public async Task<IActionResult> CourseDetail(Guid id)
     if (academy is null)
         return StatusCode(StatusCodes.Status410Gone, "This course is not available.");
 
-    var dto = new
+   var dto = new
+{
+    id = course.Id,
+    title = course.Title,
+    shortDescription = course.ShortDescription,
+    fullDescription = course.FullDescription,
+    isFree = course.IsFree,
+    price = course.Price,
+    currency = course.Currency,
+    category = course.Category,
+    tagsJson = course.TagsJson,
+    thumbnailUrl = course.ThumbnailUrl,
+
+    academy = new
     {
-        course.Id,
-        course.Title,
-        course.ShortDescription,
-        course.FullDescription,
-        course.IsFree,
-        course.Price,
-        course.Currency,
-        course.Category,
-        course.TagsJson,
-        course.ThumbnailUrl,
+        id = academy.Id,
+        name = academy.Name,
+        slug = academy.Slug,
+        logoUrl = academy.LogoUrl,
+        bannerUrl = academy.BannerUrl,
+        primaryColor = academy.PrimaryColor,
 
-        academy = new
+        fontKey = academy.FontKey,
+        customFontUrl = academy.CustomFontUrl,
+        customFontFamily = academy.CustomFontFamily
+    },
+
+    modules = course.Modules.Select(m => new
+    {
+        id = m.Id,
+        title = m.Title,
+        sortOrder = m.SortOrder,
+        lessons = m.Lessons.Select(l => new
         {
-            academy.Id,
-            academy.Name,
-            academy.Slug,
-            academy.LogoUrl,
-            academy.BannerUrl,
-            academy.PrimaryColor,
-
-            academy.FontKey,
-            academy.CustomFontUrl,
-            academy.CustomFontFamily
-        },
-
-        Modules = course.Modules.Select(m => new
-        {
-            m.Id,
-            m.Title,
-            m.SortOrder,
-            Lessons = m.Lessons.Select(l => new
-            {
-                l.Id,
-                l.Title,
-                l.Type,
-                l.SortOrder,
-                l.IsPreviewFree
-            })
+            id = l.Id,
+            title = l.Title,
+            type = l.Type,
+            sortOrder = l.SortOrder,
+            isPreviewFree = l.IsPreviewFree
         })
-    };
+    })
+};
 
-    return Ok(dto);
+return Ok(dto);
 }
 
 

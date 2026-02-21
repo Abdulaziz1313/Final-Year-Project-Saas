@@ -27,11 +27,10 @@ public class SmtpEmailSender : IEmailSender
         };
         msg.Body = builder.ToMessageBody();
 
-        using var client = new SmtpClient();
+        using var client = new SmtpClient(new MailKit.ProtocolLogger(Console.OpenStandardOutput()));
+        client.Timeout = 15000;
 
-        // choose TLS mode
-        var secure = _opt.UseSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTlsWhenAvailable;
-
+        var secure = _opt.UseSsl ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.Auto;
         await client.ConnectAsync(_opt.Host, _opt.Port, secure);
 
         if (!string.IsNullOrWhiteSpace(_opt.Username))

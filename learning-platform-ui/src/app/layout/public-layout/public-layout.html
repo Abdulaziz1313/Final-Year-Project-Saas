@@ -1,49 +1,54 @@
 <div class="public">
-  <header class="pub-top">
-    <div class="left">
-      <a class="brand" routerLink="/home">
-        <span class="logo">الف</span>
-        <span class="name">Alef</span>
-      </a>
+  <!-- Hide public topbar on /home so HomeComponent can render its own Salla-like topbar -->
+  <header class="pub-top" *ngIf="!hideTopbar">
+    <div class="pub-inner">
+      <div class="left">
+        <a class="brand" routerLink="/home" aria-label="Alef Home">
+          <span class="logo" aria-hidden="true">الف</span>
 
-      <span class="sep"></span>
-
-      <nav class="nav">
-        <a class="nav-link" routerLink="/home" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-          Home
+          <span class="brand-text">
+            <span class="name">Alef</span>
+            <span class="tag">Learning Platform</span>
+          </span>
         </a>
-        <a class="nav-link" routerLink="/academies" routerLinkActive="active">
-          Explore
-        </a>
-      </nav>
-    </div>
 
-    <div class="right">
-      <!-- Logged out -->
-      <ng-container *ngIf="!loggedIn; else loggedInLinks">
-        <a class="btn ghost small" routerLink="/login">Sign in</a>
-        <a class="btn primary small" routerLink="/register">Create account</a>
-      </ng-container>
+        <nav class="nav" aria-label="Public navigation">
+          <a
+            class="nav-link"
+            routerLink="/home"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
+            Home
+          </a>
+          <a class="nav-link" routerLink="/academies" routerLinkActive="active">
+            Explore
+          </a>
+        </nav>
+      </div>
 
-      <!-- Logged in -->
-      <ng-template #loggedInLinks>
-        <a class="btn ghost small" routerLink="/me">Account</a>
+      <div class="right">
+        <!-- Logged out -->
+        <ng-container *ngIf="!loggedIn; else loggedInLinks">
+          <a class="btn ghost small" routerLink="/login">Sign in</a>
+          <a class="btn primary small pill" routerLink="/register">Create account</a>
+        </ng-container>
 
-        <!-- Student -->
-        <a class="btn ghost small" *ngIf="isStudent" routerLink="/my-learning">My Learning</a>
+        <!-- Logged in -->
+        <ng-template #loggedInLinks>
+          <a class="btn ghost small" routerLink="/me">Account</a>
 
-        <!-- Instructor/Admin -->
-        <a class="btn ghost small" *ngIf="isInstructor" routerLink="/instructor">Dashboard</a>
-        <a class="btn ghost small" *ngIf="isAdmin" routerLink="/admin">Admin</a>
+          <a class="btn ghost small" *ngIf="isStudent" routerLink="/my-learning">My Learning</a>
+          <a class="btn ghost small" *ngIf="isInstructor" routerLink="/instructor">Dashboard</a>
+          <a class="btn ghost small" *ngIf="isAdmin" routerLink="/admin">Admin</a>
 
-
-        <!-- ✅ Logout -->
-        <button class="btn ghost small" type="button" (click)="logout()">Logout</button>
-      </ng-template>
+          <button class="btn ghost small" type="button" (click)="logout()">Logout</button>
+        </ng-template>
+      </div>
     </div>
   </header>
 
-  <main class="pub-content">
+  <main class="pub-content" [class.no-topbar]="hideTopbar">
     <router-outlet></router-outlet>
   </main>
 </div>

@@ -41,15 +41,17 @@ public class InstructorAcademiesController : ControllerBase
                 a.CreatedAt,
                 a.IsHidden,
                 a.HiddenReason,
-                a.HiddenAt
+                a.HiddenAt,
 
+                // ✅ ADD THIS:
+                CourseCount = _db.Courses.Count(c => c.AcademyId == a.Id)
             })
             .ToListAsync();
 
         return Ok(items);
     }
 
-    // ✅ NEW: Get one academy by id (for courses page header)
+    // ✅ Get one academy by id (for courses page header)
     [HttpGet("{academyId:guid}")]
     public async Task<IActionResult> GetOne(Guid academyId)
     {
@@ -73,7 +75,10 @@ public class InstructorAcademiesController : ControllerBase
                 x.CustomFontFamily,
                 x.IsPublished,
                 x.PublishedAt,
-                x.CreatedAt
+                x.CreatedAt,
+
+                // ✅ ADD THIS TOO (optional but useful):
+                CourseCount = _db.Courses.Count(c => c.AcademyId == x.Id)
             })
             .FirstOrDefaultAsync();
 

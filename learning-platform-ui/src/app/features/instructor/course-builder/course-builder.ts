@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { catchError, map, shareReplay, startWith, switchMap } from 'rxjs/operators';
@@ -40,6 +40,7 @@ export class CourseBuilderComponent {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private api: InstructorApi,
     private fb: FormBuilder,
     private toast: ToastService,
@@ -60,9 +61,10 @@ export class CourseBuilderComponent {
             of({
               loading: false,
               data: null,
-              error: typeof err?.error === 'string'
-                ? err.error
-                : `Failed to load course: ${err?.status ?? ''} ${err?.statusText ?? ''}`.trim(),
+              error:
+                typeof err?.error === 'string'
+                  ? err.error
+                  : `Failed to load course: ${err?.status ?? ''} ${err?.statusText ?? ''}`.trim(),
             } as LoadState<any>)
           )
         )
@@ -102,6 +104,29 @@ export class CourseBuilderComponent {
     } catch {
       this.toast.error('Copy failed.');
     }
+  }
+
+  // ✅ NEW: lesson type helpers used by HTML
+  lessonTypeLabel(t: any): string {
+    const n = this.n(t);
+    if (n === 0) return 'Video';
+    if (n === 1) return 'Document';
+    if (n === 2) return 'Text';
+    if (n === 3) return 'Quiz';
+    return 'Other';
+  }
+
+  // ✅ Only these types have file uploads
+  isUploadType(t: any): boolean {
+    const n = this.n(t);
+    return n === 0 || n === 1;
+  }
+
+  // ✅ NEW: open quiz editor route
+  openQuizEditor(lessonId: string) {
+    // matches app.routes.ts:
+    // instructor/lessons/:lessonId/quiz
+    this.router.navigate(['/instructor/lessons', lessonId, 'quiz']);
   }
 
   // ---------- Collapse ----------
@@ -159,7 +184,7 @@ export class CourseBuilderComponent {
       error: (err) => {
         const msg = typeof err?.error === 'string' ? err.error : 'Add module failed';
         this.toast.error(msg);
-      }
+      },
     });
   }
 
@@ -181,7 +206,7 @@ export class CourseBuilderComponent {
       contentUrl: null,
       htmlContent: typeNum === 2 ? (v.htmlContent || '') : null,
       isPreviewFree: !!v.isPreviewFree,
-      isDownloadable: !!v.isDownloadable
+      isDownloadable: !!v.isDownloadable,
     };
 
     this.api.addLesson(moduleId, payload).subscribe({
@@ -193,7 +218,7 @@ export class CourseBuilderComponent {
       error: (err) => {
         const msg = typeof err?.error === 'string' ? err.error : 'Add lesson failed';
         this.toast.error(msg);
-      }
+      },
     });
   }
 
@@ -216,7 +241,7 @@ export class CourseBuilderComponent {
         this.uploadingVideoIds.delete(lessonId);
         this.toast.error(typeof err?.error === 'string' ? err.error : 'Upload failed');
         input.value = '';
-      }
+      },
     });
   }
 
@@ -238,7 +263,7 @@ export class CourseBuilderComponent {
         this.uploadingFileIds.delete(lessonId);
         this.toast.error(typeof err?.error === 'string' ? err.error : 'Upload failed');
         input.value = '';
-      }
+      },
     });
   }
 
@@ -254,7 +279,7 @@ export class CourseBuilderComponent {
       title: 'Delete lesson?',
       message: `Delete "${title}"? This will remove the lesson and any student progress for it.`,
       confirmText: 'Delete',
-      cancelText: 'Cancel'
+      cancelText: 'Cancel',
     });
 
     if (!ok) return;
@@ -271,7 +296,7 @@ export class CourseBuilderComponent {
         this.deletingLessonIds.delete(lessonId);
         const msg = typeof err?.error === 'string' ? err.error : 'Delete lesson failed.';
         this.toast.error(msg);
-      }
+      },
     });
   }
 
@@ -283,8 +308,7 @@ export class CourseBuilderComponent {
     const target = index + dir;
     if (target < 0 || target >= mods.length) return;
 
-    const ids = mods.map(m => m.id);
-    // swap
+    const ids = mods.map((m) => m.id);
     [ids[index], ids[target]] = [ids[target], ids[index]];
 
     this.reordering = true;
@@ -298,7 +322,7 @@ export class CourseBuilderComponent {
         this.reordering = false;
         const msg = typeof err?.error === 'string' ? err.error : 'Reorder failed.';
         this.toast.error(msg);
-      }
+      },
     });
   }
 
@@ -310,7 +334,7 @@ export class CourseBuilderComponent {
     const target = index + dir;
     if (target < 0 || target >= lessons.length) return;
 
-    const ids = lessons.map(l => l.id);
+    const ids = lessons.map((l) => l.id);
     [ids[index], ids[target]] = [ids[target], ids[index]];
 
     this.reordering = true;
@@ -324,7 +348,7 @@ export class CourseBuilderComponent {
         this.reordering = false;
         const msg = typeof err?.error === 'string' ? err.error : 'Reorder failed.';
         this.toast.error(msg);
-      }
+      },
     });
   }
 
@@ -339,7 +363,7 @@ export class CourseBuilderComponent {
       title: 'Delete module?',
       message: 'This will delete the module. This action cannot be undone.',
       confirmText: 'Delete',
-      cancelText: 'Cancel'
+      cancelText: 'Cancel',
     });
 
     if (!ok) return;
@@ -352,7 +376,7 @@ export class CourseBuilderComponent {
       error: (err) => {
         const msg = typeof err?.error === 'string' ? err.error : 'Delete module failed.';
         this.toast.error(msg);
-      }
+      },
     });
   }
 
@@ -370,7 +394,7 @@ export class CourseBuilderComponent {
       error: (err) => {
         this.publishing = false;
         this.toast.error(typeof err?.error === 'string' ? err.error : 'Publish failed.');
-      }
+      },
     });
   }
 
@@ -379,5 +403,17 @@ export class CourseBuilderComponent {
     this.moduleForm.reset({ title: '' });
     this.lessonForms.clear();
     this.toast.info('Draft inputs cleared.');
+  }
+
+  countLessons(mods: any[]): number {
+    return (mods || []).reduce((sum, m) => sum + (m?.lessons?.length || 0), 0);
+  }
+
+  countUploads(mods: any[]): number {
+    let c = 0;
+    for (const m of mods || []) {
+      for (const l of m?.lessons || []) if (!!l?.contentUrl) c++;
+    }
+    return c;
   }
 }

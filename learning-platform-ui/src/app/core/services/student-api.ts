@@ -12,12 +12,10 @@ export type PublicAcademy = {
   bannerUrl?: string | null;
   primaryColor?: string | null;
 
-  // ✅ NEW: font branding
   fontKey?: string | null;
   customFontUrl?: string | null;
   customFontFamily?: string | null;
 
-  // optional (your API may return it)
   publishedAt?: string | null;
 };
 
@@ -44,7 +42,6 @@ export type CatalogAcademy = {
   primaryColor?: string | null;
   description?: string | null;
 
-  // ✅ NEW: font branding
   fontKey?: string | null;
   customFontUrl?: string | null;
   customFontFamily?: string | null;
@@ -78,10 +75,9 @@ export type CoursePublic = {
     slug: string;
 
     logoUrl?: string | null;
-    bannerUrl?: string | null; // ✅ FIX: added
+    bannerUrl?: string | null;
     primaryColor?: string | null;
 
-    // ✅ NEW: font branding
     fontKey?: string | null;
     customFontUrl?: string | null;
     customFontFamily?: string | null;
@@ -108,8 +104,6 @@ export type MyLearningItem = {
     shortDescription?: string;
     thumbnailUrl?: string | null;
     category?: string | null;
-
-    // ✅ NEW: moderation fields
     isHidden?: boolean;
     hiddenReason?: string | null;
     hiddenAt?: string | null;
@@ -125,7 +119,6 @@ export type MyLearningItem = {
     percent: number;
   };
 };
-
 
 export type PlayerCourse = {
   id: string;
@@ -143,9 +136,58 @@ export type PlayerCourse = {
       isPreviewFree: boolean;
       isDownloadable: boolean;
       completedLessonIds?: string[];
-
     }>;
   }>;
+};
+
+export type QuizSubmitResult = {
+  attemptId?: string;
+  score: number;
+  maxScore: number;
+  status?: number;
+  Status?: number;
+};
+
+/* =========================
+   ✅ Reviews (NEW)
+========================= */
+
+export type ReviewTargetKind = 'course' | 'academy';
+
+export type ReviewItem = {
+  id: string;
+  targetKind: ReviewTargetKind;
+  targetId: string;
+
+  rating: number;          // 1..5
+  comment?: string | null;
+
+  createdAt: string;
+  updatedAt?: string | null;
+
+  userId?: string | null;
+  userDisplayName?: string | null; // backend can return display name
+  userEmailMasked?: string | null; // or masked email (optional)
+};
+
+export type ReviewSummary = {
+  avgRating: number;
+  count: number;
+  distribution?: { [k: string]: number } | null; // optional, if backend supports
+};
+
+export type ReviewListResponse = {
+  summary: ReviewSummary;
+  total: number;
+  page: number;
+  pageSize: number;
+  items: ReviewItem[];
+  myReview?: ReviewItem | null; // optional, if backend includes it
+};
+
+export type UpsertReviewPayload = {
+  rating: number; // 1..5
+  comment?: string | null;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -172,6 +214,16 @@ export class StudentApi {
     return this.http.get<CoursePublic>(`${this.api}/api/catalog/courses/${id}`);
   }
 
+  listAcademies(q = '', sort = 'newest') {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (sort) params.set('sort', sort);
+
+    return this.http.get<PublicAcademy[]>(
+      `${this.api}/api/catalog/academies?${params.toString()}`
+    );
+  }
+
   // Student (auth)
   enroll(courseId: string) {
     return this.http.post<{ message: string }>(`${this.api}/api/learning/courses/${courseId}/enroll`, {});
@@ -193,13 +245,58 @@ export class StudentApi {
     return this.http.post(`${this.api}/api/learning/me/courses/${courseId}/last-lesson/${lessonId}`, {});
   }
 
-  listAcademies(q = '', sort = 'newest') {
-    const params = new URLSearchParams();
-    if (q) params.set('q', q);
-    if (sort) params.set('sort', sort);
-
-    return this.http.get<PublicAcademy[]>(
-      `${this.api}/api/catalog/academies?${params.toString()}`
-    );
+  // Quiz
+  getLessonQuiz(lessonId: string) {
+    return this.http.get<any>(`${this.api}/api/quizzes/student/lesson/${lessonId}`);
   }
+
+  submitQuizAttempt(quizId: string, payload: any) {
+    return this.http.post<QuizSubmitResult>(`${this.api}/api/quizzes/${quizId}/attempts`, payload);
+  }
+
+  saveQuizDraftAttempt(quizId: string, payload: any) {
+    return this.http.post<any>(`${this.api}/api/quizzes/${quizId}/attempts/save`, payload);
+  }
+
+  /* =========================
+     ✅ Reviews API (NEW)
+     NOTE: adjust these routes if your backend differs.
+  ========================= */
+
+  // --- Courses reviews (public read, auth write) ---
+  listCourseReviews(courseId: string, page = 1, pageSize = 10) {
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('pageSize', String(pageSize));
+    return this.http.get<ReviewListResponse>(`${this.api}/api/reviews/courses/${courseId}?${params.toString()}`);
+  }
+
+  getMyCourseReview(courseId: string) {
+    return this.http.get<ReviewItem | null>(`${this.api}/api/reviews/courses/${courseId}/mine`);
+  }
+
+  upsertCourseReview(courseId: string, payload: UpsertReviewPayload) {
+    return this.http.post<ReviewItem>(`${this.api}/api/reviews/courses/${courseId}`, payload);
+  }
+
+  // --- Academies reviews (ready for Academy page) ---
+  listAcademyReviews(academyId: string, page = 1, pageSize = 10) {
+    const params = new URLSearchParams();
+    params.set('page', String(page));
+    params.set('pageSize', String(pageSize));
+    return this.http.get<ReviewListResponse>(`${this.api}/api/reviews/academies/${academyId}?${params.toString()}`);
+  }
+
+  getMyAcademyReview(academyId: string) {
+    return this.http.get<ReviewItem | null>(`${this.api}/api/reviews/academies/${academyId}/mine`);
+  }
+
+  upsertAcademyReview(academyId: string, payload: UpsertReviewPayload) {
+    return this.http.post<ReviewItem>(`${this.api}/api/reviews/academies/${academyId}`, payload);
+  }
+
+  retakeQuizAttempt(quizId: string) {
+  return this.http.post<any>(`${this.api}/api/quizzes/${quizId}/attempts/retake`, {});
+}
+
 }

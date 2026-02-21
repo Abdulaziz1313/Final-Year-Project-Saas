@@ -1,0 +1,119 @@
+<!-- quiz-editor.html (FULL UPDATED) -->
+<div class="quiz-editor">
+  <!-- Background (same as Home / My Learning) -->
+  <div class="bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="bg-grid"></div>
+  </div>
+
+  <div class="wrap">
+    <main class="page">
+      <header class="topbar">
+        <div>
+          <div class="kicker">Instructor • Quiz</div>
+          <h1>Quiz Editor</h1>
+          <p class="muted">Create questions for this quiz lesson.</p>
+        </div>
+
+        <div class="actions">
+          <a class="btn ghost" routerLink="/instructor">Dashboard</a>
+          <button class="btn ghost" type="button" (click)="load()">Reload</button>
+          <button class="btn primary" type="button" [disabled]="saving || loading" (click)="save()">
+            {{ saving ? 'Saving…' : 'Save' }}
+          </button>
+        </div>
+      </header>
+
+      <div class="card" *ngIf="loading">
+        <div class="muted">Loading…</div>
+      </div>
+
+      <div class="card" *ngIf="!loading">
+        <form [formGroup]="form">
+          <div class="field">
+            <label>Quiz title</label>
+            <input class="input" formControlName="title" placeholder="e.g. Module 1 Quiz" />
+          </div>
+
+          <div class="toolbar">
+            <button class="btn ghost small" type="button" (click)="addQuestion(0)">+ MCQ</button>
+            <button class="btn ghost small" type="button" (click)="addQuestion(1)">+ True/False</button>
+            <button class="btn ghost small" type="button" (click)="addQuestion(2)">+ Short Answer</button>
+          </div>
+
+          <div class="q-list" formArrayName="questions">
+            <div class="q-card" *ngFor="let q of questions.controls; let i = index" [formGroupName]="i">
+              <div class="q-head">
+                <div class="q-title">Question {{ i + 1 }}</div>
+                <button class="btn danger small" type="button" (click)="removeQuestion(i)">Remove</button>
+              </div>
+
+              <div class="row">
+                <div class="field">
+                  <label>Type</label>
+                  <select class="input" formControlName="type">
+                    <option [value]="0">MCQ (single)</option>
+                    <option [value]="1">True / False</option>
+                    <option [value]="2">Short answer</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label>Points</label>
+                  <input class="input" type="number" formControlName="points" min="1" />
+                </div>
+              </div>
+
+              <div class="field">
+                <label>Prompt</label>
+                <textarea class="input" rows="2" formControlName="prompt"></textarea>
+              </div>
+
+              <!-- MCQ / TF -->
+              <div class="field" *ngIf="q.value.type !== 2">
+                <label>Choices</label>
+
+                <div class="choices" formArrayName="choices">
+                  <div class="choice" *ngFor="let c of qChoices(i).controls; let ci = index" [formGroupName]="ci">
+                    <input class="input" formControlName="text" placeholder="Choice text" />
+                    <label class="check">
+                      <input
+                        type="radio"
+                        name="correct-{{i}}"
+                        [checked]="c.value.isCorrect"
+                        (change)="markCorrect(i, ci)"
+                      />
+                      <span>Correct</span>
+                    </label>
+                    <button class="btn ghost small" type="button" (click)="removeChoice(i, ci)">Remove</button>
+                  </div>
+                </div>
+
+                <button class="btn ghost small" type="button" (click)="addChoice(i)">+ Add choice</button>
+              </div>
+
+              <!-- Short Answer -->
+              <div class="field" *ngIf="q.value.type === 2">
+                <label>Accepted answers (use | to separate)</label>
+                <input class="input" formControlName="correctAnswerText" placeholder="e.g. csharp|c#" />
+
+                <div class="row">
+                  <div class="field">
+                    <label>Match</label>
+                    <select class="input" formControlName="matchType">
+                      <option [value]="0">Case-insensitive</option>
+                      <option [value]="1">Exact</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+</div>

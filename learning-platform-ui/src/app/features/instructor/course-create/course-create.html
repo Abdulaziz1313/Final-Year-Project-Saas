@@ -1,6 +1,15 @@
+<!-- course-create.html (FULL UPDATED) -->
 <main class="page">
+  <!-- Background blobs (same as home/courses) -->
+  <div class="bg" aria-hidden="true">
+    <span class="blob b1"></span>
+    <span class="blob b2"></span>
+    <span class="blob b3"></span>
+    <span class="grid"></span>
+  </div>
+
   <header class="header">
-    <div>
+    <div class="head-left">
       <div class="kicker">Instructor • Courses</div>
       <h1>Create course</h1>
       <p>Create a draft course now, then build modules & lessons in the builder.</p>
@@ -11,7 +20,7 @@
     </div>
   </header>
 
-  <section class="grid">
+  <section class="grid-layout">
     <!-- Form -->
     <div class="card">
       <div class="card-head">
@@ -27,9 +36,12 @@
       </div>
 
       <form class="form" [formGroup]="form" (ngSubmit)="submit()">
-        <!-- Basics -->
+        <!-- BASICS -->
         <div class="section">
-          <div class="section-title">Basics</div>
+          <div class="section-top">
+            <div class="section-title">Basics</div>
+            <div class="section-sub muted">Set how students will first discover this course.</div>
+          </div>
 
           <div class="field">
             <label>Title <span class="req">*</span></label>
@@ -40,12 +52,18 @@
           </div>
 
           <div class="field">
-            <label>Short description</label>
+            <label class="row-label">
+              <span>Short description</span>
+              <span class="counter" [class.over]="shortCount() > shortMax">{{ shortCount() }}/{{ shortMax }}</span>
+            </label>
+
             <input class="input" formControlName="shortDescription" placeholder="A short summary (max 180 chars)" />
+
             <div class="meta-row">
               <small class="muted">Shown on the course card.</small>
-              <small class="muted">{{ shortCount() }}/{{ shortMax }}</small>
+              <small class="muted">Keep it clear and benefit-focused.</small>
             </div>
+
             <small class="hint error" *ngIf="shortCtrl?.touched && shortCtrl?.hasError('maxlength')">
               Keep it under {{ shortMax }} characters.
             </small>
@@ -53,7 +71,12 @@
 
           <div class="field">
             <label>Full description</label>
-            <textarea class="input" formControlName="fullDescription" rows="6" placeholder="Course overview, outcomes, etc."></textarea>
+            <textarea
+              class="input"
+              formControlName="fullDescription"
+              rows="6"
+              placeholder="Course overview, outcomes, who it’s for…"
+            ></textarea>
             <small class="muted">You can format this later in the builder (HTML supported).</small>
           </div>
 
@@ -89,14 +112,18 @@
           </div>
         </div>
 
-        <!-- Pricing -->
+        <!-- PRICING -->
         <div class="section">
-          <div class="section-title">Pricing</div>
+          <div class="section-top">
+            <div class="section-title">Pricing</div>
+            <div class="section-sub muted">Choose free or set a price.</div>
+          </div>
 
           <div class="pricing-head">
-            <label class="toggle">
+            <label class="check-pill">
               <input type="checkbox" formControlName="isFree" />
-              <span>Free course</span>
+              <span class="box" aria-hidden="true"><span class="tick">✓</span></span>
+              <span class="txt">Free course</span>
             </label>
 
             <div class="price-preview">
@@ -108,7 +135,14 @@
           <div class="row" *ngIf="!form.value.isFree">
             <div class="field">
               <label>Price <span class="req">*</span></label>
-              <input class="input" type="number" formControlName="price" min="1" step="0.01" placeholder="e.g. 49.99" />
+              <input
+                class="input"
+                type="number"
+                formControlName="price"
+                min="1"
+                step="0.01"
+                placeholder="e.g. 49.99"
+              />
               <small class="hint error" *ngIf="priceCtrl?.touched && priceInvalid()">
                 Price must be greater than 0.
               </small>
@@ -129,15 +163,21 @@
           </div>
         </div>
 
-        <!-- Thumbnail -->
+        <!-- THUMBNAIL -->
         <div class="section">
-          <div class="section-title">Thumbnail</div>
+          <div class="section-top">
+            <div class="section-title">Thumbnail</div>
+            <div class="section-sub muted">A clean image improves clicks and enrollments.</div>
+          </div>
 
           <div
             class="drop"
             (drop)="onThumbDrop($event)"
             (dragover)="onThumbDragOver($event)"
+            (dragenter)="dragThumb = true"
+            (dragleave)="dragThumb = false"
             [class.has]="!!thumbPreview"
+            [class.drag]="dragThumb"
           >
             <div class="drop-left">
               <div class="thumb-mini">
@@ -146,7 +186,9 @@
               </div>
 
               <div class="drop-text">
-                <div class="drop-title">{{ thumbPreview ? 'Thumbnail selected' : 'Drag & drop an image here' }}</div>
+                <div class="drop-title">
+                  {{ thumbPreview ? 'Thumbnail selected' : 'Drag & drop an image here' }}
+                </div>
                 <div class="drop-sub muted">PNG/JPG/WEBP • up to 5MB</div>
                 <div class="drop-sub muted" *ngIf="thumbName">File: <span class="mono">{{ thumbName }}</span></div>
               </div>
@@ -171,31 +213,39 @@
           </div>
         </div>
 
-        <!-- Options -->
+        <!-- OPTIONS -->
         <div class="section">
-          <div class="section-title">Options</div>
+          <div class="section-top">
+            <div class="section-title">Options</div>
+            <div class="section-sub muted">Recommended: keep draft, add lessons, then publish.</div>
+          </div>
 
           <div class="options">
-            <label class="toggle">
+            <label class="check-pill">
               <input type="checkbox" formControlName="publishNow" />
-              <span>Publish now</span>
+              <span class="box" aria-hidden="true"><span class="tick">✓</span></span>
+              <span class="txt">Publish now</span>
             </label>
 
-            <label class="toggle">
+            <label class="check-pill">
               <input type="checkbox" formControlName="goToBuilder" />
-              <span>Go to Course Builder after create</span>
+              <span class="box" aria-hidden="true"><span class="tick">✓</span></span>
+              <span class="txt">Go to Course Builder after create</span>
             </label>
           </div>
 
           <div class="muted small">
-            Recommended: keep it draft, open Course Builder, add content, then publish.
+            Tip: If you publish now, students can see the course even without lessons.
           </div>
         </div>
 
+        <!-- ACTIONS -->
         <div class="actions">
-          <button class="btn primary" type="submit" [disabled]="loading || form.invalid">
+          <button class="btn primary" type="submit" [disabled]="loading || form.invalid || (!form.value.isFree && priceInvalid())">
+            <span class="spinner" *ngIf="loading"></span>
             {{ loading ? 'Creating…' : 'Create course' }}
           </button>
+
           <span class="muted" *ngIf="loading">Saving and uploading thumbnail…</span>
         </div>
 

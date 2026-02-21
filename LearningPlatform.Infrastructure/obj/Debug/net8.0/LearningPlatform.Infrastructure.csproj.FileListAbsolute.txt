@@ -15,3 +15,4 @@ C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure
 C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\LearningPlatform.Infrastructure.pdb
 C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\LearningPlatform.Infrastructure.genruntimeconfig.cache
 C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\ref\LearningPlatform.Infrastructure.dll
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Infrastructure\obj\Debug\net8.0\LearningPlatform.Infrastructure.sourcelink.json

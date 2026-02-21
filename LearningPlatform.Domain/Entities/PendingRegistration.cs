@@ -7,6 +7,8 @@ public class PendingRegistration
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty; // hashed password (Identity hasher)
     public string Role { get; set; } = "Student";
+    public string? Phone { get; set; }
+
 
     public string CodeHash { get; set; } = string.Empty;     // hash of OTP
     public DateTimeOffset ExpiresAt { get; set; }

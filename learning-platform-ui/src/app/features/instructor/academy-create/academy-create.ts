@@ -32,8 +32,7 @@ function isValidHttpUrl(value?: string | null): boolean {
   }
 }
 
-type SectionKey = 'details' | 'color' | 'font';
-type SectionState = SectionKey | null;
+type StepKey = 'details' | 'branding' | 'font' | 'review';
 
 @Component({
   selector: 'app-academy-create',
@@ -46,22 +45,22 @@ export class AcademyCreateComponent {
   loading = false;
   error: string | null = null;
 
+  step: StepKey = 'details';
+
   logoPreview: string | null = null;
   logoFile: File | null = null;
 
   bannerPreview: string | null = null;
   bannerFile: File | null = null;
 
-  // Preview base
+  dragLogo = false;
+  dragBanner = false;
+
   primaryColor = '#7c3aed';
   apiBase = environment.apiBaseUrl;
 
-  activeSection: SectionState = 'details';
   private slugLocked = false;
-
   copied = false;
-
-  // Draft/Publish UI (front-end only for now)
   published = false;
 
   readonly descMax = 180;
@@ -92,13 +91,11 @@ export class AcademyCreateComponent {
       fontKey: ['system'],
     });
 
-    // auto-slug until user edits
     this.form.get('name')!.valueChanges.subscribe((v) => {
       if (this.slugLocked) return;
       this.form.get('slug')!.setValue(slugify(v || ''), { emitEvent: false });
     });
 
-    // lock slug when customized
     this.form.get('slug')!.valueChanges.subscribe((v) => {
       const name = this.form.get('name')!.value || '';
       const auto = slugify(name);
@@ -110,29 +107,12 @@ export class AcademyCreateComponent {
       if (current !== auto) this.slugLocked = true;
     });
 
-    // update preview color
     this.form.get('primaryColor')!.valueChanges.subscribe((v) => {
       this.primaryColor = v || '#7c3aed';
     });
   }
 
-  // --- accordion fix ---
-  openSection(key: SectionKey) {
-    this.activeSection = this.activeSection === key ? null : key;
-  }
-  isOpen(key: SectionKey) {
-    return this.activeSection === key;
-  }
-
-  // --- draft/publish ---
-  setPublished(v: boolean) {
-    this.published = v;
-  }
-  togglePublished() {
-    this.published = !this.published;
-  }
-
-  // --- form controls ---
+  // ---------- controls ----------
   get nameCtrl() { return this.form.get('name'); }
   get slugCtrl() { return this.form.get('slug'); }
   get websiteCtrl() { return this.form.get('website'); }
@@ -158,16 +138,54 @@ export class AcademyCreateComponent {
     return found.css;
   }
 
+  get reviewFontLabel(): string {
+    const key = this.form.value.fontKey || 'system';
+    if (key === 'custom') return this.customFontFile ? `Custom — ${this.customFontFile.name}` : 'Custom (not selected)';
+    const found = this.fontPresets.find(f => f.key === key);
+    return found?.label ?? 'System';
+  }
+
   get canSubmit(): boolean {
     if (this.loading) return false;
     if (!this.isWebsiteValid) return false;
     return this.form.valid;
   }
 
-  // --- slug helpers ---
-  onSlugInput() {
-    this.slugLocked = true;
+  setPublished(v: boolean) { this.published = v; }
+
+  // ---------- stepper ----------
+  goStep(s: StepKey) {
+    this.step = s;
+    queueMicrotask(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
   }
+
+  prevStep() {
+    const order: StepKey[] = ['details', 'branding', 'font', 'review'];
+    const i = order.indexOf(this.step);
+    this.step = order[Math.max(0, i - 1)];
+    queueMicrotask(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+
+  nextStep() {
+    const issues = this.stepIssues(this.step);
+    if (issues.length) {
+      issues[0].action();
+      return;
+    }
+
+    const order: StepKey[] = ['details', 'branding', 'font', 'review'];
+    const i = order.indexOf(this.step);
+    this.step = order[Math.min(order.length - 1, i + 1)];
+    queueMicrotask(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  }
+
+  isStepDone(s: StepKey): boolean {
+    if (s === 'review') return false;
+    return this.stepIssues(s).length === 0;
+  }
+
+  // ---------- slug / website ----------
+  onSlugInput() { this.slugLocked = true; }
 
   onSlugBlur() {
     const raw = this.form.value.slug || '';
@@ -180,6 +198,13 @@ export class AcademyCreateComponent {
 
   resetSlugToAuto() {
     const name = this.form.value.name || '';
+    this.slugLocked = false;
+    this.form.get('slug')!.setValue(slugify(name), { emitEvent: false });
+  }
+
+  autoFillSlug() {
+    const name = (this.form.value.name || '').trim();
+    if (!name) return;
     this.slugLocked = false;
     this.form.get('slug')!.setValue(slugify(name), { emitEvent: false });
   }
@@ -200,98 +225,90 @@ export class AcademyCreateComponent {
     }
   }
 
-  // --- reset branding ---
   resetBranding() {
-    const ok = confirm('Reset branding to defaults? This will clear logo, banner, and custom font selection.');
+    const ok = confirm('Reset branding to defaults?');
     if (!ok) return;
 
-    // reset form styling fields
-    this.form.patchValue({
-      primaryColor: '#7c3aed',
-      fontKey: 'system',
-    }, { emitEvent: true });
-
-    // clear uploads
+    this.form.patchValue({ primaryColor: '#7c3aed', fontKey: 'system' }, { emitEvent: true });
     this.removeLogo();
     this.removeBanner();
     this.removeCustomFont(false);
-
-    // reset publish to draft (optional, feels natural on reset)
     this.published = false;
   }
 
-  // --- logo ---
+  // ---------- files ----------
+  onDragOver(ev: DragEvent) { ev.preventDefault(); }
+
+  // logo
   onLogoSelected(ev: Event) {
     const input = ev.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    this.acceptLogoFile(file, () => (input.value = ''));
+    this.acceptImageFile(file, 'logo', () => (input.value = ''));
   }
 
   onDropLogo(ev: DragEvent) {
     ev.preventDefault();
+    this.dragLogo = false;
     const file = ev.dataTransfer?.files?.[0];
     if (!file) return;
-    this.acceptLogoFile(file);
-  }
-
-  onDragOver(ev: DragEvent) {
-    ev.preventDefault();
+    this.acceptImageFile(file, 'logo');
   }
 
   removeLogo() {
     this.logoFile = null;
     this.logoPreview = null;
+    this.dragLogo = false;
   }
 
-  private acceptLogoFile(file: File, onReject?: () => void) {
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      alert('Please select JPG/PNG/WEBP');
-      onReject?.();
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Max 5MB');
-      onReject?.();
-      return;
-    }
-    this.logoFile = file;
-
-    const reader = new FileReader();
-    reader.onload = () => (this.logoPreview = String(reader.result));
-    reader.readAsDataURL(file);
-  }
-
-  // --- banner ---
+  // banner
   onBannerSelected(ev: Event) {
     const input = ev.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
+    this.acceptImageFile(file, 'banner', () => (input.value = ''));
+  }
 
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      alert('Please select JPG/PNG/WEBP');
-      input.value = '';
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      alert('Max 5MB');
-      input.value = '';
-      return;
-    }
-
-    this.bannerFile = file;
-
-    const reader = new FileReader();
-    reader.onload = () => (this.bannerPreview = String(reader.result));
-    reader.readAsDataURL(file);
+  onDropBanner(ev: DragEvent) {
+    ev.preventDefault();
+    this.dragBanner = false;
+    const file = ev.dataTransfer?.files?.[0];
+    if (!file) return;
+    this.acceptImageFile(file, 'banner');
   }
 
   removeBanner() {
     this.bannerFile = null;
     this.bannerPreview = null;
+    this.dragBanner = false;
   }
 
-  // --- font upload (preview runtime) ---
+  private acceptImageFile(file: File, type: 'logo' | 'banner', onReject?: () => void) {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      alert('Please select JPG/PNG/WEBP');
+      onReject?.();
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Max 5MB');
+      onReject?.();
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (type === 'logo') {
+        this.logoFile = file;
+        this.logoPreview = String(reader.result);
+      } else {
+        this.bannerFile = file;
+        this.bannerPreview = String(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // font
   onFontSelected(ev: Event) {
     const input = ev.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -308,7 +325,7 @@ export class AcademyCreateComponent {
   private acceptFontFile(file: File, onReject?: () => void) {
     const extOk = /\.(ttf|otf|woff|woff2)$/i.test(file.name);
     if (!extOk) {
-      alert('Please upload a font file: .woff2 / .woff / .ttf / .otf');
+      alert('Please upload: .woff2 / .woff / .ttf / .otf');
       onReject?.();
       return;
     }
@@ -325,7 +342,6 @@ export class AcademyCreateComponent {
 
   private applyCustomFont(file: File) {
     this.clearCustomFontStyle();
-
     this.customFontObjectUrl = URL.createObjectURL(file);
 
     const format =
@@ -359,18 +375,96 @@ export class AcademyCreateComponent {
     }
   }
 
-  // --- submit ---
-  async submit() {
+  // ---------- validation summary ----------
+  get validationIssues(): Array<{ key: string; label: string; action: () => void }> {
+    // De-dup by key (clean review list)
+    const all = [
+      ...this.stepIssues('details'),
+      ...this.stepIssues('branding'),
+      ...this.stepIssues('font'),
+    ];
+
+    const seen = new Set<string>();
+    return all.filter((x) => {
+      if (seen.has(x.key)) return false;
+      seen.add(x.key);
+      return true;
+    });
+  }
+
+  get isReadyToCreate(): boolean {
+    return this.validationIssues.length === 0 && this.form.valid && this.isWebsiteValid && !this.loading;
+  }
+
+  private stepIssues(step: StepKey): Array<{ key: string; label: string; action: () => void }> {
+    const issues: Array<{ key: string; label: string; action: () => void }> = [];
+
+    const name = (this.form.value.name || '').trim();
+    const slug = (this.form.value.slug || '').trim();
+
+    if (step === 'details' || step === 'review') {
+      if (!name || name.length < 3) {
+        issues.push({
+          key: 'name',
+          label: 'Name is required (min 3 characters)',
+          action: () => this.focusInStep('details', 'name')
+        });
+      }
+
+      if (!slug || slug.length < 3) {
+        issues.push({
+          key: 'slug',
+          label: 'Slug is required (min 3 characters)',
+          action: () => this.focusInStep('details', 'slug')
+        });
+      }
+
+      if (!this.isWebsiteValid) {
+        issues.push({
+          key: 'website',
+          label: 'Website URL is invalid (must be https://...)',
+          action: () => this.focusInStep('details', 'website')
+        });
+      }
+
+      if (this.descriptionCount > this.descMax) {
+        issues.push({
+          key: 'description',
+          label: `Description is too long (max ${this.descMax})`,
+          action: () => this.focusInStep('details', 'description')
+        });
+      }
+    }
+
+    return issues;
+  }
+
+  private focusInStep(step: StepKey, controlName: string) {
+    this.step = step;
+    setTimeout(() => {
+      const el = document.querySelector(`[formControlName="${controlName}"]`) as HTMLElement | null;
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 0);
+  }
+
+  // ---------- submit ----------
+  submit() {
     this.error = null;
 
     if (!this.isWebsiteValid) {
       this.websiteCtrl?.markAsTouched();
       this.error = 'Please enter a valid website URL (https://...)';
+      this.focusInStep('details', 'website');
       return;
     }
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      const first = this.validationIssues[0];
+      if (first) first.action();
       return;
     }
 
@@ -398,7 +492,6 @@ export class AcademyCreateComponent {
 
         const doBanner = () => {
           if (!this.bannerFile) return finish();
-          // requires InstructorApi.uploadAcademyBanner
           this.api.uploadAcademyBanner(academyId, this.bannerFile).subscribe({
             next: () => finish(),
             error: () => finish()
@@ -413,7 +506,6 @@ export class AcademyCreateComponent {
           });
         };
 
-        // if custom font uploaded, upload it first
         if (fontKey === 'custom' && this.customFontFile) {
           this.api.uploadAcademyFont(academyId, this.customFontFile).subscribe({
             next: () => doLogo(),
@@ -422,7 +514,6 @@ export class AcademyCreateComponent {
           return;
         }
 
-        // persist preset font selection (safe)
         if (fontKey && fontKey !== 'custom') {
           this.api.updateAcademyBranding(academyId, { fontKey }).subscribe({
             next: () => doLogo(),

@@ -18,8 +18,8 @@ export class AdminApi {
     return this.http.get<any>(`${this.api}/api/admin/users?${params.toString()}`);
   }
 
-  setUserLock(userId: string, locked: boolean) {
-    return this.http.put(`${this.api}/api/admin/users/${userId}/lock`, { locked });
+  setUserLock(userId: string, payload: { locked: boolean; days?: number | null; permanent?: boolean }) {
+    return this.http.put(`${this.api}/api/admin/users/${userId}/lock`, payload);
   }
 
   setUserRoles(userId: string, roles: string[]) {
@@ -40,6 +40,12 @@ export class AdminApi {
     return this.http.put(`${this.api}/api/admin/academies/${id}/moderate`, { isHidden, reason });
   }
 
+  deleteAcademy(id: string, reason: string) {
+    const params = new URLSearchParams();
+    if (reason) params.set('reason', reason);
+    return this.http.delete(`${this.api}/api/admin/academies/${id}?${params.toString()}`);
+  }
+
   // ---- Courses ----
   listCourses(q = '', status = 'all', page = 1, pageSize = 25) {
     const params = new URLSearchParams();
@@ -52,5 +58,22 @@ export class AdminApi {
 
   moderateCourse(id: string, isHidden: boolean, reason: string | null) {
     return this.http.put(`${this.api}/api/admin/courses/${id}/moderate`, { isHidden, reason });
+  }
+
+  deleteCourse(id: string, reason: string) {
+    const params = new URLSearchParams();
+    if (reason) params.set('reason', reason);
+    return this.http.delete(`${this.api}/api/admin/courses/${id}?${params.toString()}`);
+  }
+
+  // ---- Audit ----
+  listAudit(q = '', action = 'all', targetType = 'all', page = 1, pageSize = 25) {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (action && action !== 'all') params.set('action', action);
+    if (targetType && targetType !== 'all') params.set('targetType', targetType);
+    params.set('page', String(page));
+    params.set('pageSize', String(pageSize));
+    return this.http.get<any>(`${this.api}/api/admin/audit?${params.toString()}`);
   }
 }

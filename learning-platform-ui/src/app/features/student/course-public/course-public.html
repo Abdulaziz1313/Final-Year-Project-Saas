@@ -1,131 +1,347 @@
-<div class="page" [style.--brand]="brandColor" [style.fontFamily]="brandFontFamily">
-  <div class="container">
-    <ng-container *ngIf="state$ | async as st">
-      <div *ngIf="st.loading" class="muted">Loading…</div>
+<div class="course-public" [style.--brand]="brandColor" [style.fontFamily]="brandFontFamily">
+  <!-- Background (same as Home / My Learning) -->
+  <div class="bg" aria-hidden="true">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+    <div class="bg-grid"></div>
+  </div>
 
-      <!-- ✅ Pretty error state -->
-      <div *ngIf="st.error && !st.loading" class="error-card card">
-        <div class="error-top">
-          <div class="error-badge" [class.hidden]="(st.error || '').toLowerCase().includes('hidden by admin')">
-            {{ (st.error || '').toLowerCase().includes('hidden by admin') ? 'Hidden' : 'Unavailable' }}
-          </div>
-          <div class="error-title">This course is not available</div>
-          <div class="error-sub muted">
-            {{ st.error }}
-          </div>
-        </div>
+  <!-- content wrapper above background -->
+  <div class="wrap">
+    <div class="container">
+      <ng-container *ngIf="state$ | async as st">
+        <div *ngIf="st.loading" class="muted">Loading…</div>
 
-        <div class="error-actions">
-          <a class="btn primary" routerLink="/academies">Explore academies</a>
-          <a class="btn ghost" routerLink="/home">Go home</a>
-        </div>
-
-        <div class="muted small">
-          If you believe this is a mistake, contact the academy owner or support.
-        </div>
-      </div>
-
-      <div *ngIf="st.data && !st.loading && !st.error">
-        <!-- Banner -->
-        <div
-          class="banner"
-          *ngIf="st.data.academy?.bannerUrl"
-          [style.backgroundImage]="'url(' + img(st.data.academy?.bannerUrl) + ')'"
-        ></div>
-
-        <div class="layout">
-          <!-- Main -->
-          <div class="main">
-            <header class="hero">
-              <div class="thumb">
-                <img *ngIf="img(st.data.thumbnailUrl)" [src]="img(st.data.thumbnailUrl)!" alt="thumb" />
-                <div class="thumb-fallback" *ngIf="!img(st.data.thumbnailUrl)">Course</div>
-              </div>
-
-              <div class="info">
-                <div class="crumbs">
-                  <a class="crumb" routerLink="/academies">Academies</a>
-                  <span class="sep">/</span>
-                  <a class="crumb" *ngIf="st.data.academy?.slug" [routerLink]="['/academy', st.data.academy?.slug]">
-                    {{ st.data.academy?.name || 'Academy' }}
-                  </a>
-                </div>
-
-                <h1 class="page-title">{{ st.data.title }}</h1>
-                <p class="page-sub">{{ st.data.shortDescription || 'No short description yet.' }}</p>
-
-                <div class="meta">
-                  <span class="badge">{{ st.data.category || 'General' }}</span>
-                  <span class="badge price">{{ priceLabel(st.data) }}</span>
-                </div>
-              </div>
-            </header>
-
-            <section class="card" *ngIf="st.data.fullDescription">
-              <div class="card-title">About this course</div>
-              <div class="desc" [innerHTML]="st.data.fullDescription"></div>
-            </section>
-
-            <section class="card">
-              <div class="card-title">Curriculum</div>
-
-              <div class="module" *ngFor="let m of st.data.modules">
-                <div class="module-title">{{ m.title }}</div>
-
-                <div class="lesson" *ngFor="let l of m.lessons">
-                  <span class="dot" [class.preview]="l.isPreviewFree"></span>
-                  <span class="lesson-title">{{ l.title }}</span>
-                  <span class="muted small" *ngIf="l.isPreviewFree">Preview</span>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          <!-- Sticky CTA -->
-          <aside class="side">
-            <div class="cta">
-              <div class="cta-top">
-                <div class="academy-mini" *ngIf="st.data.academy">
-                  <div class="mini-logo" *ngIf="img(st.data.academy.logoUrl); else miniLetter">
-                    <img [src]="img(st.data.academy.logoUrl)!" alt="logo" />
-                  </div>
-                  <ng-template #miniLetter>
-                    <div class="mini-logo fallback">{{ (st.data.academy.name || 'A').slice(0,1).toUpperCase() }}</div>
-                  </ng-template>
-
-                  <div class="mini-text">
-                    <div class="mini-name">{{ st.data.academy.name }}</div>
-                    <div class="mini-sub muted">Provider</div>
-                  </div>
-                </div>
-
-                <div class="cta-price">
-                  <div class="price-big">{{ priceLabel(st.data) }}</div>
-                  <div class="muted small" *ngIf="!st.data.isFree">Payment integration next (PayPal/Stripe).</div>
-                </div>
-              </div>
-
-              <button
-                class="btn primary wide"
-                type="button"
-                [disabled]="enrolling || !canEnroll(st.data)"
-                (click)="enroll(st.data.id)"
-                [style.background]="brandColor"
-              >
-                {{ ctaLabel(st.data) }}
-              </button>
-
-              <a class="btn ghost wide" *ngIf="st.data.academy?.slug" [routerLink]="['/academy', st.data.academy?.slug]">
-                Back to academy
-              </a>
-
-              <div class="cta-note muted">
-                Enroll to track progress and continue where you left off.
-              </div>
+        <!-- Error state -->
+        <div *ngIf="st.error && !st.loading" class="error-card card">
+          <div class="error-top">
+            <div class="error-badge" [class.hidden]="(st.error || '').toLowerCase().includes('hidden by admin')">
+              {{ (st.error || '').toLowerCase().includes('hidden by admin') ? 'Hidden' : 'Unavailable' }}
             </div>
-          </aside>
+            <div class="error-title">This course is not available</div>
+            <div class="error-sub muted">{{ st.error }}</div>
+          </div>
+
+          <div class="error-actions">
+            <a class="btn primary" routerLink="/academies">Explore academies</a>
+            <a class="btn ghost" routerLink="/home">Go home</a>
+          </div>
+
+          <div class="muted small">
+            If you believe this is a mistake, contact the academy owner or support.
+          </div>
         </div>
-      </div>
-    </ng-container>
+
+        <ng-container *ngIf="st.data as vm">
+          <!-- Banner -->
+          <div
+            class="banner"
+            *ngIf="vm.academy?.bannerUrl"
+            [style.backgroundImage]="'url(' + img(vm.academy?.bannerUrl) + ')'"
+          ></div>
+
+          <div class="layout">
+            <!-- Main -->
+            <div class="main">
+              <header class="hero">
+                <div class="thumb">
+                  <img *ngIf="img(vm.thumbnailUrl) as t" [src]="t" alt="thumb" />
+                  <div class="thumb-fallback" *ngIf="!img(vm.thumbnailUrl)">Course</div>
+                </div>
+
+                <div class="info">
+                  <div class="crumbs">
+                    <a class="crumb" routerLink="/academies">Academies</a>
+                    <span class="sep">/</span>
+                    <a class="crumb" *ngIf="vm.academy?.slug" [routerLink]="['/academy', vm.academy?.slug]">
+                      {{ vm.academy?.name || 'Academy' }}
+                    </a>
+                  </div>
+
+                  <h1 class="page-title">{{ vm.title }}</h1>
+                  <p class="page-sub">{{ subtitle(vm) }}</p>
+
+                  <div class="meta">
+                    <span class="badge">{{ categoryLabel(vm) }}</span>
+                    <span class="badge price">{{ priceLabel(vm) }}</span>
+
+                    <span class="badge ghost">
+                      {{ vm.modulesCount }} module{{ vm.modulesCount === 1 ? '' : 's' }}
+                    </span>
+
+                    <span class="badge ghost">
+                      {{ vm.lessonsCount }} lesson{{ vm.lessonsCount === 1 ? '' : 's' }}
+                    </span>
+
+                    <span class="badge ghost" *ngIf="vm.previewLessonsCount > 0">
+                      {{ vm.previewLessonsCount }} preview{{ vm.previewLessonsCount === 1 ? '' : 's' }}
+                    </span>
+                  </div>
+
+                  <div class="tags" *ngIf="tags(vm).length > 0">
+                    <span class="tag" *ngFor="let t of tags(vm)">{{ t }}</span>
+                  </div>
+
+                  <div class="hero-actions">
+                    <a class="btn ghost" *ngIf="vm.academy?.slug" [routerLink]="['/academy', vm.academy?.slug]">
+                      View academy
+                    </a>
+                    <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
+                  </div>
+                </div>
+              </header>
+
+              <section class="card" *ngIf="vm.safeFullDescription">
+                <div class="card-title">About this course</div>
+                <div class="desc" [innerHTML]="vm.safeFullDescription"></div>
+              </section>
+
+              <!-- Curriculum -->
+              <section class="card curriculum">
+                <div class="card-title-row">
+                  <div>
+                    <div class="card-title">Curriculum</div>
+                    <div class="muted small">
+                      {{ vm.modulesCount }} modules • {{ vm.lessonsCount }} lessons
+                      <span *ngIf="vm.previewLessonsCount > 0">• {{ vm.previewLessonsCount }} previews</span>
+                    </div>
+                  </div>
+                  <div class="curr-actions">
+                    <button class="btn ghost small" type="button" (click)="expandAll(vm)">Expand all</button>
+                    <button class="btn ghost small" type="button" (click)="collapseAll()">Collapse</button>
+                  </div>
+                </div>
+
+                <div class="modules">
+                  <div class="module" *ngFor="let m of vm.modules; let i = index">
+                    <button
+                      class="module-head"
+                      type="button"
+                      (click)="toggleModule(moduleKey(m.title, i))"
+                      [attr.aria-expanded]="isExpanded(moduleKey(m.title, i))"
+                    >
+                      <div class="module-left">
+                        <div class="module-index">{{ i + 1 }}</div>
+
+                        <div class="module-text">
+                          <div class="module-title">{{ m.title || ('Module ' + (i + 1)) }}</div>
+                          <div class="muted small">
+                            {{ lessonCount(m) }} lesson{{ lessonCount(m) === 1 ? '' : 's' }}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="module-right">
+                        <span class="pill-mini ghost" *ngIf="hasPreviewLessons(m)">Has preview</span>
+                        <span class="chev" [class.on]="isExpanded(moduleKey(m.title, i))">›</span>
+                      </div>
+                    </button>
+
+                    <div class="module-body" *ngIf="isExpanded(moduleKey(m.title, i))">
+                      <div class="lesson" *ngFor="let l of m.lessons; let j = index">
+                        <div class="lesson-left">
+                          <div class="lesson-ico" [class.preview]="l.isPreviewFree">▶</div>
+
+                          <div class="lesson-main">
+                            <div class="lesson-title">
+                              <span class="lesson-no">{{ i + 1 }}.{{ j + 1 }}</span>
+                              {{ l.title }}
+                            </div>
+                            <div class="muted tiny">
+                              {{ l.isPreviewFree ? 'Preview available' : 'Enroll to access' }}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="lesson-right">
+                          <span class="pill-mini" *ngIf="l.isPreviewFree">Preview</span>
+                          <span class="pill-mini ghost" *ngIf="!l.isPreviewFree">Locked</span>
+                        </div>
+                      </div>
+
+                      <div class="module-foot muted small" *ngIf="lessonCount(m) === 0">
+                        No lessons yet.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Reviews -->
+              <section class="card reviews">
+                <div class="reviews-head">
+                  <div>
+                    <div class="card-title">Student reviews</div>
+                    <ng-container *ngIf="reviewsState$ | async as rs">
+                      <div class="muted small" *ngIf="!rs.loading && rs.data">
+                        {{ rs.data.summary.avgRating | number:'1.1-1' }} / 5 • {{ rs.data.summary.count }}
+                        review{{ rs.data.summary.count === 1 ? '' : 's' }}
+                      </div>
+                    </ng-container>
+                  </div>
+
+                  <div class="reviews-actions">
+                    <button class="btn ghost small" type="button" (click)="loadReviews()">Refresh</button>
+                  </div>
+                </div>
+
+                <ng-container *ngIf="reviewsState$ | async as rs">
+                  <div class="muted" *ngIf="rs.loading">Loading reviews…</div>
+                  <div class="alert" *ngIf="rs.error && !rs.loading">{{ rs.error }}</div>
+
+                  <ng-container *ngIf="!rs.loading && rs.data as rv">
+                    <!-- My review form -->
+                    <div class="my-review">
+                      <div class="my-title">
+                        <div class="my-label">Your review</div>
+                        <div class="muted small" *ngIf="rv.mine">
+                          Last updated: {{ when(rv.mine.updatedAt || rv.mine.createdAt) }}
+                        </div>
+                      </div>
+
+                      <div class="my-form">
+                        <div class="field">
+                          <label class="lbl">Rating</label>
+                          <select class="input" [formControl]="ratingCtrl">
+                            <option [ngValue]="5">5 - Excellent</option>
+                            <option [ngValue]="4">4 - Good</option>
+                            <option [ngValue]="3">3 - OK</option>
+                            <option [ngValue]="2">2 - Poor</option>
+                            <option [ngValue]="1">1 - Bad</option>
+                          </select>
+                        </div>
+
+                        <div class="field">
+                          <label class="lbl">Comment</label>
+                          <textarea class="input area" rows="3" [formControl]="commentCtrl" placeholder="Share your experience (optional)"></textarea>
+                        </div>
+
+                        <div class="my-actions">
+                          <button class="btn primary" type="button" (click)="submitReview()" [disabled]="reviewSubmitting">
+                            {{ reviewSubmitting ? 'Saving…' : (rv.mine ? 'Update review' : 'Post review') }}
+                          </button>
+
+                          <button class="btn ghost" type="button" (click)="goLoginForReview()" *ngIf="!isLoggedIn">
+                            Login to review
+                          </button>
+
+                          <span class="muted small tip">
+                            Please keep it respectful. Reviews are visible to other students.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Reviews list -->
+                    <div class="reviews-list" *ngIf="rv.items.length > 0; else noReviews">
+                      <article class="review" *ngFor="let r of rv.items">
+                        <div class="review-left">
+                          <div class="avatar">{{ initial(r) }}</div>
+                        </div>
+
+                        <div class="review-body">
+                          <div class="review-top">
+                            <div class="name">{{ displayName(r) }}</div>
+                            <div class="stars" [attr.aria-label]="'Rating ' + r.rating + ' out of 5'">
+                              <span class="star" *ngFor="let s of stars(r.rating)">{{ s }}</span>
+                            </div>
+                            <div class="date muted small">{{ when(r.updatedAt || r.createdAt) }}</div>
+                          </div>
+
+                          <div class="comment" *ngIf="(r.comment || '').trim(); else emptyComment">
+                            {{ r.comment }}
+                          </div>
+                          <ng-template #emptyComment>
+                            <div class="muted small">No comment.</div>
+                          </ng-template>
+                        </div>
+                      </article>
+
+                      <div class="reviews-pager">
+                        <span class="muted small">
+                          Page {{ rv.page }} / {{ rv.totalPages }}
+                        </span>
+
+                        <button class="btn ghost small" type="button" (click)="reviewsPrev(rv)" [disabled]="rv.page <= 1">
+                          Prev
+                        </button>
+                        <button class="btn ghost small" type="button" (click)="reviewsNext(rv)" [disabled]="rv.page >= rv.totalPages">
+                          Next
+                        </button>
+                      </div>
+                    </div>
+
+                    <ng-template #noReviews>
+                      <div class="empty-reviews">
+                        <div class="muted">No reviews yet.</div>
+                        <div class="muted small">Be the first to share feedback.</div>
+                      </div>
+                    </ng-template>
+                  </ng-container>
+                </ng-container>
+              </section>
+            </div>
+
+            <!-- Sticky CTA -->
+            <aside class="side">
+              <div class="cta">
+                <div class="cta-top">
+                  <div class="academy-mini" *ngIf="vm.academy">
+                    <div class="mini-logo" *ngIf="img(vm.academy.logoUrl); else miniLetter">
+                      <img [src]="img(vm.academy.logoUrl)!" alt="logo" />
+                    </div>
+
+                    <ng-template #miniLetter>
+                      <div class="mini-logo fallback">{{ (vm.academy.name || 'A').slice(0,1).toUpperCase() }}</div>
+                    </ng-template>
+
+                    <div class="mini-text">
+                      <div class="mini-name">{{ vm.academy.name }}</div>
+                      <div class="mini-sub muted">Provider</div>
+                    </div>
+                  </div>
+
+                  <div class="cta-price">
+                    <div class="price-big">{{ priceLabel(vm) }}</div>
+                    <div class="muted small" *ngIf="!vm.isFree">Payment integration next (PayPal/Stripe).</div>
+                    <div class="muted small" *ngIf="vm.isFree">Instant access after enrollment.</div>
+                  </div>
+                </div>
+
+                <button
+                  class="btn primary wide enroll"
+                  type="button"
+                  [disabled]="enrolling || !canEnroll(vm)"
+                  (click)="enroll(vm.id)"
+                >
+                  {{ ctaLabel(vm) }}
+                </button>
+
+                <a class="btn ghost wide" *ngIf="vm.academy?.slug" [routerLink]="['/academy', vm.academy?.slug]">
+                  Back to academy
+                </a>
+
+                <div class="cta-note muted">
+                  Enroll to track progress and continue where you left off.
+                </div>
+
+                <div class="cta-foot">
+                  <div class="cta-chip">
+                    <span class="cta-dot"></span>
+                    {{ vm.previewLessonsCount > 0 ? (vm.previewLessonsCount + ' preview lessons') : 'No previews' }}
+                  </div>
+
+                  <div class="cta-chip">
+                    <span class="cta-dot"></span>
+                    {{ vm.lessonsCount }} lessons
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </ng-container>
+      </ng-container>
+    </div>
   </div>
 </div>

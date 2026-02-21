@@ -1,100 +1,187 @@
 <div class="shell" [class.collapsed]="collapsed">
   <!-- Sidebar -->
-  <aside class="side">
+  <aside class="side" [class.is-collapsed]="collapsed">
     <div class="brand">
-      <div class="logo">الف</div>
+      <div class="logo" aria-hidden="true">الف</div>
 
       <div class="brand-text" *ngIf="!collapsed">
         <div class="name">Alef</div>
         <div class="tagline">Learning Platform</div>
       </div>
 
-      <button class="collapse-btn" type="button" (click)="toggleSidebar()"
-              [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+      <button
+        class="collapse-btn"
+        type="button"
+        (click)="toggleSidebar()"
+        [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+      >
         <svg viewBox="0 0 24 24" class="ico" aria-hidden="true">
-          <path d="M14.5 6.5 9 12l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round"></path>
+          <path
+            d="M14.5 6.5 9 12l5.5 5.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          ></path>
         </svg>
       </button>
     </div>
 
     <ng-container *ngIf="profileState$ | async as ps">
-      <!-- ✅ Admin section ONLY for Admin role -->
+      <!-- Admin -->
       <div class="section" *ngIf="ps.data?.roles?.includes('Admin')">
         <div class="section-title" *ngIf="!collapsed">Admin</div>
 
         <nav class="nav">
-          <a routerLink="/admin" routerLinkActive="active">
+          <a
+            routerLink="/admin"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            [attr.data-tip]="collapsed ? 'Admin Panel' : null"
+          >
             <svg viewBox="0 0 24 24" class="nav-ico" aria-hidden="true">
-              <path d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4Z"
-                    fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
-              <path d="M9 12l2 2 4-5" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round"></path>
+              <path
+                d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linejoin="round"
+              ></path>
+              <path
+                d="M9 12l2 2 4-5"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ></path>
             </svg>
             <span class="nav-text" *ngIf="!collapsed">Admin Panel</span>
           </a>
         </nav>
       </div>
 
-      <!-- Instructor section ONLY for Instructor role -->
+      <!-- Instructor -->
       <div class="section" *ngIf="isInstructor(ps.data) && !ps.data?.roles?.includes('Admin')">
         <div class="section-title" *ngIf="!collapsed">Instructor</div>
 
         <nav class="nav">
-          <a routerLink="/instructor" routerLinkActive="active">
+          <!-- ✅ exact=true fixes duplicate active when you are on /instructor/... -->
+          <a
+            routerLink="/instructor"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            [attr.data-tip]="collapsed ? 'Dashboard' : null"
+          >
             <svg viewBox="0 0 24 24" class="nav-ico" aria-hidden="true">
-              <path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z"
-                    fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+              <path
+                d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linejoin="round"
+              ></path>
             </svg>
             <span class="nav-text" *ngIf="!collapsed">Dashboard</span>
           </a>
 
-          <a routerLink="/instructor/academy/create" routerLinkActive="active">
+          <a
+            routerLink="/instructor/academy/create"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            [attr.data-tip]="collapsed ? 'Create Academy' : null"
+          >
             <svg viewBox="0 0 24 24" class="nav-ico" aria-hidden="true">
-              <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round"></path>
+              <path
+                d="M12 5v14M5 12h14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              ></path>
             </svg>
             <span class="nav-text" *ngIf="!collapsed">Create Academy</span>
           </a>
         </nav>
       </div>
 
-      <!-- Student section ONLY for Student role -->
+      <!-- Student -->
       <div class="section" *ngIf="isStudent(ps.data)">
         <div class="section-title" *ngIf="!collapsed">Student</div>
 
         <nav class="nav">
-          <a routerLink="/my-learning" routerLinkActive="active">
+          <a
+            routerLink="/my-learning"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            [attr.data-tip]="collapsed ? 'My Learning' : null"
+          >
             <svg viewBox="0 0 24 24" class="nav-ico" aria-hidden="true">
-              <path d="M4 19V6a2 2 0 0 1 2-2h12v15" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linejoin="round"></path>
-              <path d="M8 8h8M8 12h8" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round"></path>
+              <path
+                d="M4 19V6a2 2 0 0 1 2-2h12v15"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linejoin="round"
+              ></path>
+              <path
+                d="M8 8h8M8 12h8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              ></path>
             </svg>
             <span class="nav-text" *ngIf="!collapsed">My Learning</span>
           </a>
 
-          <a routerLink="/academies" routerLinkActive="active">
+          <a
+            routerLink="/academies"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            [attr.data-tip]="collapsed ? 'Explore' : null"
+          >
             <svg viewBox="0 0 24 24" class="nav-ico" aria-hidden="true">
-              <path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round"></path>
+              <path
+                d="M4 6h16M4 12h16M4 18h16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              ></path>
             </svg>
             <span class="nav-text" *ngIf="!collapsed">Explore</span>
           </a>
         </nav>
       </div>
 
-      <!-- Account section for everyone -->
+      <!-- Account -->
       <div class="section">
         <div class="section-title" *ngIf="!collapsed">Account</div>
 
         <nav class="nav">
-          <a routerLink="/me" routerLinkActive="active">
+          <a
+            routerLink="/me"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            [attr.data-tip]="collapsed ? 'My Account' : null"
+          >
             <svg viewBox="0 0 24 24" class="nav-ico" aria-hidden="true">
-              <path d="M20 21a8 8 0 0 0-16 0" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round"></path>
-              <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
-                    fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
+              <path
+                d="M20 21a8 8 0 0 0-16 0"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              ></path>
+              <path
+                d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linejoin="round"
+              ></path>
             </svg>
             <span class="nav-text" *ngIf="!collapsed">My Account</span>
           </a>
@@ -105,50 +192,67 @@
 
   <!-- Main -->
   <div class="main">
+    <!-- Topbar -->
     <header class="top">
       <div class="top-left">
-        <button class="top-collapse btn ghost small" type="button" (click)="toggleSidebar()"
-                [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+        <button
+          class="icon-btn"
+          type="button"
+          (click)="toggleSidebar()"
+          [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        >
           <svg viewBox="0 0 24 24" class="ico" aria-hidden="true">
-            <path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round"></path>
+            <path
+              d="M4 7h16M4 12h16M4 17h16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            ></path>
           </svg>
         </button>
 
         <div class="top-title-wrap">
           <div class="top-title">Alef</div>
           <ng-container *ngIf="profileState$ | async as ps">
-            <div class="top-sub" *ngIf="ps.data?.roles?.includes('Admin')">Admin area</div>
-            <div class="top-sub" *ngIf="!ps.data?.roles?.includes('Admin') && isInstructor(ps.data)">Instructor area</div>
-            <div class="top-sub" *ngIf="!ps.data?.roles?.includes('Admin') && isStudent(ps.data)">Student area</div>
-            <div class="top-sub" *ngIf="!ps.data?.roles?.includes('Admin') && !isInstructor(ps.data) && !isStudent(ps.data)">Account</div>
+            <div class="top-sub" *ngIf="ps.data?.roles?.includes('Admin')">Admin</div>
+            <div class="top-sub" *ngIf="!ps.data?.roles?.includes('Admin') && isInstructor(ps.data)">Instructor</div>
+            <div class="top-sub" *ngIf="!ps.data?.roles?.includes('Admin') && isStudent(ps.data)">Student</div>
+            <div class="top-sub" *ngIf="!ps.data?.roles?.includes('Admin') && !isInstructor(ps.data) && !isStudent(ps.data)">
+              Account
+            </div>
           </ng-container>
         </div>
       </div>
 
       <div class="top-right">
         <ng-container *ngIf="profileState$ | async as ps">
-          <!-- Public explore is available to all -->
           <a class="btn ghost small" routerLink="/academies">Explore</a>
-
-          <!-- ✅ Admin shortcut -->
           <a class="btn ghost small" *ngIf="ps.data?.roles?.includes('Admin')" routerLink="/admin">Admin</a>
-
-          <!-- Student: My Learning -->
           <a class="btn ghost small" *ngIf="isStudent(ps.data)" routerLink="/my-learning">My Learning</a>
 
-          <!-- Notifications (Instructor only) -->
+          <!-- Notifications -->
           <div class="notif-wrap" *ngIf="isInstructor(ps.data)">
-            <button class="bell" type="button" (click)="toggleNotif(!notifOpen)" aria-label="Notifications">
-              <svg viewBox="0 0 24 24" class="bell-ico" aria-hidden="true">
-                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"
-                      fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" fill="none" stroke="currentColor" stroke-width="2"
-                      stroke-linecap="round"></path>
+            <button class="icon-btn" type="button" (click)="toggleNotif(!notifOpen)" aria-label="Notifications">
+              <svg viewBox="0 0 24 24" class="ico" aria-hidden="true">
+                <path
+                  d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linejoin="round"
+                ></path>
+                <path
+                  d="M13.73 21a2 2 0 0 1-3.46 0"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                ></path>
               </svg>
 
               <ng-container *ngIf="unreadCount$ | async as uc">
-                <span class="bell-badge" *ngIf="(uc.data || 0) > 0">{{ uc.data }}</span>
+                <span class="badge-dot" *ngIf="(uc.data || 0) > 0">{{ uc.data }}</span>
               </ng-container>
             </button>
 

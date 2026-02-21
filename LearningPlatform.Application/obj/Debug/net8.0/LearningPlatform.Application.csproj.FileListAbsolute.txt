@@ -13,3 +13,4 @@ C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Application\ob
 C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Application\obj\Debug\net8.0\refint\LearningPlatform.Application.dll
 C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Application\obj\Debug\net8.0\LearningPlatform.Application.pdb
 C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Application\obj\Debug\net8.0\ref\LearningPlatform.Application.dll
+C:\Users\mralo\OneDrive\Desktop\learningPlatform\LearningPlatform.Application\obj\Debug\net8.0\LearningPlatform.Application.sourcelink.json

@@ -34,15 +34,13 @@ export class AcademyCatalogComponent implements OnDestroy {
   page = 1;
   pageSize = 24;
 
-  // Branding (applied to this page)
+  // Branding
   brandColor = '#7c3aed';
   brandFontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif';
 
-  // state
   private stateSubject = new BehaviorSubject<LoadState<CatalogVm>>({ loading: true, data: null, error: null });
   state$ = this.stateSubject.asObservable();
 
-  // debounce inputs
   private qInput$ = new Subject<string>();
   private tagInput$ = new Subject<string>();
 
@@ -51,7 +49,6 @@ export class AcademyCatalogComponent implements OnDestroy {
   constructor(private route: ActivatedRoute, private router: Router, private student: StudentApi) {
     this.slug = this.route.snapshot.paramMap.get('slug') || '';
 
-    // init from URL query params (shareable links)
     const qp = this.route.snapshot.queryParamMap;
     this.q = qp.get('q') || '';
     this.tag = qp.get('tag') || '';
@@ -60,25 +57,17 @@ export class AcademyCatalogComponent implements OnDestroy {
     const pageParam = Number(qp.get('page') || '1');
     this.page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
 
-    // debounce: q
-    this.qInput$
-      .pipe(debounceTime(300), distinctUntilChanged())
-      .subscribe((v) => {
-        this.q = v;
-        this.resetAndLoad();
-      });
+    this.qInput$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((v) => {
+      this.q = v;
+      this.resetAndLoad();
+    });
 
-    // debounce: tag
-    this.tagInput$
-      .pipe(debounceTime(300), distinctUntilChanged())
-      .subscribe((v) => {
-        this.tag = v;
-        this.resetAndLoad();
-      });
+    this.tagInput$.pipe(debounceTime(300), distinctUntilChanged()).subscribe((v) => {
+      this.tag = v;
+      this.resetAndLoad();
+    });
 
-    // initial load (if page>1 in URL, we load up to that page to match the link)
     this.loadInitialUpToPage(this.page).catch(() => {
-      // fallback
       this.page = 1;
       this.resetAndLoad();
     });
@@ -88,7 +77,7 @@ export class AcademyCatalogComponent implements OnDestroy {
     this.clearCustomFontStyle();
   }
 
-  // -------- UI handlers --------
+  // ---------- UI handlers ----------
   onQInput(v: string) {
     this.qInput$.next(v);
   }
@@ -102,6 +91,16 @@ export class AcademyCatalogComponent implements OnDestroy {
     this.resetAndLoad();
   }
 
+  clearQ() {
+    this.q = '';
+    this.resetAndLoad();
+  }
+
+  clearTag() {
+    this.tag = '';
+    this.resetAndLoad();
+  }
+
   resetFilters() {
     this.q = '';
     this.tag = '';
@@ -109,7 +108,6 @@ export class AcademyCatalogComponent implements OnDestroy {
     this.resetAndLoad();
   }
 
-  // Load more pagination
   loadMore() {
     const st = this.stateSubject.value;
     if (st.loading) return;
@@ -128,14 +126,13 @@ export class AcademyCatalogComponent implements OnDestroy {
     return st.data.items.length < st.data.total;
   }
 
-  // -------- loading --------
+  // ---------- loading ----------
   private async loadInitialUpToPage(targetPage: number) {
-    // cap to avoid huge loops if someone shares ?page=999
     const safeTarget = Math.max(1, Math.min(targetPage, 10));
     this.page = 1;
     this.syncUrl();
 
-    await this.load(true); // page 1
+    await this.load(true);
     for (let p = 2; p <= safeTarget; p++) {
       this.page = p;
       this.syncUrl();
@@ -156,22 +153,23 @@ export class AcademyCatalogComponent implements OnDestroy {
         q: this.q || null,
         tag: this.tag || null,
         sort: this.sort !== 'newest' ? this.sort : null,
-        page: this.page !== 1 ? this.page : null
+        page: this.page !== 1 ? this.page : null,
       },
-      replaceUrl: true
+      replaceUrl: true,
     });
   }
 
   private async load(reset: boolean) {
     const prev = this.stateSubject.value.data;
-
-    // keep previous data while loading for smoother UI
     this.stateSubject.next({ loading: true, data: prev ?? null, error: null });
 
     const call$ = this.student.academyCourses(this.slug, this.q, this.tag, this.sort, this.page, this.pageSize).pipe(
       tap((res) => this.applyBrandingFromAcademy(res?.academy)),
       catchError((err) => {
-        const msg = `Failed to load catalog: ${err?.status ?? ''} ${err?.statusText ?? ''}`.trim();
+        const msg =
+          typeof err?.error === 'string'
+            ? err.error
+            : `Failed to load catalog: ${err?.status ?? ''} ${err?.statusText ?? ''}`.trim();
         this.stateSubject.next({ loading: false, data: prev ?? null, error: msg });
         return of(null as any);
       })
@@ -180,39 +178,55 @@ export class AcademyCatalogComponent implements OnDestroy {
     const res = await firstValueFrom(call$);
     if (!res) return;
 
-    const nextItems = reset
-      ? (res.items ?? [])
-      : ([...(prev?.items ?? []), ...(res.items ?? [])]);
+    const nextItems = reset ? (res.items ?? []) : ([...(prev?.items ?? []), ...(res.items ?? [])]);
 
     const vm: CatalogVm = {
       academy: res.academy,
       total: res.total,
       page: res.page,
       pageSize: res.pageSize,
-      items: nextItems
+      items: nextItems,
     };
 
     this.stateSubject.next({ loading: false, data: vm, error: null });
   }
 
-  // -------- helpers --------
+  // ---------- helpers ----------
   img(url?: string | null) {
     if (!url) return null;
-    return `${this.api}${url}`;
+    return url.startsWith('http') ? url : `${this.api}${url}`;
   }
 
   priceLabel(c: any) {
     return c.isFree ? 'Free' : `${c.price ?? 0} ${c.currency ?? 'EUR'}`;
   }
 
-  // -------- Branding --------
+  hasTag(c: any): boolean {
+    const raw = String(c?.tagsJson ?? '').trim();
+    return raw.length > 0 && raw !== '[]';
+  }
+
+  tagList(c: any): string[] {
+    const raw = String(c?.tagsJson ?? '').trim();
+    if (!raw) return [];
+    try {
+      const arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr.map((x) => String(x)).filter(Boolean) : [];
+    } catch {
+      return raw.split(',').map((x) => x.trim()).filter(Boolean);
+    }
+  }
+
+  trackById(_: number, item: any) {
+    return item?.id;
+  }
+
+  // ---------- Branding ----------
   private applyBrandingFromAcademy(academy: any) {
     if (!academy) return;
 
-    // Color
     this.brandColor = academy.primaryColor || '#7c3aed';
 
-    // Font
     const fontKey = (academy.fontKey || 'system').toLowerCase();
     const customFontUrl = academy.customFontUrl as string | null;
     const customFontFamily = (academy.customFontFamily || 'AlefCustomFont') as string;

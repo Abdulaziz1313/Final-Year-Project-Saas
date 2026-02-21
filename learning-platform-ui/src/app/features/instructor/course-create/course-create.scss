@@ -1,8 +1,69 @@
+/* course-create.scss (FULL UPDATED) */
+
+:host {
+  /* keep whatever you already have globally; these help ensure bg works even if --bg isn't set */
+  --border: color-mix(in oklch, black 10%, white);
+  --muted: oklch(36.98% 0.014 302.71);
+  --text: oklch(19.37% 0.006 300.98);
+
+  /* same gradient vibe as home/courses */
+  --grad: linear-gradient(
+    90deg,
+    oklch(63.32% 0.24 31.68),
+    oklch(69.02% 0.277 332.77),
+    oklch(53.18% 0.28 296.97)
+  );
+}
+
+/* Page + background layers */
 .page {
   min-height: 100vh;
-  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+
+  background: #fff;
   padding: 22px;
   color: var(--text);
+}
+
+/* ---------- Background (same as home) ---------- */
+.bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.blob {
+  position: absolute;
+  width: 720px;
+  height: 720px;
+  border-radius: 999px;
+  filter: blur(40px);
+  opacity: 0.35;
+  background: var(--grad);
+  transform: translate3d(0,0,0);
+}
+
+.b1 { top: -380px; right: -280px; }
+.b2 { bottom: -420px; left: -300px; opacity: 0.22; }
+.b3 { top: 120px; left: 40%; width: 520px; height: 520px; opacity: 0.18; }
+
+.grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.35;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(circle at 50% 20%, black 35%, transparent 70%);
+}
+
+/* content above bg */
+.header,
+.grid-layout {
+  position: relative;
+  z-index: 1;
 }
 
 .kicker {
@@ -21,6 +82,8 @@
   gap: 12px;
 }
 
+.head-left { min-width: 0; }
+
 .header h1 {
   margin: 6px 0 0 0;
   font-size: 26px;
@@ -31,9 +94,11 @@
 .header p {
   margin: 6px 0 0 0;
   color: var(--muted);
+  font-weight: 800;
 }
 
-.grid {
+/* layout */
+.grid-layout {
   max-width: 1120px;
   margin: 0 auto;
   display: grid;
@@ -101,16 +166,23 @@
 .section {
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
-  background: color-mix(in oklch, var(--surface-2) 55%, white);
+  background: color-mix(in srgb, var(--surface-2) 55%, white);
   padding: 12px;
   display: grid;
   gap: 12px;
 }
 
+.section-top { display: grid; gap: 4px; }
+
 .section-title {
   font-weight: 950;
-  font-size: .9rem;
-  color: color-mix(in oklch, var(--muted) 65%, #000);
+  font-size: .92rem;
+  color: color-mix(in srgb, var(--muted) 60%, #000);
+}
+
+.section-sub {
+  font-size: .86rem;
+  font-weight: 850;
 }
 
 .field label {
@@ -120,14 +192,29 @@
   font-size: .92rem;
 }
 
+.row-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.counter {
+  font-size: .84rem;
+  font-weight: 950;
+  color: var(--muted);
+}
+.counter.over { color: #b00020; }
+
 .input {
   width: 100%;
   height: 42px;
-  border-radius: var(--r-md);
+  border-radius: 14px;
   border: 1px solid var(--border);
   background: #fff;
   padding: 0 12px;
   outline: none;
+  transition: box-shadow .14s var(--ease), border-color .14s var(--ease);
 }
 
 textarea.input {
@@ -137,8 +224,8 @@ textarea.input {
 }
 
 .input:focus {
-  border-color: color-mix(in oklch, var(--primary) 55%, var(--border));
-  box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 18%, white);
+  border-color: color-mix(in srgb, var(--brand, #7c3aed) 55%, var(--border));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand, #7c3aed) 16%, white);
 }
 
 .hint { display: block; margin-top: 6px; font-size: .86rem; font-weight: 800; }
@@ -166,6 +253,7 @@ textarea.input {
   flex-wrap: wrap;
 }
 .tags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; }
+
 .tag {
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -187,27 +275,102 @@ textarea.input {
   align-items: center;
   flex-wrap: wrap;
 }
-.toggle {
+.price-preview { display: inline-flex; gap: 8px; align-items: center; }
+
+/* ✅ Pretty checkbox pills */
+.check-pill {
   display: inline-flex;
-  gap: 10px;
   align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+
   font-weight: 900;
   color: var(--muted);
+
+  padding: 8px 10px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  transition: background .12s var(--ease), border-color .12s var(--ease), box-shadow .12s var(--ease);
+  position: relative;
 }
-.price-preview { display: inline-flex; gap: 8px; align-items: center; }
+
+.check-pill:hover {
+  background: color-mix(in srgb, var(--text) 3%, transparent);
+  border-color: color-mix(in srgb, var(--text) 10%, var(--border));
+}
+
+.check-pill input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.check-pill .box {
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-sm);
+  transition: background .12s var(--ease), border-color .12s var(--ease), transform .12s var(--ease);
+}
+
+.check-pill .tick {
+  font-size: 14px;
+  font-weight: 950;
+  color: #fff;
+  line-height: 1;
+  opacity: 0;
+  transform: scale(.9);
+  transition: opacity .12s var(--ease), transform .12s var(--ease);
+}
+
+.check-pill .txt { line-height: 1.2; }
+
+.check-pill input:checked + .box {
+  background: var(--grad, linear-gradient(135deg, var(--brand, #7c3aed), #2563eb));
+  border-color: transparent;
+  transform: translateY(-0.5px);
+}
+
+.check-pill input:checked + .box .tick {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.check-pill input:checked ~ .txt { color: var(--text); }
+
+.check-pill input:focus-visible + .box {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand, #7c3aed) 16%, white);
+  border-color: color-mix(in srgb, var(--brand, #7c3aed) 55%, var(--border));
+}
+
+/* Options */
+.options { display: grid; gap: 10px; }
 
 /* Dropzone */
 .drop {
-  border: 1px dashed color-mix(in oklch, var(--border) 85%, #000);
-  background: color-mix(in oklch, var(--surface-2) 65%, white);
-  border-radius: var(--r-lg);
+  border: 1px dashed color-mix(in srgb, var(--border) 85%, #000);
+  background: color-mix(in srgb, var(--surface-2) 65%, white);
+  border-radius: 16px;
   padding: 12px;
   display: flex;
   justify-content: space-between;
   gap: 12px;
   align-items: center;
+  transition: border-color .14s var(--ease), box-shadow .14s var(--ease), background .14s var(--ease);
 }
 .drop.has { border-style: solid; background: #fff; }
+.drop.drag {
+  border-color: color-mix(in srgb, var(--brand, #7c3aed) 55%, var(--border));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand, #7c3aed) 14%, white);
+  background: #fff;
+}
 
 .drop-left {
   display: flex;
@@ -250,6 +413,30 @@ textarea.input {
   flex-wrap: wrap;
 }
 
+/* spinner */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, var(--muted) 30%, white);
+  border-top-color: #fff;
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: -2px;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* alert */
+.alert {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, #ff0000 25%, white);
+  background: color-mix(in srgb, #ff0000 10%, white);
+  font-weight: 850;
+}
+
 /* Preview */
 .preview { position: sticky; top: 14px; }
 
@@ -262,15 +449,21 @@ textarea.input {
   box-shadow: var(--shadow-sm);
 }
 
-.preview-thumb { height: 170px; background: var(--surface-2); display: grid; place-items: center; }
+.preview-thumb {
+  height: 170px;
+  background: var(--surface-2);
+  display: grid;
+  place-items: center;
+}
 .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .thumb-fallback { font-weight: 950; color: var(--muted); }
 
 .preview-body { padding: 12px; display: grid; gap: 8px; }
-.preview-title { font-weight: 950; }
-.preview-sub { color: var(--muted); }
+.preview-title { font-weight: 950; font-size: 1rem; }
+.preview-sub { color: var(--muted); font-weight: 850; line-height: 1.4; }
 
 .preview-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+
 .chip {
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -288,7 +481,7 @@ textarea.input {
 
 /* Responsive */
 @media (max-width: 980px) {
-  .grid { grid-template-columns: 1fr; }
+  .grid-layout { grid-template-columns: 1fr; }
   .row { grid-template-columns: 1fr; }
   .preview { position: static; }
 }

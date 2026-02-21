@@ -1,3 +1,4 @@
+// Program.cs
 using LearningPlatform.Api.Services;
 using LearningPlatform.Infrastructure.Identity;
 using LearningPlatform.Infrastructure.Persistence;
@@ -10,16 +11,30 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// SMTP
+// SMTP (keep if you still need email elsewhere; optional)
 var smtpOpt = builder.Configuration.GetSection("Smtp").Get<SmtpOptions>()
-             ?? throw new Exception("Missing Smtp config");
+             ?? new SmtpOptions(); // don't throw if you don't use it
 builder.Services.AddSingleton(smtpOpt);
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+
+// ✅ SMS (Twilio)
+var smsOpt = builder.Configuration.GetSection("Sms").Get<SmsOptions>()
+             ?? throw new Exception("Missing Sms config");
+builder.Services.AddSingleton(smsOpt);
+
+// ✅ Choose ONE sender implementation (Twilio in normal cases)
+builder.Services.AddScoped<ISmsSender, TwilioSmsSender>();
+builder.Services.AddScoped<AdminAuditWriter>();
+
+
+// If you want console-only fallback for local testing, comment Twilio and uncomment this:
+// builder.Services.AddScoped<ISmsSender, ConsoleSmsSender>();
 
 builder.Services.AddScoped<LearningPlatform.Api.Services.NotificationWriter>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
 
 builder.Services.AddSwaggerGen(c =>
 {

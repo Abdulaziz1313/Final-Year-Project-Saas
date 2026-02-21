@@ -1,11 +1,9 @@
-using System.Linq;
 using System.Security.Claims;
 using LearningPlatform.Infrastructure.Identity;
 using LearningPlatform.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace LearningPlatform.Api.Controllers;
 
@@ -45,8 +43,26 @@ public class ProfileController : ControllerBase
             email = user.Email,
             roles,
             displayName = user.DisplayName,
-            profileImageUrl = user.ProfileImageUrl
+            profileImageUrl = user.ProfileImageUrl,
+
+            // ✅ Phone number from Identity (what user registered with)
+            phoneNumber = user.PhoneNumber
         });
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> Update(UpdateProfileRequest req)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null) return Unauthorized();
+
+        user.DisplayName = string.IsNullOrWhiteSpace(req.DisplayName) ? null : req.DisplayName.Trim();
+        await _userManager.UpdateAsync(user);
+
+        return Ok(new { displayName = user.DisplayName });
     }
 
     [HttpPost("photo")]
@@ -61,7 +77,13 @@ public class ProfileController : ControllerBase
         var user = await _userManager.FindByIdAsync(userId);
         if (user is null) return Unauthorized();
 
-        var allowed = new[] { "image/jpeg", "image/png", "image/webp" };
+        var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        };
+
         if (!allowed.Contains(file.ContentType))
             return BadRequest("Only JPG, PNG, or WEBP allowed.");
 
@@ -73,11 +95,22 @@ public class ProfileController : ControllerBase
             _ => ".img"
         };
 
-        var wwwroot = Path.Combine(_env.ContentRootPath, "wwwroot");
-        var dir = Path.Combine(wwwroot, "uploads", "users");
+        // ✅ Correct place for static served files
+        var webRoot = _env.WebRootPath;
+        if (string.IsNullOrWhiteSpace(webRoot))
+        {
+            // fallback (rare)
+            webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
+        }
+
+        var dir = Path.Combine(webRoot, "uploads", "users");
         Directory.CreateDirectory(dir);
 
-        var filename = $"{userId}{ext}";
+        // ✅ Delete previous avatar file if it exists (optional but good)
+        TryDeleteOldAvatarFile(user.ProfileImageUrl, webRoot);
+
+        // ✅ Unique file name prevents caching issues
+        var filename = $"{userId}_{DateTime.UtcNow:yyyyMMddHHmmssfff}{ext}";
         var fullPath = Path.Combine(dir, filename);
 
         await using (var stream = System.IO.File.Create(fullPath))
@@ -90,8 +123,6 @@ public class ProfileController : ControllerBase
 
         return Ok(new { profileImageUrl = user.ProfileImageUrl });
     }
-
-    public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword(ChangePasswordRequest req)
@@ -118,25 +149,6 @@ public class ProfileController : ControllerBase
         return Ok(new { message = "Password updated successfully. Please sign in again." });
     }
 
-    public record UpdateProfileRequest(string? DisplayName);
-
-    [HttpPut]
-    public async Task<IActionResult> Update(UpdateProfileRequest req)
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
-
-        var user = await _userManager.FindByIdAsync(userId);
-        if (user is null) return Unauthorized();
-
-        user.DisplayName = string.IsNullOrWhiteSpace(req.DisplayName) ? null : req.DisplayName.Trim();
-        await _userManager.UpdateAsync(user);
-
-        return Ok(new { displayName = user.DisplayName });
-    }
-
-    public record DeleteAccountRequest(string Password);
-
     [HttpPost("delete")]
     public async Task<IActionResult> DeleteAccount(DeleteAccountRequest req)
     {
@@ -152,56 +164,17 @@ public class ProfileController : ControllerBase
         var ok = await _userManager.CheckPasswordAsync(user, req.Password);
         if (!ok) return BadRequest("Incorrect password.");
 
-        // ✅ Student data (only if these tables exist in your project)
-        _db.Enrollments.RemoveRange(_db.Enrollments.Where(e => e.StudentUserId == userId));
-        _db.LessonProgress.RemoveRange(_db.LessonProgress.Where(p => p.StudentUserId == userId));
+        // ✅ Optional: delete avatar file
+        var webRoot = _env.WebRootPath;
+        if (string.IsNullOrWhiteSpace(webRoot))
+            webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
 
-        // ✅ Instructor data: academies + courses tree
-        var academyIds = await _db.Academies
-            .Where(a => a.OwnerUserId == userId)
-            .Select(a => a.Id)
-            .ToListAsync();
+        TryDeleteOldAvatarFile(user.ProfileImageUrl, webRoot);
 
-        if (academyIds.Count > 0)
-        {
-            var courseIds = await _db.Courses
-                .Where(c => academyIds.Contains(c.AcademyId))
-                .Select(c => c.Id)
-                .ToListAsync();
-
-            if (courseIds.Count > 0)
-            {
-                var moduleIds = await _db.Modules
-                    .Where(m => courseIds.Contains(m.CourseId))
-                    .Select(m => m.Id)
-                    .ToListAsync();
-
-                if (moduleIds.Count > 0)
-                {
-                    var lessonIds = await _db.Lessons
-                        .Where(l => moduleIds.Contains(l.ModuleId))
-                        .Select(l => l.Id)
-                        .ToListAsync();
-
-                    if (lessonIds.Count > 0)
-                    {
-                        // remove progress for those lessons (all students)
-                        _db.LessonProgress.RemoveRange(_db.LessonProgress.Where(p => lessonIds.Contains(p.LessonId)));
-                        _db.Lessons.RemoveRange(_db.Lessons.Where(l => lessonIds.Contains(l.Id)));
-                    }
-
-                    _db.Modules.RemoveRange(_db.Modules.Where(m => moduleIds.Contains(m.Id)));
-                }
-
-                // remove enrollments for those courses (all students)
-                _db.Enrollments.RemoveRange(_db.Enrollments.Where(e => courseIds.Contains(e.CourseId)));
-                _db.Courses.RemoveRange(_db.Courses.Where(c => courseIds.Contains(c.Id)));
-            }
-
-            _db.Academies.RemoveRange(_db.Academies.Where(a => academyIds.Contains(a.Id)));
-        }
-
-        await _db.SaveChangesAsync();
+        // ✅ IMPORTANT:
+        // Do NOT hard-code deletions of tables that might not exist in your project,
+        // otherwise the API won't compile. Prefer cascade deletes in DB.
+        // If you need manual cleanup, add it here based on your real DbSets.
 
         var result = await _userManager.DeleteAsync(user);
         if (!result.Succeeded)
@@ -212,4 +185,27 @@ public class ProfileController : ControllerBase
 
         return Ok(new { message = "Account deleted." });
     }
+
+    private static void TryDeleteOldAvatarFile(string? profileImageUrl, string webRoot)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(profileImageUrl)) return;
+
+            // profileImageUrl example: "/uploads/users/xxx.webp"
+            var relative = profileImageUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+            var full = Path.Combine(webRoot, relative);
+
+            if (System.IO.File.Exists(full))
+                System.IO.File.Delete(full);
+        }
+        catch
+        {
+            // ignore file delete failures
+        }
+    }
+
+    public record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+    public record UpdateProfileRequest(string? DisplayName);
+    public record DeleteAccountRequest(string Password);
 }

@@ -1,158 +1,271 @@
-<div class="container">
-  <!-- Page header -->
-  <div class="dash-header">
-    <div>
-      <h1 class="page-title">Instructor Dashboard</h1>
-      <p class="page-sub">Manage your academies and courses in Alef (الف).</p>
-    </div>
-
-    <div class="dash-actions">
-      <button class="btn ghost" type="button" (click)="refreshAll()">Refresh</button>
-      <a class="btn primary" routerLink="/instructor/academy/create">+ Create Academy</a>
-      <button class="btn ghost" type="button" (click)="logout()">Logout</button>
-    </div>
+<!-- dashboard.html (FULL UPDATED) -->
+<div class="dash">
+  <!-- Background (same as Home / My Learning) -->
+  <div class="bg" aria-hidden="true">
+    <span class="blob b1"></span>
+    <span class="blob b2"></span>
+    <span class="blob b3"></span>
+    <span class="bg-grid"></span>
   </div>
 
-  <div class="dash-grid">
-    <!-- Profile -->
-    <section class="card">
-      <div class="card-top">
-        <div>
-          <div class="card-title">Your profile</div>
-          <div class="card-sub">Avatar and account details</div>
+  <div class="wrap">
+    <div class="container">
+      <!-- Header -->
+      <header class="dash-head card">
+        <div class="head-left">
+          <div class="kicker">Instructor</div>
+          <h1 class="head-title">Dashboard</h1>
+          <p class="head-sub muted">Quick overview of academies and activity.</p>
         </div>
 
-        <button class="btn ghost small" type="button" (click)="refreshProfile()">Reload</button>
-      </div>
-
-      <ng-container *ngIf="profileState$ | async as profileState">
-        <div *ngIf="profileState.loading" class="muted-line">Loading profile…</div>
-
-        <div *ngIf="profileState.error" class="alert">
-          {{ profileState.error }}
+        <div class="head-actions">
+          <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
+          <a class="btn primary" routerLink="/instructor/academy/create">Create academy</a>
         </div>
+      </header>
 
-        <div *ngIf="!profileState.loading && !profileState.error" class="profile-row">
-          <div class="avatar">
-            <img *ngIf="avatarUrl(profileState.data)" [src]="avatarUrl(profileState.data)!" alt="Avatar" />
-            <div class="avatar-fallback" *ngIf="!avatarUrl(profileState.data)">
-              {{ (profileState.data?.email || 'U').slice(0,1).toUpperCase() }}
-            </div>
-          </div>
+      <ng-container *ngIf="state$ | async as st">
+        <div class="state" *ngIf="st.loading">Loading…</div>
+        <div class="alert error" *ngIf="st.error">{{ st.error }}</div>
 
-          <div class="profile-meta">
-            <div class="profile-email">{{ profileState.data?.email }}</div>
-
-            <div class="profile-roles">
-              <span class="badge" *ngFor="let r of (profileState.data?.roles || [])">{{ r }}</span>
+        <ng-container *ngIf="st.data as vm">
+          <!-- KPI strip -->
+          <section class="kpis">
+            <div class="kpi card">
+              <div class="kpi-ico">🏛️</div>
+              <div class="kpi-meta">
+                <div class="kpi-k">Academies</div>
+                <div class="kpi-v">{{ vm.academiesCount }}</div>
+              </div>
             </div>
 
-            <div class="profile-upload">
-              <label>
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  (change)="onPhotoSelected($event)"
-                  hidden
-                />
-                <span class="btn primary small" [class.disabled]="photoUploading">
-                  {{ photoUploading ? 'Uploading…' : 'Upload photo' }}
-                </span>
-              </label>
-
-              <div class="profile-hint">PNG/JPG/WEBP • Max 5MB</div>
+            <div class="kpi card">
+              <div class="kpi-ico">✅</div>
+              <div class="kpi-meta">
+                <div class="kpi-k">Published</div>
+                <div class="kpi-v">{{ vm.publishedCount }}</div>
+              </div>
             </div>
-          </div>
-        </div>
-      </ng-container>
-    </section>
 
-    <!-- Academies -->
-    <section class="card">
-      <div class="card-top">
-        <div>
-          <div class="card-title">Your academies</div>
-          <div class="card-sub">Click one to manage courses</div>
-        </div>
+            <div class="kpi card">
+              <div class="kpi-ico">📝</div>
+              <div class="kpi-meta">
+                <div class="kpi-k">Draft</div>
+                <div class="kpi-v">{{ vm.draftCount }}</div>
+              </div>
+            </div>
 
-        <button class="btn ghost small" type="button" (click)="refreshAcademies()">Reload</button>
-      </div>
+            <div class="kpi card">
+              <div class="kpi-ico">🙈</div>
+              <div class="kpi-meta">
+                <div class="kpi-k">Hidden</div>
+                <div class="kpi-v">{{ vm.hiddenCount }}</div>
+              </div>
+            </div>
+          </section>
 
-      <ng-container *ngIf="academiesState$ | async as academyState">
-        <div *ngIf="academyState.loading" class="muted-line">Loading academies…</div>
+          <!-- Top row -->
+          <section class="top-row">
+            <!-- Quick actions -->
+            <section class="card panel">
+              <div class="panel-head">
+                <div>
+                  <div class="panel-title">Quick actions</div>
+                  <div class="muted small">Common tasks</div>
+                </div>
+              </div>
 
-        <div *ngIf="academyState.error" class="alert">
-          {{ academyState.error }}
-        </div>
-
-        <div *ngIf="!academyState.loading && !academyState.error">
-          <div class="empty" *ngIf="academyState.data.length === 0">
-            <div class="empty-title">No academies yet</div>
-            <div class="empty-sub">Create your first academy to start building courses.</div>
-            <a class="btn primary" routerLink="/instructor/academy/create">Create Academy</a>
-          </div>
-
-          <div class="academy-grid" *ngIf="academyState.data.length > 0">
-            <a
-              class="academy-card"
-              *ngFor="let a of academyState.data"
-              [routerLink]="['/instructor/courses', a.id]"
-            >
-              <div class="academy-left">
-                <div class="academy-badge">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
-
-                <div class="academy-text">
-                  <div class="academy-name">{{ a.name }}</div>
-
-                  <div class="academy-sub">
-                    {{ a.description || a.slug }}
+              <div class="qa">
+                <a class="qa-item" routerLink="/instructor/academy/create">
+                  <div class="qa-ico">➕</div>
+                  <div class="qa-txt">
+                    <div class="qa-title">Create academy</div>
+                    <div class="qa-sub muted">Start a new learning space</div>
                   </div>
+                  <div class="qa-go">→</div>
+                </a>
 
-                  <!-- ✅ Hidden reason shown to instructor -->
-                  <div class="academy-warning" *ngIf="a.isHidden">
-                    Hidden by admin: {{ a.hiddenReason || '—' }}
+                <a class="qa-item" routerLink="/instructor/academies">
+                  <div class="qa-ico">📚</div>
+                  <div class="qa-txt">
+                    <div class="qa-title">Manage academies</div>
+                    <div class="qa-sub muted">Edit, publish, hide</div>
                   </div>
+                  <div class="qa-go">→</div>
+                </a>
 
-                  <div class="academy-meta">
-                    <!-- ✅ If hidden, show Hidden pill -->
-                    <span class="pill danger" *ngIf="a.isHidden">
-                      <span class="dot danger"></span>
-                      Hidden
-                    </span>
+                <a class="qa-item" routerLink="/me">
+                  <div class="qa-ico">👤</div>
+                  <div class="qa-txt">
+                    <div class="qa-title">My account</div>
+                    <div class="qa-sub muted">Profile & security</div>
+                  </div>
+                  <div class="qa-go">→</div>
+                </a>
+              </div>
+            </section>
 
-                    <!-- ✅ Otherwise show publish/draft -->
-                    <span class="pill" *ngIf="!a.isHidden" [class.on]="a.isPublished">
+            <!-- Recent -->
+            <section class="card panel">
+              <div class="panel-head">
+                <div>
+                  <div class="panel-title">Recent</div>
+                  <div class="muted small">Last academy activity</div>
+                </div>
+
+                <a class="btn ghost small" routerLink="/instructor/academies">View all</a>
+              </div>
+
+              <ng-container *ngIf="vm.recent as r; else noRecent">
+                <div class="recent">
+                  <div class="recent-title">{{ r.title }}</div>
+                  <div class="recent-sub muted">{{ r.subtitle }}</div>
+
+                  <div class="recent-bottom">
+                    <span class="pill" [class.on]="r.pillOn">
                       <span class="dot"></span>
-                      {{ a.isPublished ? 'Published' : 'Draft' }}
+                      {{ r.pillText }}
                     </span>
 
-                    <span class="muted small" *ngIf="!a.isHidden && a.isPublished && a.publishedAt">
-                      • {{ a.publishedAt | date:'mediumDate' }}
-                    </span>
+                    <div class="recent-actions">
+                      <a class="btn primary" [routerLink]="r.href">Open</a>
+                      <a class="btn ghost" routerLink="/instructor/academies">All academies</a>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+
+              <ng-template #noRecent>
+                <div class="empty">
+                  <div class="empty-title">No activity yet</div>
+                  <div class="empty-sub">Create your first academy to get started.</div>
+                  <a class="btn primary" routerLink="/instructor/academy/create">Create academy</a>
+                </div>
+              </ng-template>
+            </section>
+          </section>
+
+          <!-- Main -->
+          <section class="main-grid">
+            <!-- Profile -->
+            <section class="card panel">
+              <div class="panel-head">
+                <div>
+                  <div class="panel-title">Profile</div>
+                  <div class="muted small">Signed in</div>
+                </div>
+                <a class="btn ghost small" routerLink="/me">Manage</a>
+              </div>
+
+              <div class="profile">
+                <div class="avatar">
+                  <img *ngIf="avatarUrl(vm) as url" [src]="url" alt="Avatar" />
+                  <div class="avatar-fallback" *ngIf="!avatarUrl(vm)">
+                    {{ (vm.email || 'U').slice(0,1).toUpperCase() }}
+                  </div>
+                </div>
+
+                <div class="pmeta">
+                  <div class="pemail">{{ vm.email }}</div>
+                  <div class="proles">
+                    <span class="badge" *ngFor="let r of vm.roles">{{ r }}</span>
+                  </div>
+                  <div class="muted small">
+                    ID: <span class="mono">{{ vm.userId }}</span>
                   </div>
                 </div>
               </div>
 
-              <div class="academy-right">
-                <!-- ✅ publish toggle disabled if hidden -->
-                <button
-                  class="toggle"
-                  type="button"
-                  [class.on]="a.isPublished"
-                  [disabled]="a.isHidden || isPublishing(a.id)"
-                  (click)="togglePublish($event, a)"
-                  title="Publish / Unpublish"
-                >
-                  <span class="knob"></span>
-                </button>
+              <div class="divider"></div>
 
-                <span class="muted tiny" *ngIf="a.isHidden">Locked by admin</span>
-                <span class="muted tiny" *ngIf="!a.isHidden && isPublishing(a.id)">Updating…</span>
+              <div class="pactions">
+                <button class="btn ghost" type="button" (click)="copyUserId(vm.userId)">Copy ID</button>
+                <button class="btn ghost" type="button" (click)="logout()">Logout</button>
               </div>
-            </a>
-          </div>
-        </div>
+            </section>
+
+            <!-- Academies list -->
+            <section class="card panel">
+              <div class="panel-head">
+                <div>
+                  <div class="panel-title">Your academies</div>
+                  <div class="muted small">Manage and publish</div>
+                </div>
+                <a class="btn ghost small" routerLink="/instructor/academies">View all</a>
+              </div>
+
+              <div class="empty" *ngIf="vm.academiesCount === 0">
+                <div class="empty-title">No academies</div>
+                <div class="empty-sub">Create an academy to start publishing courses.</div>
+                <a class="btn primary" routerLink="/instructor/academy/create">Create academy</a>
+              </div>
+
+              <div class="academy-list" *ngIf="vm.academiesCount > 0">
+                <a
+                  class="academy"
+                  *ngFor="let a of vm.academies"
+                  [routerLink]="['/instructor/courses', a.id]"
+                >
+                  <div class="a-left">
+                    <div class="a-badge">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
+
+                    <div class="a-text">
+                      <div class="a-title">{{ a.name }}</div>
+                      <div class="a-sub muted">{{ a.description || a.slug }}</div>
+
+                      <div class="a-meta">
+                        <span class="pill"
+                              [class.on]="a.isPublished && !a.isHidden"
+                              [class.danger]="a.isHidden">
+                          <span class="dot"></span>
+                          {{ a.isHidden ? 'Hidden' : (a.isPublished ? 'Published' : 'Draft') }}
+                        </span>
+
+                        <span class="pill ghost">
+                          {{ a.courseCount || 0 }} course{{ (a.courseCount || 0) === 1 ? '' : 's' }}
+                        </span>
+                      </div>
+
+                      <div class="hide-note" *ngIf="a.isHidden">
+                        <div class="hide-title">Hidden by admin</div>
+                        <div class="hide-text">{{ hiddenMessage(a) }}</div>
+
+                        <div class="hide-actions">
+                          <button
+                            class="btn ghost small"
+                            type="button"
+                            (click)="requestReview($event, a)"
+                            [disabled]="isPublishing(a.id)"
+                          >
+                            Request review
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="a-right">
+                    <button
+                      class="toggle-btn"
+                      type="button"
+                      [class.on]="a.isPublished && !a.isHidden"
+                      [disabled]="a.isHidden || isPublishing(a.id)"
+                      (click)="togglePublish($event, a)"
+                      [attr.aria-label]="a.isPublished ? 'Unpublish academy' : 'Publish academy'"
+                    >
+                      <span class="knob"></span>
+                    </button>
+
+                    <span class="muted tiny" *ngIf="isPublishing(a.id)">Saving…</span>
+                    <span class="muted tiny" *ngIf="a.isHidden && !isPublishing(a.id)">Disabled</span>
+                    <span class="muted small" *ngIf="!a.isHidden && !isPublishing(a.id)">Open →</span>
+                  </div>
+                </a>
+              </div>
+            </section>
+          </section>
+        </ng-container>
       </ng-container>
-    </section>
+    </div>
   </div>
 </div>

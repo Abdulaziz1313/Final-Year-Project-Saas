@@ -19,17 +19,20 @@ public class AdminController : ControllerBase
     private readonly UserManager<ApplicationUser> _users;
     private readonly RoleManager<IdentityRole> _roles;
     private readonly NotificationWriter _notifs;
+    private readonly AdminAuditWriter _audit;
 
     public AdminController(
         AppDbContext db,
         UserManager<ApplicationUser> users,
         RoleManager<IdentityRole> roles,
-        NotificationWriter notifs)
+        NotificationWriter notifs,
+        AdminAuditWriter audit)
     {
         _db = db;
         _users = users;
         _roles = roles;
         _notifs = notifs;
+        _audit = audit;
     }
 
     private string? AdminId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -88,6 +91,9 @@ public class AdminController : ControllerBase
     [HttpPut("users/{userId}/roles")]
     public async Task<IActionResult> SetRoles(string userId, SetUserRolesRequest req)
     {
+        var adminId = AdminId();
+        if (string.IsNullOrWhiteSpace(adminId)) return Unauthorized();
+
         var u = await _users.FindByIdAsync(userId);
         if (u is null) return NotFound();
 
@@ -120,22 +126,76 @@ public class AdminController : ControllerBase
             if (!ar.Succeeded) return BadRequest("Failed to add roles.");
         }
 
+        await _audit.Add(
+            actorUserId: adminId,
+            action: "user.roles",
+            targetType: "user",
+            targetId: u.Id,
+            targetLabel: u.Email,
+            reason: null,
+            meta: new
+            {
+                before = current,
+                after = desired
+            }
+        );
+
         return NoContent();
     }
 
-    public record SetUserLockRequest(bool Locked);
+    // ✅ lock supports duration + permanent
+    public record SetUserLockRequest(bool Locked, int? Days = null, bool Permanent = false);
 
     [HttpPut("users/{userId}/lock")]
     public async Task<IActionResult> LockUser(string userId, SetUserLockRequest req)
     {
+        var adminId = AdminId();
+        if (string.IsNullOrWhiteSpace(adminId)) return Unauthorized();
+
         var u = await _users.FindByIdAsync(userId);
         if (u is null) return NotFound();
 
         u.LockoutEnabled = true;
-        u.LockoutEnd = req.Locked ? DateTimeOffset.UtcNow.AddYears(50) : null;
+
+        DateTimeOffset? newEnd = null;
+
+        if (!req.Locked)
+        {
+            u.LockoutEnd = null;
+        }
+        else
+        {
+            if (req.Permanent || req.Days is null)
+            {
+                newEnd = DateTimeOffset.UtcNow.AddYears(50);
+            }
+            else
+            {
+                var days = Math.Clamp(req.Days.Value, 1, 3650); // 1..10 years
+                newEnd = DateTimeOffset.UtcNow.AddDays(days);
+            }
+
+            u.LockoutEnd = newEnd;
+        }
 
         var res = await _users.UpdateAsync(u);
         if (!res.Succeeded) return BadRequest("Failed to update lock state.");
+
+        await _audit.Add(
+            actorUserId: adminId,
+            action: req.Locked ? "user.lock" : "user.unlock",
+            targetType: "user",
+            targetId: u.Id,
+            targetLabel: u.Email,
+            reason: null,
+            meta: new
+            {
+                locked = req.Locked,
+                days = req.Days,
+                permanent = req.Permanent,
+                lockoutEnd = newEnd
+            }
+        );
 
         return NoContent();
     }
@@ -211,7 +271,6 @@ public class AdminController : ControllerBase
         a.HiddenAt = req.IsHidden ? DateTimeOffset.UtcNow : null;
         a.HiddenByUserId = req.IsHidden ? adminId : null;
 
-        // safety: hidden academy should not be published
         if (req.IsHidden)
         {
             a.IsPublished = false;
@@ -220,7 +279,16 @@ public class AdminController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        // ✅ Notify owner
+        await _audit.Add(
+            actorUserId: adminId,
+            action: req.IsHidden ? "academy.hide" : "academy.unhide",
+            targetType: "academy",
+            targetId: a.Id.ToString(),
+            targetLabel: a.Name,
+            reason: reason,
+            meta: new { a.Slug }
+        );
+
         if (!string.IsNullOrWhiteSpace(a.OwnerUserId))
         {
             if (req.IsHidden)
@@ -318,13 +386,21 @@ public class AdminController : ControllerBase
         c.HiddenAt = req.IsHidden ? DateTimeOffset.UtcNow : null;
         c.HiddenByUserId = req.IsHidden ? adminId : null;
 
-        // safety: hidden course should never be public
         if (req.IsHidden && c.Status == CourseStatus.Published)
             c.Status = CourseStatus.Private;
 
         await _db.SaveChangesAsync();
 
-        // ✅ Notify academy owner
+        await _audit.Add(
+            actorUserId: adminId,
+            action: req.IsHidden ? "course.hide" : "course.unhide",
+            targetType: "course",
+            targetId: c.Id.ToString(),
+            targetLabel: c.Title,
+            reason: reason,
+            meta: new { c.AcademyId, c.Status }
+        );
+
         var academy = await _db.Academies.AsNoTracking().FirstOrDefaultAsync(a => a.Id == c.AcademyId);
         if (academy != null && !string.IsNullOrWhiteSpace(academy.OwnerUserId))
         {
@@ -353,7 +429,6 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
-    // ✅ Delete endpoints with reason query string
     // DELETE /api/admin/academies/{id}?reason=...
     [HttpDelete("academies/{academyId:guid}")]
     public async Task<IActionResult> DeleteAcademy(Guid academyId, [FromQuery] string? reason = null)
@@ -366,7 +441,16 @@ public class AdminController : ControllerBase
 
         var finalReason = string.IsNullOrWhiteSpace(reason) ? "Policy violation" : reason.Trim();
 
-        // ✅ notify before delete
+        await _audit.Add(
+            actorUserId: adminId,
+            action: "academy.delete",
+            targetType: "academy",
+            targetId: a.Id.ToString(),
+            targetLabel: a.Name,
+            reason: finalReason,
+            meta: new { a.Slug, a.OwnerUserId }
+        );
+
         if (!string.IsNullOrWhiteSpace(a.OwnerUserId))
         {
             await _notifs.Add(
@@ -395,6 +479,16 @@ public class AdminController : ControllerBase
 
         var finalReason = string.IsNullOrWhiteSpace(reason) ? "Policy violation" : reason.Trim();
 
+        await _audit.Add(
+            actorUserId: adminId,
+            action: "course.delete",
+            targetType: "course",
+            targetId: c.Id.ToString(),
+            targetLabel: c.Title,
+            reason: finalReason,
+            meta: new { c.AcademyId }
+        );
+
         var academy = await _db.Academies.AsNoTracking().FirstOrDefaultAsync(a => a.Id == c.AcademyId);
         if (academy != null && !string.IsNullOrWhiteSpace(academy.OwnerUserId))
         {
@@ -410,5 +504,67 @@ public class AdminController : ControllerBase
         _db.Courses.Remove(c);
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    // ---------------- AUDIT ----------------
+
+    [HttpGet("audit")]
+    public async Task<IActionResult> ListAudit(
+        string? q = null,
+        string? action = null,
+        string? targetType = null,
+        int page = 1,
+        int pageSize = 25)
+    {
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize is < 1 or > 100 ? 25 : pageSize;
+
+        var query = _db.AdminAuditLogs.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(action) && action != "all")
+        {
+            action = action.Trim();
+            query = query.Where(x => x.Action == action);
+        }
+
+        if (!string.IsNullOrWhiteSpace(targetType) && targetType != "all")
+        {
+            targetType = targetType.Trim();
+            query = query.Where(x => x.TargetType == targetType);
+        }
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            q = q.Trim().ToLowerInvariant();
+            query = query.Where(x =>
+                (x.Action != null && x.Action.ToLower().Contains(q)) ||
+                (x.TargetType != null && x.TargetType.ToLower().Contains(q)) ||
+                (x.TargetId != null && x.TargetId.ToLower().Contains(q)) ||
+                (x.TargetLabel != null && x.TargetLabel.ToLower().Contains(q)) ||
+                (x.Reason != null && x.Reason.ToLower().Contains(q)) ||
+                (x.ActorUserId != null && x.ActorUserId.ToLower().Contains(q)));
+        }
+
+        var total = await query.CountAsync();
+
+        var items = await query
+            .OrderByDescending(x => x.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(x => new
+            {
+                x.Id,
+                x.ActorUserId,
+                x.Action,
+                x.TargetType,
+                x.TargetId,
+                x.TargetLabel,
+                x.Reason,
+                x.MetaJson,
+                x.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(new { total, page, pageSize, items });
     }
 }

@@ -8,6 +8,9 @@ export type ProfileDto = {
   roles: string[];
   profileImageUrl: string | null;
   displayName?: string | null;
+
+  // ✅ NEW: returned from GET /api/profile
+  phoneNumber: string | null;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -27,25 +30,23 @@ export class ProfileApi {
   }
 
   changePassword(currentPassword: string, newPassword: string) {
-  return this.http.post<{ message: string }>(
-    `${this.api}/api/profile/change-password`,
-    { currentPassword, newPassword }
-  );
-}
+    return this.http.post<{ message: string }>(
+      `${this.api}/api/profile/change-password`,
+      { currentPassword, newPassword }
+    );
+  }
 
-updateProfile(displayName: string | null) {
-  return this.http.put<{ displayName: string | null }>(
-    `${this.api}/api/profile`,
-    { displayName }
-  );
-}
+  updateProfile(displayName: string | null) {
+    return this.http.put<{ displayName: string | null }>(
+      `${this.api}/api/profile`,
+      { displayName }
+    );
+  }
 
-deleteAccount(password: string) {
-  return this.http.post<{ message: string }>(
-    `${this.api}/api/profile/delete`,
-    { password }
-  );
-}
-
-
+  deleteAccount(password: string) {
+    return this.http.post<{ message: string }>(
+      `${this.api}/api/profile/delete`,
+      { password }
+    );
+  }
 }

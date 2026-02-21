@@ -225,6 +225,14 @@ getAcademy(academyId: string) {
 }
 
 
+getLessonQuiz(lessonId: string) {
+  return this.http.get<any>(`${this.api}/api/quizzes/lesson/${lessonId}`);
+}
+
+upsertLessonQuiz(lessonId: string, payload: any) {
+  return this.http.put(`${this.api}/api/quizzes/lesson/${lessonId}`, payload);
+}
+
 
 
 }

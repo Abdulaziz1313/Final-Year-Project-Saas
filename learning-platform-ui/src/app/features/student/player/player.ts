@@ -1,11 +1,15 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
-import { BehaviorSubject, Observable, of } from 'rxjs';
-import { catchError, map, shareReplay, startWith, switchMap, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { catchError, finalize, map, shareReplay, startWith, switchMap, tap } from 'rxjs/operators';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { FormsModule } from '@angular/forms';
+
 import { StudentApi, PlayerCourse } from '../../../core/services/student-api';
 import { ToastService } from '../../../shared/ui/toast.service';
 import { environment } from '../../../../environments/environment';
+import { QuizPlayerComponent } from './quiz-player/quiz-player';
 
 type LoadState<T> = { loading: boolean; data: T | null; error: string | null };
 
@@ -24,11 +28,13 @@ type FlatLesson = {
 @Component({
   selector: 'app-player',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, FormsModule, QuizPlayerComponent],
   templateUrl: './player.html',
   styleUrl: './player.scss',
 })
 export class PlayerComponent {
+  @ViewChild('qp') qp?: QuizPlayerComponent;
+
   courseId = '';
   private reload$ = new BehaviorSubject<void>(undefined);
   state$: Observable<LoadState<PlayerCourse>>;
@@ -36,27 +42,39 @@ export class PlayerComponent {
   selectedLessonId: string | null = null;
   completing = false;
 
-  // ✅ now hydrated from server (CourseContent returns completedLessonIds)
   completed = new Set<string>();
-
   apiBase = environment.apiBaseUrl;
+
+  // ✅ UI state
+  lessonQuery = '';
+  sidebarOpen = true;
+  isMobile = false;
+
+  private moduleOpen = new Map<string, boolean>();
 
   constructor(
     private route: ActivatedRoute,
     private student: StudentApi,
-    private toast: ToastService
+    private toast: ToastService,
+    private sanitizer: DomSanitizer
   ) {
     this.courseId = this.route.snapshot.paramMap.get('courseId') || '';
+
+    this.updateMobile();
+    window.addEventListener('resize', () => this.updateMobile());
 
     this.state$ = this.reload$.pipe(
       switchMap(() =>
         this.student.courseContent(this.courseId).pipe(
           tap((res) => {
-            // ✅ Hydrate completed lessons from server
             const ids = (res as any)?.completedLessonIds as string[] | undefined;
             this.completed = new Set(ids ?? []);
 
-            // Auto-select first lesson if neither selected nor lastLessonId exists
+            // open all modules by default once
+            for (const m of res.modules ?? []) {
+              if (!this.moduleOpen.has(m.id)) this.moduleOpen.set(m.id, true);
+            }
+
             if (!this.selectedLessonId) {
               const first = this.firstLessonId(res);
               if (!res.lastLessonId && first) {
@@ -64,6 +82,9 @@ export class PlayerComponent {
                 this.bestEffortSetLastLesson(res.id, first);
               }
             }
+
+            // On mobile, default sidebar closed
+            if (this.isMobile) this.sidebarOpen = false;
           }),
           map((res) => ({ loading: false, data: res, error: null } as LoadState<PlayerCourse>)),
           startWith({ loading: true, data: null, error: null } as LoadState<PlayerCourse>),
@@ -71,9 +92,10 @@ export class PlayerComponent {
             of({
               loading: false,
               data: null,
-              error: typeof err?.error === 'string'
-                ? err.error
-                : `Failed to load course: ${err?.status ?? ''} ${err?.statusText ?? ''}`.trim(),
+              error:
+                typeof err?.error === 'string'
+                  ? err.error
+                  : `Failed to load course: ${err?.status ?? ''} ${err?.statusText ?? ''}`.trim(),
             } as LoadState<PlayerCourse>)
           )
         )
@@ -82,10 +104,22 @@ export class PlayerComponent {
     );
   }
 
-  reload() { this.reload$.next(); }
+  private updateMobile() {
+    this.isMobile = window.innerWidth <= 980;
+    if (!this.isMobile) this.sidebarOpen = true;
+  }
 
-  // ---------- Helpers ----------
-  n(v: any): number { return Number(v); }
+  toggleSidebar(force?: boolean) {
+    this.sidebarOpen = typeof force === 'boolean' ? force : !this.sidebarOpen;
+  }
+
+  reload() {
+    this.reload$.next();
+  }
+
+  n(v: any): number {
+    return Number(v);
+  }
 
   assetUrl(url?: string | null): string | null {
     if (!url) return null;
@@ -93,11 +127,16 @@ export class PlayerComponent {
     return this.apiBase + url;
   }
 
+  safePdfUrl(docUrl: string): SafeResourceUrl {
+    const withParams = docUrl.includes('#') ? docUrl : `${docUrl}#toolbar=0&navpanes=0&scrollbar=0`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(withParams);
+  }
+
   isVideo(type: any) { return this.n(type) === 0; }
   isDoc(type: any) { return this.n(type) === 1; }
   isText(type: any) { return this.n(type) === 2; }
+  isQuiz(t: any): boolean { return Number(t) === 3; }
 
-  // Flatten lessons in order
   flat(course: PlayerCourse | null): FlatLesson[] {
     if (!course) return [];
     const out: FlatLesson[] = [];
@@ -111,12 +150,42 @@ export class PlayerComponent {
           type: this.n(l.type),
           contentUrl: (l as any).contentUrl ?? null,
           htmlContent: (l as any).htmlContent ?? null,
-          isPreviewFree: !!l.isPreviewFree,
-          isDownloadable: !!(l as any).isDownloadable
+          isPreviewFree: !!(l as any).isPreviewFree,
+          isDownloadable: !!(l as any).isDownloadable,
         });
       }
     }
     return out;
+  }
+
+  filteredModules(course: PlayerCourse): any[] {
+    const q = (this.lessonQuery || '').trim().toLowerCase();
+    if (!q) return course.modules ?? [];
+
+    const out = [];
+    for (const m of course.modules ?? []) {
+      const lessons = (m.lessons ?? []).filter((l: any) =>
+        (l.title || '').toLowerCase().includes(q)
+      );
+      if (lessons.length) out.push({ ...m, lessons });
+    }
+    return out;
+  }
+
+  toggleModule(moduleId: string) {
+    const cur = this.moduleOpen.get(moduleId);
+    this.moduleOpen.set(moduleId, !cur);
+  }
+
+  isModuleOpen(moduleId: string): boolean {
+    return this.moduleOpen.get(moduleId) ?? true;
+  }
+
+  moduleTitleForLesson(course: PlayerCourse, lessonId: string): string {
+    for (const m of course.modules ?? []) {
+      if ((m.lessons ?? []).some((l: any) => l.id === lessonId)) return m.title;
+    }
+    return 'Module';
   }
 
   firstLessonId(course: PlayerCourse | null): string | null {
@@ -124,13 +193,12 @@ export class PlayerComponent {
     return all.length ? all[0].id : null;
   }
 
-  // Current lesson id priority: selected → lastLessonId → first
   activeLessonId(course: PlayerCourse | null): string | null {
     const all = this.flat(course);
     if (!all.length) return null;
 
     const want = this.selectedLessonId || course?.lastLessonId || all[0].id;
-    const exists = all.some(l => l.id === want);
+    const exists = all.some((l) => l.id === want);
     return exists ? want : all[0].id;
   }
 
@@ -138,13 +206,13 @@ export class PlayerComponent {
     const all = this.flat(course);
     if (!all.length) return null;
     const id = this.activeLessonId(course);
-    return all.find(l => l.id === id) || all[0];
+    return all.find((l) => l.id === id) || all[0];
   }
 
   currentIndex(course: PlayerCourse | null): number {
     const all = this.flat(course);
     const id = this.activeLessonId(course);
-    return Math.max(0, all.findIndex(l => l.id === id));
+    return Math.max(0, all.findIndex((l) => l.id === id));
   }
 
   hasPrev(course: PlayerCourse | null): boolean {
@@ -156,17 +224,18 @@ export class PlayerComponent {
     return this.currentIndex(course) < all.length - 1;
   }
 
-  // Progress summary (server hydrated)
   progressText(course: PlayerCourse | null): string {
     const total = this.flat(course).length;
     const done = this.completed.size;
     return `${done}/${total}`;
   }
 
-  // ---------- Navigation ----------
   pickLesson(courseId: string, lessonId: string) {
     this.selectedLessonId = lessonId;
     this.bestEffortSetLastLesson(courseId, lessonId);
+
+    // close drawer after selecting on mobile
+    if (this.isMobile) this.sidebarOpen = false;
   }
 
   prev(course: PlayerCourse) {
@@ -189,45 +258,73 @@ export class PlayerComponent {
     this.student.setLastLesson(courseId, lessonId).subscribe({ next: () => {}, error: () => {} });
   }
 
-  // ---------- Completion ----------
-  markComplete(lessonId: string) {
+  private saveQuizIfNeeded(course: PlayerCourse, lessonId: string): Observable<unknown> {
+    const lesson = this.flat(course).find((l) => l.id === lessonId);
+    const isQuizLesson = !!lesson && this.isQuiz(lesson.type);
+
+    if (!isQuizLesson) return of(null);
+    if (!this.qp) return of(null);
+
+    return this.qp.submitForCompletion({ showToastOnSuccess: false }).pipe(
+      catchError((err) => {
+        const msg =
+          (typeof err?.error === 'string' && err.error) ||
+          (typeof err?.message === 'string' && err.message) ||
+          '';
+
+        const low = msg.toLowerCase();
+        const ignorable =
+          low.includes('already submitted') ||
+          low.includes('read only') ||
+          low.includes('readonly') ||
+          low.includes('submitted');
+
+        if (ignorable) return of(null);
+        return throwError(() => err);
+      })
+    );
+  }
+
+  markComplete(course: PlayerCourse, lessonId: string) {
     if (this.completing) return;
     this.completing = true;
 
-    this.student.completeLesson(lessonId).subscribe({
-      next: () => {
-        this.completing = false;
-        this.completed.add(lessonId);
-        this.toast.success('Lesson marked complete.');
-      },
-      error: (err) => {
-        this.completing = false;
-        const msg = typeof err?.error === 'string' ? err.error : 'Failed to mark complete.';
-        this.toast.error(msg);
-      }
-    });
+    this.saveQuizIfNeeded(course, lessonId)
+      .pipe(
+        switchMap(() => this.student.completeLesson(lessonId)),
+        finalize(() => (this.completing = false))
+      )
+      .subscribe({
+        next: () => {
+          this.completed.add(lessonId);
+          this.toast.success('Lesson marked complete.');
+        },
+        error: (err) => {
+          const msg = typeof err?.error === 'string' ? err.error : 'Failed to mark complete.';
+          this.toast.error(msg);
+        },
+      });
   }
 
   markCompleteAndNext(course: PlayerCourse, lessonId: string) {
     if (this.completing) return;
     this.completing = true;
 
-    this.student.completeLesson(lessonId).subscribe({
-      next: () => {
-        this.completed.add(lessonId);
-        this.toast.success('Lesson complete.');
-
-        if (this.hasNext(course)) {
-          this.next(course);
-        }
-
-        this.completing = false;
-      },
-      error: (err) => {
-        this.completing = false;
-        const msg = typeof err?.error === 'string' ? err.error : 'Failed to mark complete.';
-        this.toast.error(msg);
-      }
-    });
+    this.saveQuizIfNeeded(course, lessonId)
+      .pipe(
+        switchMap(() => this.student.completeLesson(lessonId)),
+        finalize(() => (this.completing = false))
+      )
+      .subscribe({
+        next: () => {
+          this.completed.add(lessonId);
+          this.toast.success('Lesson complete.');
+          if (this.hasNext(course)) this.next(course);
+        },
+        error: (err) => {
+          const msg = typeof err?.error === 'string' ? err.error : 'Failed to mark complete.';
+          this.toast.error(msg);
+        },
+      });
   }
 }

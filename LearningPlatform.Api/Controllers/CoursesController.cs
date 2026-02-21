@@ -1,3 +1,5 @@
+// CoursesController.cs
+
 using System.Security.Claims;
 using LearningPlatform.Api.Services;
 using LearningPlatform.Domain.Entities;
@@ -472,6 +474,15 @@ public class CoursesController : ControllerBase
         if (!await IsAcademyOwner(lesson.Module.Course.AcademyId, userId))
             return Forbid("You don't own this academy.");
 
+        // ✅ Block uploads if course is hidden by admin
+        if (lesson.Module.Course.IsHidden)
+            return BadRequest($"Course is hidden by admin. Reason: {lesson.Module.Course.HiddenReason ?? "Policy violation"}");
+
+        // ✅ Block uploads if academy is hidden
+        var academy = await _db.Academies.AsNoTracking().FirstOrDefaultAsync(a => a.Id == lesson.Module.Course.AcademyId);
+        if (academy != null && academy.IsHidden)
+            return BadRequest("Academy is hidden by admin. Uploads are disabled.");
+
         var allowed = new[] { "video/mp4", "video/webm", "video/quicktime" };
         if (!allowed.Contains(file.ContentType))
             return BadRequest("Only MP4, WebM or MOV allowed.");
@@ -507,6 +518,7 @@ public class CoursesController : ControllerBase
         return Ok(new { contentUrl = url });
     }
 
+    // ✅ UPDATED: PDF-only upload (robust detection) + blocked when hidden
     [HttpPost("lessons/{lessonId:guid}/upload-file")]
     [Authorize(Roles = "Instructor")]
     [RequestSizeLimit(50 * 1024 * 1024)]
@@ -527,12 +539,32 @@ public class CoursesController : ControllerBase
         if (!await IsAcademyOwner(lesson.Module.Course.AcademyId, userId))
             return Forbid("You don't own this academy.");
 
-        var allowed = new[] { "application/pdf", "image/png", "image/jpeg", "image/webp" };
-        if (!allowed.Contains(file.ContentType))
-            return BadRequest("Only PDF, PNG, JPG, WEBP allowed.");
+        // ✅ Block uploads if course is hidden by admin
+        if (lesson.Module.Course.IsHidden)
+            return BadRequest($"Course is hidden by admin. Reason: {lesson.Module.Course.HiddenReason ?? "Policy violation"}");
 
-        var ext = Path.GetExtension(file.FileName);
-        if (string.IsNullOrWhiteSpace(ext)) ext = ".bin";
+        // ✅ Block uploads if academy is hidden
+        var academy = await _db.Academies.AsNoTracking().FirstOrDefaultAsync(a => a.Id == lesson.Module.Course.AcademyId);
+        if (academy != null && academy.IsHidden)
+            return BadRequest("Academy is hidden by admin. Uploads are disabled.");
+
+        // ✅ Ensure this endpoint is used only for Document lessons
+        if (lesson.Type != LessonType.Document)
+            return BadRequest("This lesson is not a Document lesson.");
+
+        // ✅ Robust PDF detection (some browsers send application/octet-stream)
+        var ext = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+        var contentType = (file.ContentType ?? "").ToLowerInvariant();
+
+        var looksLikePdf =
+            contentType == "application/pdf" ||
+            ext == ".pdf";
+
+        if (!looksLikePdf)
+            return BadRequest("Only PDF files are allowed.");
+
+        // ✅ Force extension to .pdf
+        ext = ".pdf";
 
         var wwwroot = Path.Combine(AppContext.BaseDirectory, "wwwroot");
         if (!Directory.Exists(wwwroot))
@@ -551,6 +583,7 @@ public class CoursesController : ControllerBase
 
         var url = $"/uploads/lessons/{lessonId:N}/{filename}";
         lesson.ContentUrl = url;
+
         await _db.SaveChangesAsync();
 
         return Ok(new { contentUrl = url });

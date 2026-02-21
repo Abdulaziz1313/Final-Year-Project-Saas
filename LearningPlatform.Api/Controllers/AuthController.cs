@@ -1,3 +1,4 @@
+// AuthController.cs
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -21,24 +22,30 @@ public class AuthController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly AppDbContext _db;
-    private readonly IEmailSender _email;
+    private readonly ISmsSender _sms;
+    private readonly SmsOptions _smsOpt;
     private readonly IPasswordHasher<ApplicationUser> _passwordHasher;
     private readonly IConfiguration _config;
+    private readonly IWebHostEnvironment _env;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
         AppDbContext db,
-        IEmailSender email,
+        ISmsSender sms,
+        SmsOptions smsOpt,
         IPasswordHasher<ApplicationUser> passwordHasher,
-        IConfiguration config)
+        IConfiguration config,
+        IWebHostEnvironment env)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _db = db;
-        _email = email;
+        _sms = sms;
+        _smsOpt = smsOpt;
         _passwordHasher = passwordHasher;
         _config = config;
+        _env = env;
     }
 
     // ---------- LOGIN ----------
@@ -59,8 +66,8 @@ public class AuthController : ControllerBase
         return Ok(new { accessToken = token });
     }
 
-    // ---------- REGISTER START (send code) ----------
-    public record RegisterStartRequest(string Email, string Password, string Role);
+    // ---------- REGISTER START (send code via SMS) ----------
+    public record RegisterStartRequest(string Email, string Password, string Role, string Phone);
     public record RegisterStartResponse(string Email, int ExpiresInSeconds);
 
     [HttpPost("register-start")]
@@ -79,6 +86,11 @@ public class AuthController : ControllerBase
         if (role is not ("Student" or "Instructor"))
             return BadRequest("Role must be Student or Instructor.");
 
+        // Phone normalize + validate (E.164, with Irish convenience)
+        var phone = NormalizeToE164(req.Phone);
+        if (string.IsNullOrWhiteSpace(phone))
+            return BadRequest("Phone must be a valid number. Use E.164 like +353851234567 (or Irish local 08...).");
+
         // already registered?
         var exists = await _userManager.FindByEmailAsync(email);
         if (exists != null) return Conflict("Email already registered. Please login.");
@@ -92,7 +104,7 @@ public class AuthController : ControllerBase
         var secret = _config["Otp:Secret"] ?? throw new Exception("Otp:Secret missing");
         var codeHash = HashCode(code, email, secret);
 
-        // Hash the password now (do NOT store raw password)
+        // Hash password now (do NOT store raw password)
         var tempUser = new ApplicationUser { Email = email, UserName = email };
         var passwordHash = _passwordHasher.HashPassword(tempUser, req.Password);
 
@@ -104,6 +116,7 @@ public class AuthController : ControllerBase
             {
                 Email = email,
                 Role = role,
+                Phone = phone,
                 PasswordHash = passwordHash,
                 CodeHash = codeHash,
                 ExpiresAt = expires,
@@ -115,6 +128,7 @@ public class AuthController : ControllerBase
         else
         {
             pending.Role = role;
+            pending.Phone = phone;
             pending.PasswordHash = passwordHash;
             pending.CodeHash = codeHash;
             pending.ExpiresAt = expires;
@@ -124,13 +138,32 @@ public class AuthController : ControllerBase
 
         await _db.SaveChangesAsync();
 
-        await _email.SendAsync(
-            email,
-            "Alef verification code",
-            $"<p>Your Alef verification code is:</p><h2>{code}</h2><p>It expires in 10 minutes.</p>"
-        );
+        try
+        {
+            var smsText = $"Alef verification code: {code}. Expires in 10 minutes.";
+            await _sms.SendAsync(phone, smsText);
 
-        return Ok(new RegisterStartResponse(email, 600));
+            return Ok(new RegisterStartResponse(email, 600));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("SMS send failed:");
+            Console.WriteLine(ex);
+
+            // Dev fallback (optional)
+            if (_env.IsDevelopment() && _smsOpt.EnableDevFallback)
+            {
+                return Ok(new
+                {
+                    email,
+                    expiresInSeconds = 600,
+                    devNote = "SMS failed in Development. Returning code for testing only.",
+                    code
+                });
+            }
+
+            return StatusCode(500, "Failed to send verification SMS. Please try again later.");
+        }
     }
 
     // ---------- REGISTER CONFIRM (verify code + create user) ----------
@@ -167,10 +200,10 @@ public class AuthController : ControllerBase
         {
             Email = email,
             UserName = email,
-            EmailConfirmed = true
+            EmailConfirmed = true,
+            PhoneNumber = pending.Phone
         };
 
-        // set password hash from pending (so we don't need raw password)
         user.PasswordHash = pending.PasswordHash;
 
         var createResult = await _userManager.CreateAsync(user);
@@ -235,12 +268,76 @@ public class AuthController : ControllerBase
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    [HttpPost("email-test")]
-[AllowAnonymous]
-public async Task<IActionResult> EmailTest([FromBody] string email)
+    [HttpPost("sms-test")]
+    [AllowAnonymous]
+    public async Task<IActionResult> SmsTest([FromBody] string phone)
+    {
+        try
+        {
+            var to = NormalizeToE164(phone);
+            if (string.IsNullOrWhiteSpace(to))
+                return BadRequest("Phone must be valid E.164, e.g. +353851234567.");
+
+            await _sms.SendAsync(to, "Alef SMS test ✅");
+            return Ok("sent");
+        }
+        catch (Exception ex)
+        {
+            return BadRequest("SMS failed: " + ex.Message);
+        }
+    }
+
+    private static string NormalizeToE164(string? input)
 {
-    await _email.SendAsync(email, "Alef SMTP test", "<h2>SMTP works ✅</h2>");
-    return Ok("sent");
+    if (string.IsNullOrWhiteSpace(input)) return "";
+
+    var p = input.Trim()
+        .Replace(" ", "")
+        .Replace("-", "")
+        .Replace("(", "")
+        .Replace(")", "");
+
+    
+    if (p.StartsWith("00"))
+        p = "+" + p.Substring(2);
+
+    
+    if (p.StartsWith("+") && p.Length >= 8)
+    {
+        
+        if (p.StartsWith("+9660"))
+            p = "+966" + p.Substring(5);
+
+        return p;
+    }
+
+    
+    if (p.StartsWith("05") && p.Length >= 9)
+        return "+966" + p.Substring(1); 
+
+    
+    if (p.StartsWith("5") && p.Length >= 8 && p.Length <= 10)
+        return "+966" + p;
+
+    
+    if (p.StartsWith("966") && p.Length >= 11)
+    {
+        
+        if (p.StartsWith("9660"))
+            return "+966" + p.Substring(4);
+
+        return "+" + p;
+    }
+
+ 
+    if (p.StartsWith("353") && p.Length >= 11)
+        return "+" + p;
+
+  
+    if (p.StartsWith("08") && p.Length >= 9)
+        return "+353" + p.Substring(1);
+
+    return "";
 }
 
 }
