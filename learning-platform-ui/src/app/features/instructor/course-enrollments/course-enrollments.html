@@ -1,196 +1,215 @@
-<!-- course.enrollments.html (FULL UPDATED) -->
-<main class="page">
-  <!-- Background blobs (same as home) -->
-  <div class="bg" aria-hidden="true">
-    <span class="blob b1"></span>
-    <span class="blob b2"></span>
-    <span class="blob b3"></span>
-    <span class="grid"></span>
+<!-- course-enrollments.html — Elevated to match Home page aesthetics -->
+<main class="enrollments-page">
+
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">Instructor panel</span>
+      </div>
+      <h1 class="page-title">Enrollments &amp; <em>Progress</em></h1>
+      <p class="page-desc">Students enrolled in this course and their completion progress.</p>
+    </div>
+
+    <div class="hero-right">
+      <div class="action-group">
+        <button class="btn btn-ghost" type="button" (click)="reload()">Refresh</button>
+        <a class="btn btn-ghost" routerLink="/instructor">← Dashboard</a>
+      </div>
+    </div>
   </div>
 
-  <div class="container">
-    <header class="topbar">
-      <div class="top-left">
-        <div class="kicker">Instructor • Analytics</div>
-        <h1 class="page-title">Enrollments</h1>
-        <p class="page-sub">Students enrolled in this course and their progress.</p>
+  <ng-container *ngIf="state$ | async as st">
+
+    <!-- ── Loading skeleton ── -->
+    <div class="skeleton" *ngIf="st.loading">
+      <div class="sk-head"></div>
+      <div class="sk-row" *ngFor="let _ of [1,2,3,4,5]"></div>
+    </div>
+
+    <!-- ── Error ── -->
+    <div class="alert-error" *ngIf="st.error && !st.loading">
+      <div class="err-icon">⚠</div>
+      <div class="err-body">
+        <div class="err-title">Couldn't load enrollments</div>
+        <div class="err-msg">{{ st.error }}</div>
       </div>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="reload()">Try again</button>
+    </div>
 
-      <div class="top-actions">
-        <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
-        <a class="btn ghost" routerLink="/instructor">Dashboard</a>
-      </div>
-    </header>
+    <!-- ── Content ── -->
+    <section class="layout" *ngIf="st.data && !st.loading && !st.error">
 
-    <ng-container *ngIf="state$ | async as st">
-      <!-- Loading -->
-      <div *ngIf="st.loading" class="card skeleton">
-        <div class="sk-head"></div>
-        <div class="sk-row" *ngFor="let _ of [1,2,3,4,5]"></div>
-      </div>
+      <!-- ── LEFT: Summary + Filters ── -->
+      <aside class="panel sticky">
 
-      <!-- Error -->
-      <div *ngIf="st.error" class="alert error">
-        <div class="err-title">Couldn’t load enrollments</div>
-        <div class="muted">{{ st.error }}</div>
-        <button class="btn ghost small" type="button" (click)="reload()">Try again</button>
-      </div>
-
-      <!-- Content -->
-      <section *ngIf="st.data && !st.loading && !st.error" class="layout">
-        <!-- Summary / Filters -->
-        <aside class="panel sticky">
-          <div class="panel-head">
-            <div>
-              <div class="panel-title">Course</div>
-              <div class="muted small">ID: <span class="mono">{{ courseId }}</span></div>
-            </div>
-
-            <span class="pill">
-              <span class="dot"></span>
-              Live
-            </span>
-          </div>
-
-          <div class="course-title">{{ st.data.course?.title }}</div>
-          <div class="muted course-sub">
-            Enrolled students and their completion progress.
-          </div>
-
-          <div class="summary">
-            <div class="chip">
-              <div class="k">Enrolled</div>
-              <div class="v">{{ st.data.enrolledCount }}</div>
-            </div>
-
-            <div class="chip">
-              <div class="k">Total lessons</div>
-              <div class="v">{{ st.data.totalLessons }}</div>
-            </div>
-
-            <div class="chip">
-              <div class="k">Avg progress</div>
-              <div class="v">{{ avgPercent(filteredStudents(st.data.students)) }}%</div>
+        <div class="panel-head">
+          <div>
+            <div class="panel-eyebrow">Course</div>
+            <div class="panel-title">Summary</div>
+            <div class="panel-id">
+              ID: <span class="mono-inline">{{ courseId }}</span>
             </div>
           </div>
+          <span class="status-badge status-good">Live</span>
+        </div>
 
-          <div class="divider"></div>
+        <div class="course-info">
+          <div class="course-name">{{ st.data.course?.title }}</div>
+          <div class="course-sub">Enrolled students and their completion progress.</div>
+        </div>
 
-          <div class="filters">
-            <div class="field">
-              <label>Search</label>
-              <input
-                class="input"
-                type="text"
-                [value]="query"
-                (input)="setQuery(($any($event.target).value))"
-                placeholder="Name / email…"
-              />
-            </div>
+        <!-- Stat chips — home hcs-item pattern -->
+        <div class="summary-chips">
+          <div class="stat-chip">
+            <div class="stat-chip-val">{{ st.data.enrolledCount }}</div>
+            <div class="stat-chip-label">Enrolled</div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-chip-val">{{ st.data.totalLessons }}</div>
+            <div class="stat-chip-label">Lessons</div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-chip-val">{{ avgPercent(filteredStudents(st.data.students)) }}%</div>
+            <div class="stat-chip-label">Avg progress</div>
+          </div>
+        </div>
 
-            <div class="row2">
-              <div class="field">
-                <label>Sort</label>
-                <select class="input" [value]="sortBy" (change)="setSort($any($event.target).value)">
-                  <option value="recent">Most recent</option>
-                  <option value="oldest">Oldest</option>
-                  <option value="progressDesc">Progress high → low</option>
-                  <option value="progressAsc">Progress low → high</option>
-                  <option value="nameAsc">Name A → Z</option>
-                </select>
-              </div>
+        <div class="divider"></div>
 
-              <div class="field">
-                <label>Filter</label>
-                <select class="input" [value]="filterBy" (change)="setFilter($any($event.target).value)">
-                  <option value="all">All</option>
-                  <option value="started">Started (1%+)</option>
-                  <option value="notStarted">Not started (0%)</option>
-                  <option value="completed">Completed (100%)</option>
-                </select>
-              </div>
-            </div>
-
-            <button class="btn ghost small" type="button" (click)="resetFilters()">
-              Reset
-            </button>
+        <!-- Filters -->
+        <div class="filters">
+          <div class="filter-field">
+            <label class="filter-label">Search students</label>
+            <input class="input" type="text"
+              [value]="query"
+              (input)="setQuery(($any($event.target).value))"
+              placeholder="Name or email…" />
           </div>
 
-          <div class="hint muted small">
-            Tip: Click a student card to quickly copy their email.
-          </div>
-        </aside>
+          <div class="row2">
+            <div class="filter-field">
+              <label class="filter-label">Sort by</label>
+              <select class="input select-input"
+                [value]="sortBy" (change)="setSort($any($event.target).value)">
+                <option value="recent">Most recent</option>
+                <option value="oldest">Oldest first</option>
+                <option value="progressDesc">Progress ↓</option>
+                <option value="progressAsc">Progress ↑</option>
+                <option value="nameAsc">Name A → Z</option>
+              </select>
+            </div>
 
-        <!-- List -->
-        <section class="panel">
-          <div class="panel-head">
-            <div class="panel-title">Students</div>
-            <div class="muted">
-              Showing {{ filteredStudents(st.data.students).length }} of {{ st.data.students.length }}
+            <div class="filter-field">
+              <label class="filter-label">Filter</label>
+              <select class="input select-input"
+                [value]="filterBy" (change)="setFilter($any($event.target).value)">
+                <option value="all">All students</option>
+                <option value="started">Started (1%+)</option>
+                <option value="notStarted">Not started</option>
+                <option value="completed">Completed</option>
+              </select>
             </div>
           </div>
 
-          <ng-container *ngIf="filteredStudents(st.data.students).length > 0; else empty">
-            <div class="cards">
-              <article
-                class="student-card"
-                *ngFor="let s of filteredStudents(st.data.students)"
-                (click)="copyEmail(s.student?.email)"
-                tabindex="0"
-                role="button"
-              >
-                <div class="left">
-                  <div class="avatar">
-                    <img *ngIf="avatar(s.student?.profileImageUrl)" [src]="avatar(s.student?.profileImageUrl)!" />
-                    <div class="fallback" *ngIf="!avatar(s.student?.profileImageUrl)">
-                      {{ initial(s.student?.displayName || s.student?.email || 'S') }}
-                    </div>
-                  </div>
+          <button class="btn btn-ghost btn-sm" type="button" (click)="resetFilters()">
+            Reset filters
+          </button>
+        </div>
 
-                  <div class="meta">
-                    <div class="name">
-                      {{ s.student?.displayName || s.student?.email || s.student?.id }}
-                    </div>
+        <!-- Tip box — cta-point style from home -->
+        <div class="tip-box">
+          <div class="tip-icon">💡</div>
+          <div class="tip-body">
+            <div class="tip-title">Quick copy</div>
+            <div class="tip-desc">Click any student card to copy their email address.</div>
+          </div>
+        </div>
 
-                    <div class="sub muted small">
-                      <span class="email" *ngIf="s.student?.email">{{ s.student.email }}</span>
-                      <span class="sep">•</span>
-                      <span>Enrolled {{ timeAgo(s.enrolledAt) }}</span>
-                    </div>
+      </aside>
+
+      <!-- ── RIGHT: Student list ── -->
+      <section class="panel">
+
+        <div class="panel-head">
+          <div>
+            <div class="panel-eyebrow">Students</div>
+            <div class="panel-title">
+              {{ filteredStudents(st.data.students).length }}
+              <span class="panel-title-muted">of {{ st.data.students.length }}</span>
+            </div>
+          </div>
+        </div>
+
+        <ng-container *ngIf="filteredStudents(st.data.students).length > 0; else empty">
+          <div class="cards">
+            <article
+              class="student-card"
+              *ngFor="let s of filteredStudents(st.data.students)"
+              (click)="copyEmail(s.student?.email)"
+              tabindex="0"
+              role="button"
+            >
+              <!-- Left: avatar + info -->
+              <div class="card-left">
+                <div class="avatar">
+                  <img *ngIf="avatar(s.student?.profileImageUrl)"
+                    [src]="avatar(s.student?.profileImageUrl)!" alt="avatar" />
+                  <div class="avatar-fallback" *ngIf="!avatar(s.student?.profileImageUrl)">
+                    {{ initial(s.student?.displayName || s.student?.email || 'S') }}
                   </div>
                 </div>
 
-                <div class="right">
-                  <div class="stats">
-                    <span class="badge strong">{{ s.progress?.percent ?? 0 }}%</span>
-                    <span class="badge">
-                      {{ s.progress?.done ?? 0 }}/{{ s.progress?.total ?? 0 }}
-                    </span>
+                <div class="student-info">
+                  <div class="student-name">
+                    {{ s.student?.displayName || s.student?.email || s.student?.id }}
                   </div>
-
-                  <div class="bar" aria-hidden="true">
-                    <div class="bar-fill" [style.width.%]="clampPercent(s.progress?.percent)"></div>
-                  </div>
-
-                  <div class="muted tiny">
-                    Last activity:
-                    <span class="mono">
-                      {{ s.lastActivityAt ? (s.lastActivityAt | date:'medium') : '—' }}
-                    </span>
+                  <div class="student-meta">
+                    <span class="student-email" *ngIf="s.student?.email">{{ s.student.email }}</span>
+                    <span class="meta-sep" *ngIf="s.student?.email">·</span>
+                    <span class="enroll-date">Enrolled {{ timeAgo(s.enrolledAt) }}</span>
                   </div>
                 </div>
-              </article>
-            </div>
-          </ng-container>
+              </div>
 
-          <ng-template #empty>
-            <div class="empty">
-              <div class="empty-title">No enrollments yet</div>
-              <div class="muted">Once students enroll, they’ll appear here with their progress.</div>
-            </div>
-          </ng-template>
-        </section>
+              <!-- Right: progress -->
+              <div class="card-right">
+                <div class="progress-top">
+                  <span class="pct-badge">{{ s.progress?.percent ?? 0 }}%</span>
+                  <span class="lessons-badge">
+                    {{ s.progress?.done ?? 0 }}/{{ s.progress?.total ?? 0 }} lessons
+                  </span>
+                </div>
+
+                <div class="progress-bar">
+                  <div class="progress-fill"
+                    [style.width.%]="clampPercent(s.progress?.percent)"></div>
+                </div>
+
+                <div class="last-seen">
+                  Last activity:
+                  <span class="mono-inline">{{ s.lastActivityAt ? (s.lastActivityAt | date:'medium') : '—' }}</span>
+                </div>
+              </div>
+            </article>
+          </div>
+        </ng-container>
+
+        <!-- Empty state -->
+        <ng-template #empty>
+          <div class="empty-state">
+            <div class="empty-icon">👥</div>
+            <div class="empty-title">No enrollments yet</div>
+            <p class="empty-desc">
+              Once students enroll, they'll appear here with their full progress data.
+            </p>
+          </div>
+        </ng-template>
+
       </section>
-    </ng-container>
-  </div>
+
+    </section>
+  </ng-container>
+
 </main>

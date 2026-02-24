@@ -1,13 +1,118 @@
-.quiz { padding: 14px; position: relative; }
+:host {
+  /* Home tokens (local so this component never depends on globals) */
+  --text:          #0a0f1e;
+  --muted:         #6b7280;
+  --muted-2:       #9ca3af;
+  --border:        rgba(10, 15, 30, 0.10);
+  --border-strong: rgba(10, 15, 30, 0.16);
+  --surface:       #ffffff;
+  --surface-2:     #f8f9fb;
+  --surface-3:     #f1f3f7;
+
+  --accent:        #1a56db;
+  --accent-light:  #eff4ff;
+  --accent-glow:   rgba(26, 86, 219, 0.12);
+
+  --gold:          #d97706;
+  --gold-light:    #fffbeb;
+
+  --r-md:          16px;
+  --r-lg:          20px;
+  --r-xl:          24px;
+
+  --shadow-xs:     0 1px 2px rgba(10, 15, 30, 0.06);
+  --shadow-sm:     0 2px 8px rgba(10, 15, 30, 0.07), 0 1px 2px rgba(10, 15, 30, 0.04);
+  --shadow-md:     0 8px 24px rgba(10, 15, 30, 0.10), 0 2px 4px rgba(10, 15, 30, 0.05);
+
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+/* Card wrapper (this component sits inside other cards too, keep safe) */
+.quiz {
+  padding: 14px;
+  position: relative;
+}
 
 .form { position: relative; }
 
+.muted { color: var(--muted); }
+.small { font-size: .86rem; }
+.mono  { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+/* ------------------------------------------------
+   Buttons (Home style, local fallback)
+------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  border-radius: 12px;
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+
+.btn.btn-primary {
+  background: var(--text);
+  color: #fff;
+  border-color: var(--text);
+  box-shadow: 0 2px 8px rgba(10, 15, 30, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.btn.btn-primary:hover {
+  background: #1a2035;
+  box-shadow: 0 6px 20px rgba(10, 15, 30, 0.26);
+  transform: translateY(-1px);
+}
+.btn.btn-primary:active { transform: translateY(0); }
+
+.btn.btn-ghost {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-xs);
+}
+.btn.btn-ghost:hover {
+  border-color: rgba(10, 15, 30, 0.24);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.btn.btn-sm { padding: 7px 14px; font-size: 13px; border-radius: 10px; }
+
+/* Danger (Home-consistent, not purple) */
+.btn.btn-danger {
+  background: #fee2e2;
+  border-color: rgba(220, 38, 38, 0.18);
+  color: #991b1b;
+  box-shadow: var(--shadow-xs);
+}
+.btn.btn-danger:hover {
+  background: #fecaca;
+  border-color: rgba(220, 38, 38, 0.28);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+/* ------------------------------------------------
+   Sticky head (glass inside the card)
+------------------------------------------------- */
 .head {
   position: sticky;
   top: 0;
   z-index: 5;
-  background: #fff;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(18px) saturate(1.6);
+  -webkit-backdrop-filter: blur(18px) saturate(1.6);
+
+  border-bottom: 1px solid var(--border);
   padding-bottom: 12px;
   margin-bottom: 12px;
 
@@ -15,6 +120,10 @@
   justify-content: space-between;
   gap: 12px;
   align-items: flex-start;
+
+  /* make it feel “attached” */
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
 }
 
 .head-left { min-width: 0; }
@@ -27,8 +136,8 @@
 }
 
 .title {
-  font-weight: 950;
-  font-size: 1.12rem;
+  font-weight: 900;
+  font-size: 1.08rem;
   letter-spacing: -0.01em;
 }
 
@@ -38,61 +147,53 @@
   flex-wrap: wrap;
   align-items: center;
 }
-
 .head-actions .btn { white-space: nowrap; }
 
-/* ✅ Premium redo icon button */
-.redo-btn {
-  padding-left: 10px;
-  padding-right: 12px;
-  gap: 8px;
-}
+/* Premium redo icon button */
+.redo-btn { padding-left: 10px; padding-right: 12px; gap: 8px; }
 
 .redo-ic {
   width: 26px;
   height: 26px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: color-mix(in oklch, black 3%, white);
+  background: var(--surface-2);
   display: grid;
   place-items: center;
-  font-weight: 950;
+  font-weight: 900;
   line-height: 1;
   transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
-
 .redo-btn:hover .redo-ic {
   transform: rotate(-10deg);
-  box-shadow: 0 10px 18px rgba(0,0,0,0.08);
-  border-color: color-mix(in oklch, black 16%, white);
+  box-shadow: 0 10px 18px rgba(10,15,30,0.10);
+  border-color: rgba(10,15,30,0.18);
 }
+.redo-btn:disabled .redo-ic { box-shadow: none; transform: none; opacity: .7; }
 
-.redo-btn:disabled .redo-ic {
-  box-shadow: none;
-  transform: none;
-  opacity: .7;
-}
-
+/* Badges (Home-ish) */
 .badge {
   border: 1px solid var(--border);
-  background: color-mix(in oklch, black 3%, white);
+  background: var(--surface-2);
   border-radius: 999px;
   padding: 6px 10px;
-  font-weight: 950;
+  font-weight: 800;
   font-size: .78rem;
   color: var(--muted);
 }
+
 .badge.ok {
-  border-color: color-mix(in oklch, #22c55e 35%, var(--border));
-  background: color-mix(in oklch, #22c55e 14%, white);
-  color: color-mix(in oklch, #22c55e 50%, black);
+  border-color: rgba(21, 128, 61, 0.15);
+  background: #dcfce7;
+  color: #15803d;
 }
 .badge.warn {
-  border-color: color-mix(in oklch, oklch(63.32% 0.24 31.68) 35%, var(--border));
-  background: color-mix(in oklch, oklch(63.32% 0.24 31.68) 12%, white);
+  border-color: rgba(217, 119, 6, 0.22);
+  background: var(--gold-light);
   color: var(--text);
 }
 
+/* Progress */
 .progress-row {
   margin-top: 10px;
   display: grid;
@@ -103,18 +204,20 @@
   height: 10px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: var(--surface-2);
+  background: var(--surface-3);
   overflow: hidden;
 }
 
 .progressbar-fill {
   height: 100%;
   width: 0%;
-  background: var(--grad);
+  background: linear-gradient(90deg, var(--accent), #3b82f6);
   border-radius: 999px;
 }
 
-/* ✅ Premium inline confirm (replaces alert/confirm) */
+/* ------------------------------------------------
+   Premium inline confirm (retake)
+------------------------------------------------- */
 @keyframes slideDownSoft {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
@@ -123,12 +226,12 @@
 .confirm {
   margin-top: 12px;
   padding: 10px 12px;
-  border-radius: 16px;
-  border: 1px solid color-mix(in oklch, black 10%, white);
+  border-radius: 18px;
+  border: 1px solid var(--border);
   background:
-    radial-gradient(600px 120px at 0% 0%, color-mix(in oklch, oklch(63.32% 0.24 31.68) 10%, white), transparent 55%),
+    radial-gradient(600px 120px at 0% 0%, rgba(26, 86, 219, 0.10), transparent 55%),
     #fff;
-  box-shadow: 0 16px 34px rgba(0,0,0,0.06);
+  box-shadow: var(--shadow-md);
 
   display: flex;
   gap: 12px;
@@ -147,16 +250,15 @@
   height: 38px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: color-mix(in oklch, black 3%, white);
+  background: var(--surface-2);
   display: grid;
   place-items: center;
-  font-weight: 950;
+  font-weight: 900;
 }
 
 .confirm-txt { min-width: 0; display: grid; gap: 2px; }
-.confirm-title { font-weight: 950; letter-spacing: -0.01em; }
+.confirm-title { font-weight: 900; letter-spacing: -0.01em; }
 
-/* ✅ FIX: align + prevent wrapping + premium button sizing */
 .confirm-actions {
   display: inline-flex;
   gap: 10px;
@@ -165,38 +267,13 @@
   align-items: center;
 }
 
-.confirm-actions .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 34px;
-  padding: 0 12px;
-  line-height: 1;
-  border-radius: 999px;
-}
+.confirm-primary { white-space: nowrap; min-width: 170px; }
 
-.confirm-primary {
-  white-space: nowrap;
-  min-width: 160px;
-}
-
-/* If you don't already have .btn.danger in global styles, keep this local fallback */
-.btn.danger {
-  border: 1px solid color-mix(in oklch, oklch(63.32% 0.24 31.68) 30%, var(--border));
-  background:
-    radial-gradient(120px 60px at 30% 20%, color-mix(in oklch, oklch(63.32% 0.24 31.68) 18%, white), transparent 60%),
-    color-mix(in oklch, oklch(63.32% 0.24 31.68) 10%, white);
-  color: var(--text);
-}
-.btn.danger:hover {
-  background:
-    radial-gradient(120px 60px at 30% 20%, color-mix(in oklch, oklch(63.32% 0.24 31.68) 22%, white), transparent 60%),
-    color-mix(in oklch, oklch(63.32% 0.24 31.68) 14%, white);
-}
-
+/* ------------------------------------------------
+   Questions
+------------------------------------------------- */
 .qs { display: grid; gap: 12px; }
 
-/* Question card */
 .q {
   padding: 14px;
   border: 1px solid var(--border);
@@ -209,12 +286,10 @@
 .q:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
-  border-color: color-mix(in oklch, black 16%, white);
+  border-color: rgba(10,15,30,0.18);
 }
 
-.q.answered {
-  border-color: color-mix(in oklch, #22c55e 30%, var(--border));
-}
+.q.answered { border-color: rgba(21, 128, 61, 0.18); }
 
 .q-head {
   display: grid;
@@ -229,14 +304,14 @@
   height: 42px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: color-mix(in oklch, black 3%, white);
+  background: var(--surface-2);
   display: grid;
   place-items: center;
-  font-weight: 950;
+  font-weight: 900;
 }
 
 .q-prompt {
-  font-weight: 950;
+  font-weight: 900;
   line-height: 1.35;
   padding-top: 2px;
 }
@@ -250,16 +325,17 @@
 
 .pill {
   border: 1px solid var(--border);
-  background: color-mix(in oklch, black 2%, white);
+  background: var(--surface-2);
   border-radius: 999px;
   padding: 6px 10px;
-  font-weight: 950;
+  font-weight: 800;
   font-size: .78rem;
   color: var(--muted);
   white-space: nowrap;
 }
 .pill.ghost { background: #fff; }
 
+/* Options */
 .opts { display: grid; gap: 10px; }
 
 .opt {
@@ -278,30 +354,37 @@
 
 .opt:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.06);
-  border-color: color-mix(in oklch, black 16%, white);
+  box-shadow: 0 12px 24px rgba(10,15,30,0.08);
+  border-color: rgba(10,15,30,0.18);
 }
 
 .opt.selected {
-  border-color: color-mix(in oklch, var(--brand, #7c3aed) 35%, var(--border));
-  background: color-mix(in oklch, var(--brand, #7c3aed) 10%, white);
+  border-color: rgba(26, 86, 219, 0.28);
+  background: var(--accent-light);
 }
 
-.opt.disabled {
-  cursor: default;
-  opacity: .8;
-}
+.opt.disabled { cursor: default; opacity: .8; }
 
 .opt input { margin: 0; }
-.opt-text { font-weight: 850; }
+.opt-text { font-weight: 700; }
 
-/* short answer */
+/* Short answer */
 .short .input {
   width: 100%;
   border-radius: 16px;
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  color: var(--text);
+  outline: none;
+  padding: 10px 12px;
+  box-shadow: var(--shadow-xs);
+}
+.short .input:focus {
+  border-color: rgba(26, 86, 219, 0.35);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-/* actions */
+/* Actions */
 .actions {
   margin-top: 12px;
   display: flex;
@@ -310,7 +393,7 @@
   flex-wrap: wrap;
 }
 
-/* result */
+/* Result */
 .result {
   margin-top: 12px;
   padding: 14px;
@@ -327,9 +410,9 @@
   flex-wrap: wrap;
 }
 
-.result-title { font-weight: 950; margin-bottom: 6px; }
+.result-title { font-weight: 900; margin-bottom: 6px; }
 
-/* review lock overlay */
+/* Review lock overlay */
 .lock {
   position: absolute;
   inset: 0;
@@ -340,10 +423,7 @@
   pointer-events: none;
 }
 
-/* misc */
-.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-
-/* optional: make confirm buttons stack nicely on very small screens */
+/* Responsive */
 @media (max-width: 520px) {
   .confirm-actions { width: 100%; margin-left: 0; justify-content: flex-end; }
   .confirm-primary { width: 100%; min-width: 0; }

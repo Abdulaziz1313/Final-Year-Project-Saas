@@ -1,271 +1,261 @@
-<!-- dashboard.html (FULL UPDATED) -->
-<div class="dash">
-  <!-- Background (same as Home / My Learning) -->
-  <div class="bg" aria-hidden="true">
-    <span class="blob b1"></span>
-    <span class="blob b2"></span>
-    <span class="blob b3"></span>
-    <span class="bg-grid"></span>
-  </div>
+<!-- dashboard.html (ADMIN-STYLE) -->
+<main class="dash-page">
 
-  <div class="wrap">
-    <div class="container">
-      <!-- Header -->
-      <header class="dash-head card">
-        <div class="head-left">
-          <div class="kicker">Instructor</div>
-          <h1 class="head-title">Dashboard</h1>
-          <p class="head-sub muted">Quick overview of academies and activity.</p>
-        </div>
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">Instructor panel</span>
+      </div>
 
-        <div class="head-actions">
-          <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
-          <a class="btn primary" routerLink="/instructor/academy/create">Create academy</a>
-        </div>
-      </header>
+      <h1 class="page-title">Dashboard &amp; <em>Overview</em></h1>
+      <p class="page-desc">Quick overview of academies, publishing status, and activity.</p>
+    </div>
 
-      <ng-container *ngIf="state$ | async as st">
-        <div class="state" *ngIf="st.loading">Loading…</div>
-        <div class="alert error" *ngIf="st.error">{{ st.error }}</div>
-
-        <ng-container *ngIf="st.data as vm">
-          <!-- KPI strip -->
-          <section class="kpis">
-            <div class="kpi card">
-              <div class="kpi-ico">🏛️</div>
-              <div class="kpi-meta">
-                <div class="kpi-k">Academies</div>
-                <div class="kpi-v">{{ vm.academiesCount }}</div>
-              </div>
-            </div>
-
-            <div class="kpi card">
-              <div class="kpi-ico">✅</div>
-              <div class="kpi-meta">
-                <div class="kpi-k">Published</div>
-                <div class="kpi-v">{{ vm.publishedCount }}</div>
-              </div>
-            </div>
-
-            <div class="kpi card">
-              <div class="kpi-ico">📝</div>
-              <div class="kpi-meta">
-                <div class="kpi-k">Draft</div>
-                <div class="kpi-v">{{ vm.draftCount }}</div>
-              </div>
-            </div>
-
-            <div class="kpi card">
-              <div class="kpi-ico">🙈</div>
-              <div class="kpi-meta">
-                <div class="kpi-k">Hidden</div>
-                <div class="kpi-v">{{ vm.hiddenCount }}</div>
-              </div>
-            </div>
-          </section>
-
-          <!-- Top row -->
-          <section class="top-row">
-            <!-- Quick actions -->
-            <section class="card panel">
-              <div class="panel-head">
-                <div>
-                  <div class="panel-title">Quick actions</div>
-                  <div class="muted small">Common tasks</div>
-                </div>
-              </div>
-
-              <div class="qa">
-                <a class="qa-item" routerLink="/instructor/academy/create">
-                  <div class="qa-ico">➕</div>
-                  <div class="qa-txt">
-                    <div class="qa-title">Create academy</div>
-                    <div class="qa-sub muted">Start a new learning space</div>
-                  </div>
-                  <div class="qa-go">→</div>
-                </a>
-
-                <a class="qa-item" routerLink="/instructor/academies">
-                  <div class="qa-ico">📚</div>
-                  <div class="qa-txt">
-                    <div class="qa-title">Manage academies</div>
-                    <div class="qa-sub muted">Edit, publish, hide</div>
-                  </div>
-                  <div class="qa-go">→</div>
-                </a>
-
-                <a class="qa-item" routerLink="/me">
-                  <div class="qa-ico">👤</div>
-                  <div class="qa-txt">
-                    <div class="qa-title">My account</div>
-                    <div class="qa-sub muted">Profile & security</div>
-                  </div>
-                  <div class="qa-go">→</div>
-                </a>
-              </div>
-            </section>
-
-            <!-- Recent -->
-            <section class="card panel">
-              <div class="panel-head">
-                <div>
-                  <div class="panel-title">Recent</div>
-                  <div class="muted small">Last academy activity</div>
-                </div>
-
-                <a class="btn ghost small" routerLink="/instructor/academies">View all</a>
-              </div>
-
-              <ng-container *ngIf="vm.recent as r; else noRecent">
-                <div class="recent">
-                  <div class="recent-title">{{ r.title }}</div>
-                  <div class="recent-sub muted">{{ r.subtitle }}</div>
-
-                  <div class="recent-bottom">
-                    <span class="pill" [class.on]="r.pillOn">
-                      <span class="dot"></span>
-                      {{ r.pillText }}
-                    </span>
-
-                    <div class="recent-actions">
-                      <a class="btn primary" [routerLink]="r.href">Open</a>
-                      <a class="btn ghost" routerLink="/instructor/academies">All academies</a>
-                    </div>
-                  </div>
-                </div>
-              </ng-container>
-
-              <ng-template #noRecent>
-                <div class="empty">
-                  <div class="empty-title">No activity yet</div>
-                  <div class="empty-sub">Create your first academy to get started.</div>
-                  <a class="btn primary" routerLink="/instructor/academy/create">Create academy</a>
-                </div>
-              </ng-template>
-            </section>
-          </section>
-
-          <!-- Main -->
-          <section class="main-grid">
-            <!-- Profile -->
-            <section class="card panel">
-              <div class="panel-head">
-                <div>
-                  <div class="panel-title">Profile</div>
-                  <div class="muted small">Signed in</div>
-                </div>
-                <a class="btn ghost small" routerLink="/me">Manage</a>
-              </div>
-
-              <div class="profile">
-                <div class="avatar">
-                  <img *ngIf="avatarUrl(vm) as url" [src]="url" alt="Avatar" />
-                  <div class="avatar-fallback" *ngIf="!avatarUrl(vm)">
-                    {{ (vm.email || 'U').slice(0,1).toUpperCase() }}
-                  </div>
-                </div>
-
-                <div class="pmeta">
-                  <div class="pemail">{{ vm.email }}</div>
-                  <div class="proles">
-                    <span class="badge" *ngFor="let r of vm.roles">{{ r }}</span>
-                  </div>
-                  <div class="muted small">
-                    ID: <span class="mono">{{ vm.userId }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="divider"></div>
-
-              <div class="pactions">
-                <button class="btn ghost" type="button" (click)="copyUserId(vm.userId)">Copy ID</button>
-                <button class="btn ghost" type="button" (click)="logout()">Logout</button>
-              </div>
-            </section>
-
-            <!-- Academies list -->
-            <section class="card panel">
-              <div class="panel-head">
-                <div>
-                  <div class="panel-title">Your academies</div>
-                  <div class="muted small">Manage and publish</div>
-                </div>
-                <a class="btn ghost small" routerLink="/instructor/academies">View all</a>
-              </div>
-
-              <div class="empty" *ngIf="vm.academiesCount === 0">
-                <div class="empty-title">No academies</div>
-                <div class="empty-sub">Create an academy to start publishing courses.</div>
-                <a class="btn primary" routerLink="/instructor/academy/create">Create academy</a>
-              </div>
-
-              <div class="academy-list" *ngIf="vm.academiesCount > 0">
-                <a
-                  class="academy"
-                  *ngFor="let a of vm.academies"
-                  [routerLink]="['/instructor/courses', a.id]"
-                >
-                  <div class="a-left">
-                    <div class="a-badge">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
-
-                    <div class="a-text">
-                      <div class="a-title">{{ a.name }}</div>
-                      <div class="a-sub muted">{{ a.description || a.slug }}</div>
-
-                      <div class="a-meta">
-                        <span class="pill"
-                              [class.on]="a.isPublished && !a.isHidden"
-                              [class.danger]="a.isHidden">
-                          <span class="dot"></span>
-                          {{ a.isHidden ? 'Hidden' : (a.isPublished ? 'Published' : 'Draft') }}
-                        </span>
-
-                        <span class="pill ghost">
-                          {{ a.courseCount || 0 }} course{{ (a.courseCount || 0) === 1 ? '' : 's' }}
-                        </span>
-                      </div>
-
-                      <div class="hide-note" *ngIf="a.isHidden">
-                        <div class="hide-title">Hidden by admin</div>
-                        <div class="hide-text">{{ hiddenMessage(a) }}</div>
-
-                        <div class="hide-actions">
-                          <button
-                            class="btn ghost small"
-                            type="button"
-                            (click)="requestReview($event, a)"
-                            [disabled]="isPublishing(a.id)"
-                          >
-                            Request review
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="a-right">
-                    <button
-                      class="toggle-btn"
-                      type="button"
-                      [class.on]="a.isPublished && !a.isHidden"
-                      [disabled]="a.isHidden || isPublishing(a.id)"
-                      (click)="togglePublish($event, a)"
-                      [attr.aria-label]="a.isPublished ? 'Unpublish academy' : 'Publish academy'"
-                    >
-                      <span class="knob"></span>
-                    </button>
-
-                    <span class="muted tiny" *ngIf="isPublishing(a.id)">Saving…</span>
-                    <span class="muted tiny" *ngIf="a.isHidden && !isPublishing(a.id)">Disabled</span>
-                    <span class="muted small" *ngIf="!a.isHidden && !isPublishing(a.id)">Open →</span>
-                  </div>
-                </a>
-              </div>
-            </section>
-          </section>
-        </ng-container>
-      </ng-container>
+    <div class="hero-right">
+      <div class="action-group">
+        <button class="btn btn-ghost" type="button" (click)="reload()">Refresh</button>
+        <a class="btn btn-primary" routerLink="/instructor/academy/create">Create academy</a>
+      </div>
     </div>
   </div>
-</div>
+
+  <ng-container *ngIf="state$ | async as st">
+    <div class="state-loading" *ngIf="st.loading">Loading…</div>
+    <div class="alert-error" *ngIf="st.error"><span>⚠</span> {{ st.error }}</div>
+
+    <ng-container *ngIf="st.data as vm">
+
+      <!-- ── KPI STRIP ── -->
+      <div class="kpi-strip">
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Academies</span>
+            <span class="kpi-icon">🏛️</span>
+          </div>
+          <div class="kpi-value">{{ vm.academiesCount }}</div>
+          <div class="kpi-sub">Total academies</div>
+        </div>
+
+        <div class="kpi-card kpi-success">
+          <div class="kpi-header">
+            <span class="kpi-label">Published</span>
+            <span class="kpi-icon">✅</span>
+          </div>
+          <div class="kpi-value">{{ vm.publishedCount }}</div>
+          <div class="kpi-sub">Visible to students</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Draft</span>
+            <span class="kpi-icon">📝</span>
+          </div>
+          <div class="kpi-value">{{ vm.draftCount }}</div>
+          <div class="kpi-sub">Not published</div>
+        </div>
+
+        <div class="kpi-card kpi-danger">
+          <div class="kpi-header">
+            <span class="kpi-label">Hidden</span>
+            <span class="kpi-icon">⛔</span>
+          </div>
+          <div class="kpi-value">{{ vm.hiddenCount }}</div>
+          <div class="kpi-sub">Moderated by admin</div>
+        </div>
+      </div>
+
+      <!-- ── TOP GRID ── -->
+      <div class="grid-2">
+
+        <!-- Quick actions -->
+        <section class="item-card">
+          <div class="item-head">
+            <div>
+              <div class="item-title-lg">Quick actions</div>
+              <div class="item-sub">Common tasks</div>
+            </div>
+          </div>
+
+          <div class="qa-list">
+            <a class="qa-row" routerLink="/instructor/academy/create">
+              <div class="qa-ico">➕</div>
+              <div class="qa-text">
+                <div class="qa-title">Create academy</div>
+                <div class="qa-sub">Start a new learning space</div>
+              </div>
+              <div class="qa-go">→</div>
+            </a>
+
+            <a class="qa-row" routerLink="/instructor/academies">
+              <div class="qa-ico">📚</div>
+              <div class="qa-text">
+                <div class="qa-title">Manage academies</div>
+                <div class="qa-sub">Edit, publish, hide</div>
+              </div>
+              <div class="qa-go">→</div>
+            </a>
+
+            <a class="qa-row" routerLink="/me">
+              <div class="qa-ico">👤</div>
+              <div class="qa-text">
+                <div class="qa-title">My account</div>
+                <div class="qa-sub">Profile &amp; security</div>
+              </div>
+              <div class="qa-go">→</div>
+            </a>
+          </div>
+        </section>
+
+        <!-- Recent -->
+        <section class="item-card">
+          <div class="item-head">
+            <div>
+              <div class="item-title-lg">Recent</div>
+              <div class="item-sub">Last academy activity</div>
+            </div>
+            <a class="btn btn-ghost btn-sm" routerLink="/instructor/academies">View all</a>
+          </div>
+
+          <ng-container *ngIf="vm.recent as r; else noRecent">
+            <div class="recent">
+              <div class="recent-title">{{ r.title }}</div>
+              <div class="recent-sub">{{ r.subtitle }}</div>
+
+              <div class="recent-bottom">
+                <span class="status-badge"
+                      [class.status-good]="r.pillOn"
+                      [class.status-hidden]="!r.pillOn">
+                  {{ r.pillText }}
+                </span>
+
+                <div class="recent-actions">
+                  <a class="btn btn-primary btn-sm" [routerLink]="r.href">Open</a>
+                  <a class="btn btn-ghost btn-sm" routerLink="/instructor/academies">All academies</a>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-template #noRecent>
+            <div class="empty">
+              <div class="empty-title">No activity yet</div>
+              <div class="empty-sub">Create your first academy to get started.</div>
+              <a class="btn btn-primary" routerLink="/instructor/academy/create">Create academy</a>
+            </div>
+          </ng-template>
+        </section>
+
+      </div>
+
+      <!-- ── LOWER GRID ── -->
+      <div class="grid-2 lower">
+
+        <!-- Profile -->
+        <section class="item-card">
+          <div class="item-head">
+            <div>
+              <div class="item-title-lg">Profile</div>
+              <div class="item-sub">Signed in</div>
+            </div>
+            <a class="btn btn-ghost btn-sm" routerLink="/me">Manage</a>
+          </div>
+
+          <div class="profile">
+            <div class="avatar">
+              <img *ngIf="avatarUrl(vm) as url" [src]="url" alt="Avatar" />
+              <div class="avatar-fallback" *ngIf="!avatarUrl(vm)">
+                {{ (vm.email || 'U').slice(0,1).toUpperCase() }}
+              </div>
+            </div>
+
+            <div class="pmeta">
+              <div class="pemail">{{ vm.email }}</div>
+              <div class="proles">
+                <span class="role-pill" *ngFor="let r of vm.roles">{{ r }}</span>
+              </div>
+              <div class="pmono">
+                ID: <code>{{ vm.userId }}</code>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="row-actions">
+            <button class="btn btn-ghost btn-sm" type="button" (click)="copyUserId(vm.userId)">Copy ID</button>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="logout()">Logout</button>
+          </div>
+        </section>
+
+        <!-- Academies -->
+        <section class="item-card">
+          <div class="item-head">
+            <div>
+              <div class="item-title-lg">Your academies</div>
+              <div class="item-sub">Manage and publish</div>
+            </div>
+            <a class="btn btn-ghost btn-sm" routerLink="/instructor/academies">View all</a>
+          </div>
+
+          <div class="empty" *ngIf="vm.academiesCount === 0">
+            <div class="empty-title">No academies</div>
+            <div class="empty-sub">Create an academy to start publishing courses.</div>
+            <a class="btn btn-primary" routerLink="/instructor/academy/create">Create academy</a>
+          </div>
+
+          <div class="items-grid" *ngIf="vm.academiesCount > 0">
+            <article class="academy-card" *ngFor="let a of vm.academies" [routerLink]="['/instructor/courses', a.id]">
+              <div class="item-header">
+                <div class="item-title" [title]="a.name">{{ a.name }}</div>
+
+                <span class="status-badge"
+                      [class.status-hidden]="a.isHidden"
+                      [class.status-good]="!a.isHidden && a.isPublished">
+                  {{ a.isHidden ? 'Hidden' : (a.isPublished ? 'Published' : 'Draft') }}
+                </span>
+              </div>
+
+              <div class="meta-text">{{ a.description || a.slug }}</div>
+
+              <div class="meta-row">
+                <span class="meta-text">Courses: <code>{{ a.courseCount || 0 }}</code></span>
+                <span class="meta-text">Slug: <code>{{ a.slug }}</code></span>
+              </div>
+
+              <div class="hidden-info" *ngIf="a.isHidden">
+                <div class="meta-text"><strong>Hidden by admin</strong></div>
+                <div class="meta-text">{{ hiddenMessage(a) }}</div>
+                <div class="item-actions">
+                  <button class="btn btn-ghost btn-sm"
+                          type="button"
+                          (click)="requestReview($event, a)"
+                          [disabled]="isPublishing(a.id)">
+                    Request review
+                  </button>
+                </div>
+              </div>
+
+              <div class="item-actions" *ngIf="!a.isHidden">
+                <button class="btn btn-ghost btn-sm"
+                        type="button"
+                        (click)="togglePublish($event, a)"
+                        [disabled]="isPublishing(a.id)"
+                        [attr.aria-label]="a.isPublished ? 'Unpublish academy' : 'Publish academy'">
+                  {{ a.isPublished ? 'Unpublish' : 'Publish' }}
+                </button>
+
+                <span class="meta-text" *ngIf="isPublishing(a.id)">Saving…</span>
+                <span class="meta-text" *ngIf="!isPublishing(a.id)">Open →</span>
+              </div>
+            </article>
+          </div>
+        </section>
+
+      </div>
+
+    </ng-container>
+  </ng-container>
+
+</main>

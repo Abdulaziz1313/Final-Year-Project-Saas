@@ -59,14 +59,27 @@ export class QuizEditorComponent {
     this.load();
   }
 
+  // ---------- Template-safe getters (no ?. needed) ----------
   get questions(): UntypedFormArray {
     return this.form.get('questions') as UntypedFormArray;
   }
 
-  qChoices(i: number): UntypedFormArray {
-    return (this.questions.at(i).get('choices') as UntypedFormArray);
+  get questionCount(): number {
+    return this.questions.length;
   }
 
+  get hasQuestions(): boolean {
+    return this.questions.length > 0;
+  }
+
+  // Optional: nicer ngFor perf if you want to use trackBy in html
+  trackByIndex = (i: number) => i;
+
+  qChoices(i: number): UntypedFormArray {
+    return this.questions.at(i).get('choices') as UntypedFormArray;
+  }
+
+  // ---------- Builders ----------
   private makeChoice(text = '', isCorrect = false): UntypedFormGroup {
     return this.fb.group({
       id: [null],
@@ -86,20 +99,86 @@ export class QuizEditorComponent {
       matchType: [0],
     });
 
-    const choices = fg.get('choices') as UntypedFormArray;
+    // seed defaults based on type
+    this.seedByType(fg, type);
 
-    // Seed defaults
-    if (type === 1) {
-      choices.push(this.makeChoice('True', true));
-      choices.push(this.makeChoice('False', false));
-    } else if (type === 0) {
-      choices.push(this.makeChoice('Option 1', true));
-      choices.push(this.makeChoice('Option 2', false));
-    }
+    // react to type changes
+    fg.get('type')!.valueChanges.subscribe((t: number) => {
+      this.seedByType(fg, Number(t));
+    });
 
     return fg;
   }
 
+  // Ensure the question's inner structure matches the selected type
+  private seedByType(qFg: UntypedFormGroup, type: number) {
+    const choices = qFg.get('choices') as UntypedFormArray;
+
+    // Short answer => no choices
+    if (type === 2) {
+      choices.clear();
+      // keep correctAnswerText/matchType available
+      if (qFg.get('matchType')?.value == null) qFg.get('matchType')?.setValue(0, { emitEvent: false });
+      return;
+    }
+
+    // MCQ / TF => must have choices
+    // If switching from short => create minimal choices
+    if (choices.length === 0) {
+      if (type === 1) {
+        choices.push(this.makeChoice('True', true));
+        choices.push(this.makeChoice('False', false));
+      } else {
+        choices.push(this.makeChoice('Option 1', true));
+        choices.push(this.makeChoice('Option 2', false));
+      }
+      return;
+    }
+
+    // If switching to TF, enforce exactly True/False
+    if (type === 1) {
+      // Replace choices with True/False, but try to preserve correct if possible
+      const anyCorrect = choices.controls.some(c => !!c.value?.isCorrect);
+      choices.clear();
+      choices.push(this.makeChoice('True', anyCorrect ? true : true));
+      choices.push(this.makeChoice('False', false));
+      this.ensureExactlyOneCorrect(choices);
+      return;
+    }
+
+    // If switching to MCQ, ensure at least 2 choices and one correct
+    if (type === 0) {
+      while (choices.length < 2) {
+        choices.push(this.makeChoice(`Option ${choices.length + 1}`, false));
+      }
+      this.ensureExactlyOneCorrect(choices);
+    }
+  }
+
+  private ensureExactlyOneCorrect(arr: UntypedFormArray) {
+    if (arr.length === 0) return;
+
+    // If none correct, set first correct
+    const anyCorrect = arr.controls.some((c) => !!c.value?.isCorrect);
+    if (!anyCorrect) {
+      arr.at(0).patchValue({ isCorrect: true }, { emitEvent: false });
+    }
+
+    // If multiple correct, keep first only
+    let found = false;
+    for (let i = 0; i < arr.length; i++) {
+      const isCorrect = !!arr.at(i).value?.isCorrect;
+      if (isCorrect && !found) {
+        found = true;
+        continue;
+      }
+      if (isCorrect && found) {
+        arr.at(i).patchValue({ isCorrect: false }, { emitEvent: false });
+      }
+    }
+  }
+
+  // ---------- Load ----------
   load() {
     this.loading = true;
 
@@ -132,6 +211,8 @@ export class QuizEditorComponent {
           });
 
           const choicesArr = fg.get('choices') as UntypedFormArray;
+
+          // hydrate choices
           for (const c of qq.choices ?? []) {
             choicesArr.push(
               this.fb.group({
@@ -142,11 +223,13 @@ export class QuizEditorComponent {
             );
           }
 
-          // ensure TF always has 2
-          if ((qq.type ?? 0) === 1 && choicesArr.length === 0) {
-            choicesArr.push(this.makeChoice('True', true));
-            choicesArr.push(this.makeChoice('False', false));
-          }
+          // normalize by type (ensures TF has 2, MCQ has at least 2, short clears)
+          this.seedByType(fg, Number(qq.type ?? 0));
+
+          // subscribe to type changes after initial seed
+          fg.get('type')!.valueChanges.subscribe((t: number) => {
+            this.seedByType(fg, Number(t));
+          });
 
           this.questions.push(fg);
         }
@@ -158,6 +241,7 @@ export class QuizEditorComponent {
     });
   }
 
+  // ---------- UI actions ----------
   addQuestion(type: number) {
     this.questions.push(this.makeQuestion(type));
   }
@@ -167,14 +251,18 @@ export class QuizEditorComponent {
   }
 
   addChoice(qIndex: number) {
-    this.qChoices(qIndex).push(this.makeChoice('', false));
+    const arr = this.qChoices(qIndex);
+    arr.push(this.makeChoice(`Option ${arr.length + 1}`, false));
+    this.ensureExactlyOneCorrect(arr);
   }
 
   removeChoice(qIndex: number, cIndex: number) {
-    this.qChoices(qIndex).removeAt(cIndex);
+    const arr = this.qChoices(qIndex);
+    arr.removeAt(cIndex);
+    this.ensureExactlyOneCorrect(arr);
   }
 
-  // make sure MCQ has exactly one correct (simple UX)
+  // make sure MCQ/TF has exactly one correct (simple UX)
   markCorrect(qIndex: number, cIndex: number) {
     const arr = this.qChoices(qIndex);
     for (let i = 0; i < arr.length; i++) {
@@ -182,6 +270,7 @@ export class QuizEditorComponent {
     }
   }
 
+  // ---------- Save ----------
   save() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -191,6 +280,12 @@ export class QuizEditorComponent {
 
     const v: any = this.form.value;
 
+    // extra safety: normalize before save
+    for (let i = 0; i < this.questions.length; i++) {
+      const qFg = this.questions.at(i) as UntypedFormGroup;
+      this.seedByType(qFg, Number(qFg.get('type')!.value));
+    }
+
     const payload = {
       title: v.title,
       questions: (v.questions ?? []).map((q: any) => ({
@@ -198,13 +293,14 @@ export class QuizEditorComponent {
         type: q.type,
         prompt: q.prompt,
         points: q.points,
-        choices: q.type === 2
-          ? null
-          : (q.choices ?? []).map((c: any) => ({
-              id: c.id ?? null,
-              text: c.text,
-              isCorrect: !!c.isCorrect,
-            })),
+        choices:
+          q.type === 2
+            ? null
+            : (q.choices ?? []).map((c: any) => ({
+                id: c.id ?? null,
+                text: c.text,
+                isCorrect: !!c.isCorrect,
+              })),
         correctAnswerText: q.type === 2 ? (q.correctAnswerText ?? null) : null,
         matchType: q.type === 2 ? (q.matchType ?? 0) : null,
       })),

@@ -37,6 +37,22 @@ export class Auth {
     return !!this.getToken();
   }
 
+  isInstructor(): boolean {
+    return this.hasRole('Instructor');
+  }
+
+  isStudent(): boolean {
+    return this.hasRole('Student');
+  }
+
+  isAdmin(): boolean {
+    return this.hasRole('Admin');
+  }
+
+  isCoordinator(): boolean {
+    return this.hasRole('Coordinator');
+  }
+
   private setToken(token: string): void {
     localStorage.setItem(this.tokenKey, token);
   }
@@ -78,7 +94,6 @@ export class Auth {
     return this.getRoles().includes(role);
   }
 
-  // ✅ SMS-only: register-start requires phone
   registerStart(email: string, password: string, role: string, phone: string) {
     return this.http.post<{ email: string; expiresInSeconds: number }>(
       `${this.baseUrl}/register-start`,
@@ -93,3 +108,6 @@ export class Auth {
     );
   }
 }
+
+// Alias so components can import as either `Auth` or `AuthService`
+export { Auth as AuthService };

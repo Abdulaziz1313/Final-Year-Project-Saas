@@ -1,203 +1,232 @@
-<div class="academy-catalog" [style.--brand]="brandColor" [style.fontFamily]="brandFontFamily">
-  <!-- Background (same as Home / My Learning) -->
-  <div class="bg" aria-hidden="true">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
-    <div class="blob b3"></div>
-    <div class="bg-grid"></div>
-  </div>
+<div class="catalog" [style.--brand]="brandColor" [style.fontFamily]="brandFontFamily">
 
-  <!-- Content above background -->
-  <div class="wrap">
-    <div class="container">
-      <ng-container *ngIf="state$ | async as st">
-        <div *ngIf="st.error" class="alert">{{ st.error }}</div>
+  <ng-container *ngIf="state$ | async as st">
+    <div class="error-bar" *ngIf="st.error">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      {{ st.error }}
+    </div>
 
-        <div *ngIf="st.loading && !st.data" class="muted">Loading catalog…</div>
+    <!-- Skeleton while loading -->
+    <div class="skeleton-hero" *ngIf="st.loading && !st.data">
+      <div class="skel skel-logo"></div>
+      <div class="skel-body">
+        <div class="skel skel-h1"></div>
+        <div class="skel skel-p"></div>
+        <div class="skel skel-p w50"></div>
+      </div>
+    </div>
 
-        <ng-container *ngIf="st.data as vm">
-          <!-- HERO -->
-          <header class="hero">
-            <div
-              class="hero-bg"
-              [style.backgroundImage]="vm.academy.bannerUrl ? ('url(' + img(vm.academy.bannerUrl) + ')') : null"
-            ></div>
-            <div class="hero-overlay"></div>
+    <ng-container *ngIf="st.data as vm">
 
-            <div class="hero-content">
-              <div class="academy">
-                <div class="logo" *ngIf="img(vm.academy.logoUrl); else letter">
-                  <img [src]="img(vm.academy.logoUrl)!" alt="logo" />
-                </div>
-                <ng-template #letter>
-                  <div class="logo fallback">{{ vm.academy.name.slice(0, 1).toUpperCase() }}</div>
-                </ng-template>
+      <!-- ═══════════════════════════════════════
+           HERO BANNER
+      ════════════════════════════════════════ -->
+      <div class="hero" [class.hero-has-banner]="vm.academy.bannerUrl">
 
-                <div class="hero-text">
-                  <div class="hero-top">
-                    <h1 class="page-title">{{ vm.academy.name }}</h1>
+        <div class="hero-bg"
+             [style.backgroundImage]="vm.academy.bannerUrl ? ('url(' + img(vm.academy.bannerUrl) + ')') : null">
+        </div>
+        <div class="hero-scrim"></div>
 
-                    <a class="btn ghost small" [routerLink]="['/academies']">
-                      Back
-                    </a>
-                  </div>
-
-                  <p class="page-sub">
-                    {{ vm.academy.description || 'Explore courses from this academy.' }}
-                  </p>
-
-                  <div class="hero-meta">
-                    <span class="chip">
-                      <span class="dot"></span>
-                      {{ vm.items.length }} / {{ vm.total }} courses
-                    </span>
-
-                    <span class="chip ghost" *ngIf="q || tag || sort !== 'newest'">
-                      Filters active
-                    </span>
-
-                    <button class="chip link" type="button" (click)="resetFilters()">
-                      Reset filters
-                    </button>
-                  </div>
-                </div>
-              </div>
+        <div class="hero-inner">
+          <!-- Logo  -->
+          <div class="logo-wrap">
+            <div class="logo-img" *ngIf="img(vm.academy.logoUrl)">
+              <img [src]="img(vm.academy.logoUrl)!" alt="logo" />
             </div>
-          </header>
-
-          <!-- FILTERS -->
-          <section class="filters" [class.loading]="st.loading">
-            <div class="field">
-              <label class="lbl">Search</label>
-
-              <div class="input-wrap">
-                <input
-                  class="input"
-                  [value]="q"
-                  (input)="onQInput($any($event.target).value)"
-                  placeholder="Search courses…"
-                />
-                <button class="icon-btn" type="button" *ngIf="q" (click)="clearQ()" aria-label="Clear search">×</button>
-              </div>
-
-              <div class="hint muted">Title &amp; description</div>
+            <div class="logo-img logo-letter" *ngIf="!img(vm.academy.logoUrl)">
+              <span>{{ vm.academy.name.slice(0, 1).toUpperCase() }}</span>
             </div>
+          </div>
 
-            <div class="field">
-              <label class="lbl">Tag</label>
-
-              <div class="input-wrap">
-                <input
-                  class="input"
-                  [value]="tag"
-                  (input)="onTagInput($any($event.target).value)"
-                  placeholder="e.g. html, angular"
-                />
-                <button class="icon-btn" type="button" *ngIf="tag" (click)="clearTag()" aria-label="Clear tag">×</button>
-              </div>
-
-              <div class="hint muted">Matches tags</div>
+          <!-- Copy -->
+          <div class="hero-copy">
+            <div class="hero-kicker">
+              <span class="kicker-dot"></span>
+              Academy catalog
             </div>
+            <h1 class="hero-title">{{ vm.academy.name }}</h1>
+            <p class="hero-sub" *ngIf="vm.academy.description">{{ vm.academy.description }}</p>
 
-            <div class="field">
-              <label class="lbl">Sort</label>
-              <select class="input" [value]="sort" (change)="onSortChange($any($event.target).value)">
-                <option value="newest">Newest</option>
-                <option value="title">Title</option>
-                <option value="price">Price</option>
-              </select>
-              <div class="hint muted">Default: newest</div>
-            </div>
-
-            <div class="actions">
-              <div class="results-chip">
-                <span class="muted small">
-                  Showing <b>{{ vm.items.length }}</b> of <b>{{ vm.total }}</b>
-                </span>
-                <span class="spinner" *ngIf="st.loading" aria-hidden="true"></span>
-              </div>
-            </div>
-          </section>
-
-          <!-- GRID -->
-          <div class="grid" *ngIf="vm.items.length > 0; else empty">
-            <a class="course" *ngFor="let c of vm.items; trackBy: trackById" [routerLink]="['/course', c.id]">
-              <div class="thumb">
-                <img *ngIf="img(c.thumbnailUrl)" [src]="img(c.thumbnailUrl)!" alt="thumb" />
-
-                <div class="thumb-fallback" *ngIf="!img(c.thumbnailUrl)">
-                  <div class="tf-title">{{ c.title.slice(0, 1) || 'C' }}</div>
-                  <div class="tf-sub">Course</div>
-                </div>
-
-                <div class="thumb-shade" *ngIf="c.shortDescription"></div>
-                <div class="thumb-desc netflix" *ngIf="c.shortDescription">
-                  <div class="td-kicker">About this course</div>
-                  <div class="td-text">{{ c.shortDescription }}</div>
-                </div>
-
-                <div class="pill-row">
-                  <span class="price-pill">{{ priceLabel(c) }}</span>
-                  <span class="tag-pill" *ngIf="hasTag(c)">Tagged</span>
-                </div>
+            <div class="hero-meta">
+              <div class="meta-stat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">
+                  <path d="M4 19V6a2 2 0 0 1 2-2h12v15"/><path d="M8 8h8M8 12h6"/>
+                </svg>
+                <strong>{{ vm.total }}</strong> courses
               </div>
 
-              <div class="body">
-                <div class="title" [title]="c.title">{{ c.title }}</div>
-
-                <div class="sub" [title]="c.shortDescription || ''">
-                  {{ c.shortDescription || 'No description yet.' }}
-                </div>
-
-                <div class="meta">
-                  <span class="badge">{{ c.category || 'General' }}</span>
-
-                  <ng-container *ngFor="let t of tagList(c).slice(0, 2)">
-                    <span class="badge ghost">#{{ t }}</span>
-                  </ng-container>
-
-                  <span class="badge ghost" *ngIf="tagList(c).length > 2">+{{ tagList(c).length - 2 }}</span>
-                </div>
-
-                <div class="cta-row">
-                  <span class="muted tiny">Open course</span>
-                  <span class="arrow">→</span>
-                </div>
-              </div>
-            </a>
-
-            <!-- LOAD MORE -->
-            <div class="load-more">
-              <div class="lm-left">
-                <div class="lm-title">Want more?</div>
-                <div class="muted small">Load the next page of courses.</div>
-              </div>
-
-              <div class="lm-right">
-                <button class="btn primary" type="button" (click)="loadMore()" [disabled]="!canLoadMore || st.loading">
-                  {{ st.loading ? 'Loading…' : (canLoadMore ? 'Load more' : 'All loaded') }}
-                </button>
-                <div class="muted small">
-                  Page {{ vm.page }} • {{ vm.items.length }} of {{ vm.total }}
-                </div>
+              <div class="meta-filter-badge" *ngIf="q || tag || sort !== 'newest'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                </svg>
+                Filters active
+                <button class="filter-badge-x" type="button" (click)="resetFilters()">×</button>
               </div>
             </div>
           </div>
 
-          <ng-template #empty>
-            <div class="empty">
-              <div class="empty-ic">👜</div>
-              <div class="empty-title">No courses yet</div>
-              <p class="empty-sub">This academy is published, but hasn’t published any courses yet.</p>
+          <a class="hero-back" [routerLink]="['/academies']">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+              <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+            Back
+          </a>
+        </div>
 
-              <div class="empty-actions">
-                <a class="btn ghost" [routerLink]="['/academies']">Explore other academies</a>
-                <button class="btn primary" type="button" (click)="resetFilters()">Reset filters</button>
+      </div>
+
+      <!-- ═══════════════════════════════════════
+           FILTER BAR (unified single-line bar)
+      ════════════════════════════════════════ -->
+      <div class="fbar" [class.fbar-busy]="st.loading">
+
+        <!-- Search -->
+        <div class="fbar-group fbar-grow">
+          <svg class="fbar-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="10.5" cy="10.5" r="7.5"/><path d="M21 21l-4.3-4.3"/>
+          </svg>
+          <input class="fbar-input" [value]="q"
+                 (input)="onQInput($any($event.target).value)"
+                 placeholder="Search courses…" />
+          <button class="fbar-x" type="button" *ngIf="q" (click)="clearQ()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="11" height="11">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="fbar-sep"></div>
+
+        <!-- Tag -->
+        <div class="fbar-group fbar-shrink">
+          <svg class="fbar-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"/>
+            <line x1="7" y1="7" x2="7.01" y2="7"/>
+          </svg>
+          <input class="fbar-input" [value]="tag"
+                 (input)="onTagInput($any($event.target).value)"
+                 placeholder="Tag…" />
+          <button class="fbar-x" type="button" *ngIf="tag" (click)="clearTag()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="11" height="11">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="fbar-sep"></div>
+
+        <!-- Sort -->
+        <div class="fbar-group fbar-static">
+          <svg class="fbar-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/>
+          </svg>
+          <select class="fbar-select" [value]="sort" (change)="onSortChange($any($event.target).value)">
+            <option value="newest">Newest</option>
+            <option value="title">A–Z</option>
+            <option value="price">Price</option>
+          </select>
+        </div>
+
+        <!-- Count / spinner -->
+        <div class="fbar-count">
+          <span class="fbar-spinner" *ngIf="st.loading"></span>
+          <span class="fbar-num" *ngIf="!st.loading">{{ vm.items.length }}<em>/{{ vm.total }}</em></span>
+        </div>
+
+      </div>
+
+      <!-- ═══════════════════════════════════════
+           COURSE GRID
+      ════════════════════════════════════════ -->
+      <div class="cgrid" *ngIf="vm.items.length > 0; else empty">
+
+        <a class="ccard" *ngFor="let c of vm.items; trackBy: trackById" [routerLink]="['/course', c.id]">
+
+          <!-- Image section -->
+          <div class="ccard-img">
+            <img *ngIf="img(c.thumbnailUrl)" [src]="img(c.thumbnailUrl)!" alt="" />
+
+            <div class="ccard-fallback" *ngIf="!img(c.thumbnailUrl)">
+              <div class="cf-letter">{{ c.title.slice(0, 1) || 'C' }}</div>
+            </div>
+
+            <!-- Hover overlay -->
+            <div class="ccard-overlay" *ngIf="c.shortDescription">
+              <div class="co-tag">About</div>
+              <p class="co-text">{{ c.shortDescription }}</p>
+            </div>
+
+            <!-- Top badges -->
+            <div class="ccard-badges">
+              <span class="price-badge">{{ priceLabel(c) }}</span>
+              <span class="tagged-badge" *ngIf="hasTag(c)">Tagged</span>
+            </div>
+          </div>
+
+          <!-- Text section -->
+          <div class="ccard-body">
+            <div class="ccard-cat">{{ c.category || 'General' }}</div>
+            <div class="ccard-title">{{ c.title }}</div>
+            <div class="ccard-desc">{{ c.shortDescription || 'No description yet.' }}</div>
+
+            <div class="ccard-tags" *ngIf="tagList(c).length">
+              <span class="ctag" *ngFor="let t of tagList(c).slice(0, 3)">#{{ t }}</span>
+              <span class="ctag ctag-more" *ngIf="tagList(c).length > 3">+{{ tagList(c).length - 3 }}</span>
+            </div>
+
+            <div class="ccard-cta">
+              <span>Start course</span>
+              <div class="cta-pill">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
               </div>
             </div>
-          </ng-template>
-        </ng-container>
-      </ng-container>
-    </div>
-  </div>
+          </div>
+
+        </a>
+
+      </div>
+
+      <!-- Load more (outside grid, full width) -->
+      <div class="loadmore" *ngIf="vm.items.length > 0">
+        <div class="lm-track">
+          <div class="lm-fill" [style.width.%]="(vm.items.length / vm.total) * 100"></div>
+        </div>
+        <div class="lm-info">{{ vm.items.length }} of {{ vm.total }} courses</div>
+        <button class="btn btn-outline-primary" type="button"
+                (click)="loadMore()" [disabled]="!canLoadMore || st.loading">
+          {{ st.loading ? 'Loading…' : (canLoadMore ? 'Load more courses' : 'All courses loaded ✓') }}
+        </button>
+      </div>
+
+      <!-- ── EMPTY STATE ── -->
+      <ng-template #empty>
+        <div class="empty">
+          <div class="empty-art">
+            <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="96" height="96" rx="24" fill="#eff4ff"/>
+              <rect x="20" y="20" width="56" height="56" rx="10" fill="white" stroke="#c7d7fb" stroke-width="1.5"/>
+              <path d="M32 44h32M32 52h20M32 60h14" stroke="#1a56db" stroke-width="2" stroke-linecap="round"/>
+              <rect x="32" y="30" width="32" height="8" rx="4" fill="#dbeafe"/>
+            </svg>
+          </div>
+          <h2 class="empty-h">{{ (q || tag) ? 'No results found' : 'No courses yet' }}</h2>
+          <p class="empty-p">
+            {{ (q || tag)
+              ? 'Try different keywords or clear your filters to see all courses.'
+              : 'This academy is published but hasn\'t added courses yet. Check back soon!' }}
+          </p>
+          <div class="empty-btns">
+            <button class="btn btn-primary" type="button" *ngIf="q || tag" (click)="resetFilters()">Clear filters</button>
+            <a class="btn btn-ghost" [routerLink]="['/academies']">Browse academies</a>
+          </div>
+        </div>
+      </ng-template>
+
+    </ng-container>
+  </ng-container>
 </div>

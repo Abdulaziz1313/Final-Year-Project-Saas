@@ -1,256 +1,385 @@
 <div class="home">
-  <!-- Background blobs -->
-  <div class="bg">
-    <span class="blob b1"></span>
-    <span class="blob b2"></span>
-    <span class="blob b3"></span>
-    <span class="grid"></span>
-  </div>
 
-  <!-- Top bar -->
+  <!-- Background -->
+  <div class="home-bg"></div>
+
+  <!-- ── TOPBAR ── -->
   <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" routerLink="/home">
-        <span class="logo">الف</span>
-        <span class="name">Alef</span>
-        <span class="tag">Learning Commerce</span>
+        <div class="logo-mark"><span>الف</span></div>
+        <div class="brand-text">
+          <span class="brand-name">Alef</span>
+          <span class="brand-sub">Learning Commerce</span>
+        </div>
       </a>
 
       <nav class="nav">
         <a class="nav-link" routerLink="/academies">Explore</a>
+        <a class="nav-link" routerLink="/pricing">Pricing</a>
+        <div class="nav-sep"></div>
 
         <ng-container *ngIf="!isLoggedIn; else loggedNav">
           <a class="nav-link" routerLink="/login">Sign in</a>
-          <a class="btn primary pill" routerLink="/register">Create account</a>
+          <a class="btn btn-primary btn-sm" routerLink="/register">Create account</a>
         </ng-container>
 
         <ng-template #loggedNav>
           <a class="nav-link" routerLink="/me">Account</a>
-
-          <a class="btn primary pill" *ngIf="isInstructor" routerLink="/instructor">Dashboard</a>
-          <a class="btn primary pill" *ngIf="isStudent" routerLink="/my-learning">My Learning</a>
-          <a class="btn primary pill" *ngIf="!isInstructor && !isStudent" routerLink="/me">Go to Account</a>
+          <a class="btn btn-primary btn-sm" *ngIf="isInstructor" routerLink="/instructor">Dashboard</a>
+          <a class="btn btn-primary btn-sm" *ngIf="isStudent" routerLink="/my-learning">My Learning</a>
+          <a class="btn btn-primary btn-sm" *ngIf="!isInstructor && !isStudent" routerLink="/me">Go to Account</a>
         </ng-template>
       </nav>
     </div>
   </header>
 
+  <!-- ── MAIN ── -->
   <main class="wrap">
-    <!-- Hero -->
+
+    <!-- ── HERO ── -->
     <section class="hero">
       <div class="hero-left">
-        <div class="pill-row">
-          <span class="pill-chip">
-            <span class="dot"></span>
-            Built for instructors & students
-          </span>
-          <span class="pill-chip soft">OTP verification</span>
-          <span class="pill-chip soft">Progress tracking</span>
+        <div class="hero-eyebrow">
+          <div class="hero-eyebrow-dot"></div>
+          <span class="hero-eyebrow-text">Built for instructors &amp; students</span>
         </div>
 
         <h1 class="hero-title">
-          Launch your academy.<br />
-          Sell knowledge with a branded learning experience.
+          Launch your<br>
+          <em>academy.</em><br>
+          Sell knowledge.
         </h1>
 
-        <p class="hero-sub">
-          Alef (الف) helps instructors create academies, publish courses, and track student progress —
-          with a clean, professional SaaS experience inspired by modern commerce platforms.
+        <p class="hero-desc">
+          Alef helps instructors create branded academies, publish courses, and track student progress —
+          with a professional SaaS experience inspired by modern commerce platforms.
         </p>
 
-        <div class="hero-cta">
-          <a class="btn primary big" routerLink="/register">Get started</a>
-          <a class="btn ghost big" routerLink="/academies">Explore academies</a>
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-lg" routerLink="/register">Get started free</a>
+          <a class="btn btn-ghost btn-lg" routerLink="/academies">Explore academies →</a>
         </div>
 
-        <div class="hero-meta">
-          <div class="meta-item">
-            <span class="meta-k">Fast setup</span>
-            <span class="meta-v">Create academy in minutes</span>
+        <div class="hero-trust">
+          <div class="trust-item">
+            <div class="trust-icon">⚡</div>
+            <span>Setup in minutes</span>
           </div>
-          <div class="meta-item">
-            <span class="meta-k">Secure</span>
-            <span class="meta-v">Identity + JWT + OTP</span>
+          <div class="trust-item">
+            <div class="trust-icon">🔒</div>
+            <span>OTP + JWT security</span>
           </div>
-          <div class="meta-item">
-            <span class="meta-k">Scale</span>
-            <span class="meta-v">Uploads, courses, progress</span>
+          <div class="trust-item">
+            <div class="trust-icon">📊</div>
+            <span>Progress tracking</span>
           </div>
         </div>
       </div>
 
-      <div class="hero-right">
-        <!-- Salla-like device preview card -->
-        <div class="preview card">
-          <div class="preview-top">
-            <div class="mini-brand">
-              <span class="mini-logo">الف</span>
-              <div>
-                <div class="mini-title">Alef Academy</div>
-                <div class="mini-sub">Branded learning space</div>
-              </div>
-            </div>
+      <div class="hero-visual">
 
-            <div class="mini-actions">
-              <span class="chip">Courses</span>
-              <span class="chip">Students</span>
-            </div>
-          </div>
-
-          <div class="preview-body">
-            <div class="stat-grid">
-              <div class="stat">
-                <div class="n">12</div>
-                <div class="l">Courses</div>
-              </div>
-              <div class="stat">
-                <div class="n">1.4k</div>
-                <div class="l">Enrollments</div>
-              </div>
-              <div class="stat">
-                <div class="n">97%</div>
-                <div class="l">Completion</div>
-              </div>
-            </div>
-
-            <div class="course-list">
-              <div class="course">
-                <div class="thumb"></div>
-                <div class="info">
-                  <div class="t"></div>
-                  <div class="s"></div>
-                </div>
-                <div class="badge-pill">Published</div>
-              </div>
-              <div class="course">
-                <div class="thumb"></div>
-                <div class="info">
-                  <div class="t w70"></div>
-                  <div class="s w55"></div>
-                </div>
-                <div class="badge-pill soft">Draft</div>
-              </div>
-              <div class="course">
-                <div class="thumb"></div>
-                <div class="info">
-                  <div class="t w60"></div>
-                  <div class="s w45"></div>
-                </div>
-                <div class="badge-pill">Published</div>
-              </div>
-            </div>
-
-            <div class="progress-strip">
-              <div class="bar">
-                <span style="width: 68%"></span>
-              </div>
-              <div class="muted small">Student progress • resume learning anytime</div>
-            </div>
+        <!-- Floating: enrollment -->
+        <div class="hero-float f2">
+          <div class="hf-icon blue">📈</div>
+          <div class="hf-text">
+            <div class="hf-val">+340 enrollments</div>
+            <div class="hf-lbl">This month</div>
           </div>
         </div>
 
-        <div class="hero-note muted">
-          Your academy branding (logo, banner, colors) stays consistent across public pages and dashboards.
+        <!-- Dashboard preview card -->
+        <div class="hero-card">
+
+          <div class="hero-card-header">
+            <div class="hch-brand">
+              <div class="hch-logo"><span>الف</span></div>
+              <div class="hch-info">
+                <div class="hch-name">Alef Academy</div>
+                <div class="hch-sub">Branded learning space</div>
+              </div>
+            </div>
+            <div class="hch-badges">
+              <div class="hch-badge">Courses</div>
+              <div class="hch-badge">Students</div>
+            </div>
+          </div>
+
+          <div class="hero-card-stats">
+            <div class="hcs-item">
+              <div class="hcs-n">12</div>
+              <div class="hcs-l">Courses</div>
+            </div>
+            <div class="hcs-item">
+              <div class="hcs-n">1.4k</div>
+              <div class="hcs-l">Enrollments</div>
+            </div>
+            <div class="hcs-item">
+              <div class="hcs-n">97%</div>
+              <div class="hcs-l">Completion</div>
+            </div>
+          </div>
+
+          <div class="hero-card-courses">
+            <div class="hcc-item">
+              <div class="hcc-thumb c1"></div>
+              <div class="hcc-info">
+                <div class="hcc-t w90"></div>
+                <div class="hcc-s w55"></div>
+              </div>
+              <div class="hcc-status live">Live</div>
+            </div>
+            <div class="hcc-item">
+              <div class="hcc-thumb c2"></div>
+              <div class="hcc-info">
+                <div class="hcc-t w75"></div>
+                <div class="hcc-s w45"></div>
+              </div>
+              <div class="hcc-status live">Live</div>
+            </div>
+            <div class="hcc-item">
+              <div class="hcc-thumb c3"></div>
+              <div class="hcc-info">
+                <div class="hcc-t w60"></div>
+                <div class="hcc-s w40"></div>
+              </div>
+              <div class="hcc-status draft">Draft</div>
+            </div>
+          </div>
+
+          <div class="hero-card-progress">
+            <div class="hcp-header">
+              <div class="hcp-label">Student progress • resume anytime</div>
+              <div class="hcp-pct">72%</div>
+            </div>
+            <div class="hcp-bar">
+              <div class="hcp-fill"></div>
+            </div>
+            <div class="hcp-sub">Last lesson: Advanced TypeScript Patterns</div>
+          </div>
+        </div>
+
+        <!-- Floating: rating -->
+        <div class="hero-float f1">
+          <div class="hf-icon gold">⭐</div>
+          <div class="hf-text">
+            <div class="hf-val">4.9 / 5.0 rating</div>
+            <div class="hf-lbl">From 820 reviews</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── LOGOS STRIP ── -->
+    <div class="logos-strip">
+      <span class="logos-label">Trusted technology stack</span>
+      <div class="logos-items">
+        <span class="logo-item">Angular 17</span>
+        <span class="logo-item">.NET 8</span>
+        <span class="logo-item">SQL Server</span>
+        <span class="logo-item">JWT Auth</span>
+        <span class="logo-item">OTP Verify</span>
+        <span class="logo-item">Azure</span>
+      </div>
+    </div>
+
+    <!-- ── FEATURES ── -->
+    <section class="features">
+      <div class="section-header">
+        <div class="section-tag">Platform Features</div>
+        <h2 class="section-title">Everything you need to<br><em>teach and sell</em></h2>
+        <p class="section-desc">A complete learning commerce platform — from branded storefront to student progress tracking.</p>
+      </div>
+
+      <div class="feat-grid">
+        <article class="feat-card c-blue">
+          <div class="feat-icon-wrap">🏷️</div>
+          <h3 class="feat-title">Branded academies</h3>
+          <p class="feat-desc">Your logo, banner, and theme live consistently across public pages and student dashboards — no white-labeling guesswork.</p>
+          <ul class="feat-list">
+            <li>Custom logo &amp; banner</li>
+            <li>Public academy pages</li>
+            <li>Consistent theme</li>
+            <li>Asset uploads</li>
+          </ul>
+        </article>
+
+        <article class="feat-card c-gold">
+          <div class="feat-icon-wrap">📦</div>
+          <h3 class="feat-title">Course builder</h3>
+          <p class="feat-desc">Structure your content into modules and lessons with a clean instructor workflow that's fast and intuitive.</p>
+          <ul class="feat-list">
+            <li>Modules &amp; lessons</li>
+            <li>Publish controls</li>
+            <li>Media uploads</li>
+            <li>Draft previews</li>
+          </ul>
+        </article>
+
+        <article class="feat-card c-green">
+          <div class="feat-icon-wrap">📈</div>
+          <h3 class="feat-title">Progress tracking</h3>
+          <p class="feat-desc">Students resume exactly where they left off. Instructors see engagement clearly at a glance.</p>
+          <ul class="feat-list">
+            <li>Last lesson resume</li>
+            <li>Completion rates</li>
+            <li>Enrollment metrics</li>
+            <li>Student insights</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <!-- ── HOW IT WORKS ── -->
+    <section class="how">
+      <div class="section-header">
+        <div class="section-tag">How it works</div>
+        <h2 class="section-title">From sign up to<br><em>first enrollment</em></h2>
+      </div>
+
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="how-num">1</div>
+          <div class="how-step-title">Create your account</div>
+          <div class="how-step-desc">Register as an instructor with OTP-verified identity in under 2 minutes.</div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">2</div>
+          <div class="how-step-title">Set up your academy</div>
+          <div class="how-step-desc">Upload your branding, write your bio, and customize your public academy page.</div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">3</div>
+          <div class="how-step-title">Build your courses</div>
+          <div class="how-step-desc">Create structured modules and lessons, upload media, and publish when ready.</div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">4</div>
+          <div class="how-step-title">Watch students learn</div>
+          <div class="how-step-desc">Students enroll, track their progress, and you see real-time engagement data.</div>
         </div>
       </div>
     </section>
 
-    <!-- Stats strip -->
-    <section class="stats">
-      <div class="stats-inner card">
-        <div class="statItem">
-          <div class="k">Academy setup</div>
-          <div class="v">Brand + courses + publish</div>
-        </div>
-        <div class="divider"></div>
-        <div class="statItem">
-          <div class="k">Student experience</div>
-          <div class="v">Enroll • learn • continue</div>
-        </div>
-        <div class="divider"></div>
-        <div class="statItem">
-          <div class="k">Tech stack</div>
-          <div class="v">Angular • .NET 8 • SQL Server</div>
-        </div>
+    <!-- ── STATS BAND ── -->
+    <section class="stats-band">
+      <div class="stat-item">
+        <div class="stat-n">100<span>%</span></div>
+        <div class="stat-label">OTP-secured identity verification</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-n"><span>∞</span></div>
+        <div class="stat-label">Unlimited courses &amp; modules per academy</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-n">2<span>min</span></div>
+        <div class="stat-label">Average time to launch your first academy</div>
       </div>
     </section>
 
-    <!-- Features -->
-    <section class="feature-grid">
-      <article class="feature card">
-        <div class="icon">
-          <span>🏷️</span>
-        </div>
-        <h3>Branded academies</h3>
-        <p>Logo, banner, and theme options that keep the experience consistent everywhere.</p>
-        <ul>
-          <li>Public academy pages</li>
-          <li>Theme-ready UI</li>
-          <li>Upload assets</li>
-        </ul>
-      </article>
-
-      <article class="feature card">
-        <div class="icon">
-          <span>📦</span>
-        </div>
-        <h3>Course builder</h3>
-        <p>Organize content into modules and lessons with a clean instructor workflow.</p>
-        <ul>
-          <li>Modules & lessons</li>
-          <li>Publish control</li>
-          <li>Media uploads</li>
-        </ul>
-      </article>
-
-      <article class="feature card">
-        <div class="icon">
-          <span>📈</span>
-        </div>
-        <h3>Progress tracking</h3>
-        <p>Students continue from where they left off, instructors see engagement clearly.</p>
-        <ul>
-          <li>Last lesson resume</li>
-          <li>Lesson progress</li>
-          <li>Enrollments</li>
-        </ul>
-      </article>
-    </section>
-
-    <!-- Trust / CTA -->
-    <section class="cta-band">
-      <div class="cta-card card">
+    <!-- ── CTA ── -->
+    <section class="cta-section">
+      <div class="cta-card">
         <div class="cta-left">
-          <h2>Ready to build your academy on Alef?</h2>
-          <p class="muted">
-            Start with a student or instructor account. Set up your academy and publish your first course.
-          </p>
+          <div class="cta-tag">Get started today</div>
+          <h2 class="cta-title">Ready to build your<br><em>academy on Alef?</em></h2>
+          <p class="cta-desc">Start as a student or instructor. Set up your academy and publish your first course — no credit card required.</p>
+          <div class="cta-actions">
+            <a class="btn btn-primary btn-lg" routerLink="/register">Create free account</a>
+            <a class="btn btn-ghost btn-lg" routerLink="/login">Sign in</a>
+          </div>
         </div>
         <div class="cta-right">
-          <a class="btn primary big pill" routerLink="/register">Create account</a>
-          <a class="btn ghost big pill" routerLink="/login">Sign in</a>
+          <div class="cta-point">
+            <div class="cta-point-icon">⚡</div>
+            <div class="cta-point-text">
+              <div class="cta-point-title">Instant setup</div>
+              <div class="cta-point-desc">Academy is live in minutes, not days.</div>
+            </div>
+          </div>
+          <div class="cta-point">
+            <div class="cta-point-icon">🔐</div>
+            <div class="cta-point-text">
+              <div class="cta-point-title">Secure by default</div>
+              <div class="cta-point-desc">JWT + OTP verification out of the box.</div>
+            </div>
+          </div>
+          <div class="cta-point">
+            <div class="cta-point-icon">📊</div>
+            <div class="cta-point-text">
+              <div class="cta-point-title">Built-in analytics</div>
+              <div class="cta-point-desc">Track enrollments and progress from day one.</div>
+            </div>
+          </div>
+          <div class="cta-point">
+            <div class="cta-point-icon">🏷️</div>
+            <div class="cta-point-text">
+              <div class="cta-point-title">Fully branded</div>
+              <div class="cta-point-desc">Your logo and colors everywhere, consistently.</div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <footer class="foot">
-      <div class="foot-inner">
-        <div class="brand-foot">
-          <span class="logo small">الف</span>
-          <div>
-            <div class="name">Alef</div>
-            <div class="muted small">Clean, professional learning SaaS</div>
-          </div>
-        </div>
-
-        <div class="links">
-          <a routerLink="/academies">Explore</a>
-          <a routerLink="/login">Sign in</a>
-          <a routerLink="/register">Create account</a>
-        </div>
-
-        <div class="muted small copy">© {{ year }} Alef</div>
-      </div>
-    </footer>
   </main>
+
+  <!-- ── FOOTER ── -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="fb-logo">
+          <a class="brand" routerLink="/home">
+            <div class="logo-mark"><span>الف</span></div>
+            <div class="brand-text">
+              <span class="brand-name">Alef</span>
+              <span class="brand-sub">Learning Commerce</span>
+            </div>
+          </a>
+        </div>
+        <p class="fb-desc">Clean, professional learning SaaS for instructors who want to sell knowledge with a branded experience.</p>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Platform</div>
+        <ul class="footer-links">
+          <li><a routerLink="/academies">Explore academies</a></li>
+          <li><a routerLink="/features">Features</a></li>
+          <li><a routerLink="/pricing">Pricing</a></li>
+          <li><a routerLink="/changelog">Changelog</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Account</div>
+        <ul class="footer-links">
+          <li><a routerLink="/login">Sign in</a></li>
+          <li><a routerLink="/register">Create account</a></li>
+          <li><a routerLink="/instructor">Instructor dashboard</a></li>
+          <li><a routerLink="/my-learning">My learning</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <div class="footer-col-title">Tech</div>
+        <ul class="footer-links">
+          <li><a href="#">Angular 17</a></li>
+          <li><a href="#">ASP.NET Core 8</a></li>
+          <li><a href="#">SQL Server</a></li>
+          <li><a href="#">Identity + JWT</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="footer-copy">© {{ year }} Alef Learning Commerce. All rights reserved.</div>
+      <div class="footer-legal">
+        <a routerLink="/privacy">Privacy</a>
+        <a routerLink="/terms">Terms</a>
+        <a routerLink="/contact">Contact</a>
+      </div>
+    </div>
+  </footer>
+
 </div>

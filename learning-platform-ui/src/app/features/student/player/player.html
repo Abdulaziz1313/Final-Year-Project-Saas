@@ -1,274 +1,398 @@
-<div class="player">
-  <!-- Background (same as Home / My Learning) -->
-  <div class="bg" aria-hidden="true">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
-    <div class="blob b3"></div>
-    <div class="bg-grid"></div>
-  </div>
+<div class="player-page">
 
-  <div class="wrap">
-    <div class="container">
-      <ng-container *ngIf="state$ | async as st">
-        <div *ngIf="st.loading" class="muted">Loading…</div>
-        <div *ngIf="st.error" class="alert">{{ st.error }}</div>
+  <!-- Background matching home -->
+  <div class="home-bg" aria-hidden="true"></div>
 
-        <ng-container *ngIf="st.data && !st.loading && !st.error">
-          <!-- ✅ Sticky topbar (match Home: topbar + topbar-inner) -->
-          <header class="topbar">
-            <div class="topbar-inner">
-              <div class="top-left">
-                <div class="kicker">Student • Player</div>
-                <div class="top-title" [title]="st.data.title">{{ st.data.title }}</div>
+  <ng-container *ngIf="state$ | async as st">
 
-                <div class="top-sub muted">
-                  <span class="chip">
-                    Progress
-                    <span class="mono">{{ progressText(st.data) }}</span>
-                  </span>
+    <!-- ── LOADING ── -->
+    <div class="state-panel" *ngIf="st.loading">
+      <div class="sk-topbar skel"></div>
+      <div class="sk-layout">
+        <div class="sk-sidebar">
+          <div class="sk-line w60 skel"></div>
+          <div class="sk-bar skel"></div>
+          <div class="sk-lessons">
+            <div class="sk-lesson skel" *ngFor="let _ of [1,2,3,4,5]"></div>
+          </div>
+        </div>
+        <div class="sk-content">
+          <div class="sk-media skel"></div>
+          <div class="sk-line w45 skel" style="margin-top:14px"></div>
+          <div class="sk-line w70 skel"></div>
+        </div>
+      </div>
+    </div>
 
-                  <span class="chip ghost">
-                    Lessons
-                    <span class="mono">{{ flat(st.data).length }}</span>
-                  </span>
+    <!-- ── ERROR ── -->
+    <div class="error-center" *ngIf="st.error && !st.loading">
+      <div class="error-panel">
+        <div class="error-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="error-title">Couldn't open the player</div>
+        <div class="error-desc">{{ st.error }}</div>
+        <button class="btn btn-primary btn-sm" type="button" (click)="reload()">Try again</button>
+      </div>
+    </div>
 
-                  <span class="chip ghost" *ngIf="currentLesson(st.data) as cl">
-                    Now
-                    <span class="mono">{{ cl.title }}</span>
-                  </span>
-                </div>
+    <!-- ── PLAYER ── -->
+    <ng-container *ngIf="st.data && !st.loading && !st.error">
+
+      <!-- ══ TOPBAR (glass, home-style) ══ -->
+      <header class="topbar">
+        <div class="topbar-inner">
+
+          <!-- Left: brand + course info -->
+          <div class="tb-left">
+            <a class="brand" routerLink="/my-learning">
+              <div class="logo-mark"><span>الف</span></div>
+              <div class="brand-text">
+                <span class="brand-name">Alef</span>
+                <span class="brand-sub">Learning</span>
               </div>
+            </a>
 
-              <div class="top-actions">
-                <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
+            <div class="tb-divider"></div>
 
-                <button class="btn ghost" type="button" (click)="toggleSidebar()">
-                  {{ sidebarOpen ? 'Hide lessons' : 'Show lessons' }}
-                </button>
+            <div class="tb-course">
+              <div class="tb-eyebrow">
+                <div class="tb-dot"></div>
+                Now learning
+              </div>
+              <div class="tb-title" [title]="st.data.title">{{ st.data.title }}</div>
+            </div>
+          </div>
+
+          <!-- Right: progress + actions -->
+          <div class="tb-right">
+            <div class="tb-progress-pill">
+              <div class="tpp-ring">
+                <svg viewBox="0 0 32 32" width="32" height="32">
+                  <circle class="tpp-track" cx="16" cy="16" r="13"/>
+                  <circle class="tpp-fill" cx="16" cy="16" r="13"
+                          [attr.stroke-dasharray]="ringDash((completed.size / (flat(st.data).length || 1)) * 100)"/>
+                </svg>
+                <span class="tpp-pct">{{ ((completed.size / (flat(st.data).length || 1)) * 100) | number:'1.0-0' }}</span>
+              </div>
+              <div class="tpp-text">
+                <div class="tpp-label">Progress</div>
+                <div class="tpp-value">{{ progressText(st.data) }}</div>
               </div>
             </div>
-          </header>
 
-          <!-- ✅ Overlay for mobile drawer -->
-          <div class="overlay" *ngIf="sidebarOpen && isMobile" (click)="toggleSidebar(false)"></div>
+            <div class="tb-sep"></div>
 
-          <div class="layout">
-            <!-- ✅ Sidebar lessons -->
-            <aside class="card sidebar" [class.open]="sidebarOpen" [class.drawer]="isMobile">
-              <div class="side-head">
-                <div class="course-meta">
-                  <div class="side-title">Lessons</div>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="reload()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>
+              </svg>
+              Refresh
+            </button>
 
-                  <div class="progress-row">
-                    <div class="muted small">Progress: {{ progressText(st.data) }}</div>
+            <button class="tb-sidebar-toggle" type="button" (click)="toggleSidebar()"
+                    [class.active]="sidebarOpen">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15">
+                <rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18"/>
+              </svg>
+              {{ sidebarOpen ? 'Hide' : 'Lessons' }}
+            </button>
+          </div>
+        </div>
+      </header>
 
-                    <div class="progressbar" aria-hidden="true">
-                      <div
-                        class="progressbar-fill"
-                        [style.width.%]="(completed.size / (flat(st.data).length || 1)) * 100"
-                      ></div>
-                    </div>
-                  </div>
+      <!-- Mobile sidebar overlay -->
+      <div class="overlay" *ngIf="sidebarOpen && isMobile" (click)="toggleSidebar(false)"></div>
+
+      <!-- ══ MAIN LAYOUT ══ -->
+      <div class="player-layout" [class.sidebar-hidden]="!sidebarOpen">
+
+        <!-- ── SIDEBAR ── -->
+        <aside class="sidebar" [class.open]="sidebarOpen" [class.drawer]="isMobile">
+
+          <div class="sb-head">
+            <div class="sb-title">Course content</div>
+            <button class="sb-close" type="button" (click)="toggleSidebar(false)" *ngIf="isMobile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Overall progress bar in sidebar -->
+          <div class="sb-progress">
+            <div class="sb-progress-meta">
+              <span class="sb-progress-label">{{ progressText(st.data) }}</span>
+              <span class="sb-progress-count">{{ completed.size }} / {{ flat(st.data).length }} done</span>
+            </div>
+            <div class="sb-bar">
+              <div class="sb-bar-fill"
+                   [style.width.%]="(completed.size / (flat(st.data).length || 1)) * 100"></div>
+            </div>
+          </div>
+
+          <!-- Search -->
+          <div class="sb-search">
+            <svg class="sb-search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14">
+              <circle cx="10.5" cy="10.5" r="7.5"/><path d="M21 21l-4.3-4.3"/>
+            </svg>
+            <input class="sb-search-input" [(ngModel)]="lessonQuery"
+                   placeholder="Search lessons…" aria-label="Search lessons" />
+            <button class="sb-search-x" type="button" *ngIf="lessonQuery" (click)="lessonQuery=''">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" width="10" height="10">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Module list -->
+          <div class="sb-modules">
+            <div class="sb-module" *ngFor="let m of filteredModules(st.data)">
+
+              <button type="button" class="sb-module-btn" (click)="toggleModule(m.id)">
+                <div class="sb-module-icon" [class.open]="isModuleOpen(m.id)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
                 </div>
+                <div class="sb-module-info">
+                  <div class="sb-module-name">{{ m.title }}</div>
+                  <div class="sb-module-count">{{ m.lessons?.length || 0 }} lessons</div>
+                </div>
+              </button>
 
-                <button class="btn ghost small" type="button" (click)="toggleSidebar(false)" *ngIf="isMobile">
-                  ✕
-                </button>
-              </div>
+              <div class="sb-lessons" *ngIf="isModuleOpen(m.id)">
+                <button
+                  type="button"
+                  class="sb-lesson"
+                  *ngFor="let l of m.lessons"
+                  [class.is-active]="l.id === activeLessonId(st.data)"
+                  [class.is-done]="completed.has(l.id)"
+                  (click)="pickLesson(st.data.id, l.id)"
+                >
+                  <!-- Completion indicator -->
+                  <div class="sb-check">
+                    <svg *ngIf="completed.has(l.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" width="10" height="10">
+                      <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                  </div>
 
-              <!-- ✅ search -->
-              <div class="search">
-                <span class="icon">🔎</span>
-                <input
-                  class="input"
-                  [(ngModel)]="lessonQuery"
-                  placeholder="Search lessons..."
-                  aria-label="Search lessons"
-                />
-                <button class="clear" type="button" *ngIf="lessonQuery" (click)="lessonQuery=''">×</button>
-              </div>
+                  <span class="sb-lesson-name">{{ l.title }}</span>
 
-              <div class="side-sub muted">Pick a lesson to continue.</div>
-
-              <div class="module" *ngFor="let m of filteredModules(st.data)">
-                <button type="button" class="module-toggle" (click)="toggleModule(m.id)">
-                  <span class="module-title">{{ m.title }}</span>
-                  <span class="module-right">
-                    <span class="mini muted">{{ m.lessons?.length || 0 }} lessons</span>
-                    <span class="chev">{{ isModuleOpen(m.id) ? '▾' : '▸' }}</span>
+                  <!-- Type badge -->
+                  <span class="sb-type"
+                        [class.type-video]="isVideo(l.type)"
+                        [class.type-quiz]="isQuiz(l.type)"
+                        [class.type-doc]="isDoc(l.type)"
+                        [class.type-text]="isText(l.type)">
+                    <svg *ngIf="isVideo(l.type)" viewBox="0 0 24 24" fill="currentColor" stroke="none" width="10" height="10">
+                      <path d="M8 5v14l11-7-11-7Z"/>
+                    </svg>
+                    <svg *ngIf="isQuiz(l.type)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="10" height="10">
+                      <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/>
+                    </svg>
+                    <svg *ngIf="isDoc(l.type)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="10" height="10">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                    </svg>
+                    <svg *ngIf="isText(l.type)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="10" height="10">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                      <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z"/>
+                    </svg>
+                    <span>
+                      {{ isVideo(l.type) ? 'Video' : isDoc(l.type) ? 'Doc' : isText(l.type) ? 'Text' : isQuiz(l.type) ? 'Quiz' : 'Other' }}
+                    </span>
                   </span>
                 </button>
+              </div>
 
-                <div class="module-body" *ngIf="isModuleOpen(m.id)">
-                  <button
-                    type="button"
-                    class="lesson"
-                    *ngFor="let l of m.lessons"
-                    [class.active]="l.id === activeLessonId(st.data)"
-                    [class.done]="completed.has(l.id)"
-                    (click)="pickLesson(st.data.id, l.id)"
-                  >
-                    <span class="check" aria-hidden="true">
-                      <span class="check-dot"></span>
-                      <span class="check-tick">✓</span>
-                    </span>
+            </div>
+          </div>
 
-                    <span class="name" [title]="l.title">{{ l.title }}</span>
+        </aside>
 
-                    <span
-                      class="kind"
-                      [attr.data-kind]="isVideo(l.type) ? 'video' : isDoc(l.type) ? 'doc' : isText(l.type) ? 'text' : isQuiz(l.type) ? 'quiz' : 'other'"
-                    >
-                      <span class="k-ico" aria-hidden="true">
-                        {{ isVideo(l.type) ? '▶' : isDoc(l.type) ? '📄' : isText(l.type) ? '✎' : isQuiz(l.type) ? '🧩' : '•' }}
-                      </span>
-                      <span class="k-txt">
-                        {{ isVideo(l.type) ? 'Video' : isDoc(l.type) ? 'Doc' : isText(l.type) ? 'Text' : isQuiz(l.type) ? 'Quiz' : 'Other' }}
-                      </span>
-                    </span>
+        <!-- ── CONTENT AREA ── -->
+        <section class="content-area">
+          <ng-container *ngIf="currentLesson(st.data) as lesson">
+
+            <!-- Content header -->
+            <div class="content-header">
+              <div class="ch-left">
+                <!-- Breadcrumb -->
+                <div class="ch-crumb">
+                  <a class="ch-crumb-link" routerLink="/my-learning">My Learning</a>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12" class="ch-crumb-sep">
+                    <path d="M9 18l6-6-6-6"/>
+                  </svg>
+                  <span class="ch-crumb-link ch-crumb-muted">{{ moduleTitleForLesson(st.data, lesson.id) }}</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12" class="ch-crumb-sep">
+                    <path d="M9 18l6-6-6-6"/>
+                  </svg>
+                  <span class="ch-crumb-current">{{ lesson.title }}</span>
+                </div>
+
+                <!-- Lesson meta -->
+                <div class="ch-meta-row">
+                  <span class="ch-now-pill">
+                    <div class="ch-now-dot"></div>
+                    Now learning
+                  </span>
+                  <span class="ch-type-badge"
+                        [class.badge-video]="isVideo(lesson.type)"
+                        [class.badge-quiz]="isQuiz(lesson.type)"
+                        [class.badge-doc]="isDoc(lesson.type)"
+                        [class.badge-text]="isText(lesson.type)">
+                    {{ isVideo(lesson.type) ? 'Video' : isDoc(lesson.type) ? 'Document' : isText(lesson.type) ? 'Text' : isQuiz(lesson.type) ? 'Quiz' : 'Lesson' }}
+                  </span>
+                  <span class="ch-done-badge" *ngIf="completed.has(lesson.id)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" width="11" height="11">
+                      <path d="M20 6L9 17l-5-5"/>
+                    </svg>
+                    Completed
+                  </span>
+                </div>
+
+                <h2 class="ch-lesson-title">{{ lesson.title }}</h2>
+
+                <p class="ch-lesson-hint">
+                  {{ isVideo(lesson.type) ? 'Watch the video, then mark it complete to continue.'
+                   : isDoc(lesson.type) ? 'Read the document inline or open it in a new tab.'
+                   : isText(lesson.type) ? 'Read through the lesson content below.'
+                   : isQuiz(lesson.type) ? 'Complete the quiz to mark this lesson done.'
+                   : 'Review this lesson.' }}
+                </p>
+              </div>
+
+              <!-- Navigation + actions -->
+              <div class="ch-actions">
+                <div class="ch-nav">
+                  <button class="btn btn-ghost btn-sm" type="button"
+                          [disabled]="!hasPrev(st.data)" (click)="prev(st.data)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+                      <path d="M19 12H5M12 5l-7 7 7 7"/>
+                    </svg>
+                    Prev
+                  </button>
+                  <button class="btn btn-ghost btn-sm" type="button"
+                          [disabled]="!hasNext(st.data)" (click)="next(st.data)">
+                    Next
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <div class="ch-complete-btns">
+                  <button class="btn btn-ghost btn-sm" type="button"
+                          [disabled]="completing"
+                          (click)="markComplete(st.data, lesson.id)">
+                    <svg *ngIf="!completing && !completed.has(lesson.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+                      <circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/>
+                    </svg>
+                    {{ completing ? 'Saving…' : (completed.has(lesson.id) ? '✓ Completed' : 'Mark done') }}
+                  </button>
+
+                  <button class="btn btn-primary btn-sm" type="button"
+                          [disabled]="completing || !hasNext(st.data)"
+                          (click)="markCompleteAndNext(st.data, lesson.id)">
+                    {{ completing ? 'Saving…' : 'Done & Next' }}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
                   </button>
                 </div>
               </div>
-            </aside>
+            </div>
 
-            <!-- ✅ Content -->
-            <section class="card content">
-              <ng-container *ngIf="currentLesson(st.data) as lesson">
-                <div class="content-head">
-                  <div class="now">
-                    <div class="crumbs muted small">
-                      <span>Course</span>
-                      <span class="sep">/</span>
-                      <span>{{ moduleTitleForLesson(st.data, lesson.id) }}</span>
-                    </div>
-
-                    <div class="title-row">
-                      <div class="pill">Now learning</div>
-
-                      <span
-                        class="type-badge"
-                        [attr.data-kind]="isVideo(lesson.type) ? 'video' : isDoc(lesson.type) ? 'doc' : isText(lesson.type) ? 'text' : isQuiz(lesson.type) ? 'quiz' : 'other'"
-                      >
-                        {{ isVideo(lesson.type) ? 'Video' : isDoc(lesson.type) ? 'Document' : isText(lesson.type) ? 'Text' : isQuiz(lesson.type) ? 'Quiz' : 'Lesson' }}
-                      </span>
-
-                      <span class="done-badge" *ngIf="completed.has(lesson.id)">✓ Completed</span>
-                    </div>
-
-                    <div class="lesson-title">{{ lesson.title }}</div>
-
-                    <div class="muted small">
-                      {{
-                        isVideo(lesson.type) ? 'Watch and continue to the next lesson.'
-                        : isDoc(lesson.type) ? 'Read the document inline or open it in a new tab.'
-                        : isText(lesson.type) ? 'Read the lesson content below.'
-                        : isQuiz(lesson.type) ? 'Complete the quiz to mark this lesson complete.'
-                        : 'Lesson'
-                      }}
-                    </div>
+            <!-- ── VIDEO ── -->
+            <div class="media-block" *ngIf="isVideo(lesson.type)">
+              <ng-container *ngIf="assetUrl(lesson.contentUrl) as videoUrl; else noVideo">
+                <div class="video-frame">
+                  <video class="video-player" [src]="videoUrl" controls playsinline preload="metadata"></video>
+                </div>
+                <p class="media-hint">If the video doesn't play, ensure the API is running and static files are configured.</p>
+              </ng-container>
+              <ng-template #noVideo>
+                <div class="empty-media">
+                  <div class="em-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="28" height="28">
+                      <rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 8l6 4-6 4V8Z" fill="currentColor" opacity="0.3"/>
+                    </svg>
                   </div>
-
-                  <div class="content-actions">
-                    <button class="btn ghost" type="button" [disabled]="!hasPrev(st.data)" (click)="prev(st.data)">
-                      ← Prev
-                    </button>
-
-                    <button class="btn ghost" type="button" [disabled]="!hasNext(st.data)" (click)="next(st.data)">
-                      Next →
-                    </button>
-
-                    <button class="btn primary" type="button" [disabled]="completing" (click)="markComplete(st.data, lesson.id)">
-                      {{ completing ? 'Saving…' : (completed.has(lesson.id) ? 'Completed' : 'Mark complete') }}
-                    </button>
-
-                    <button
-                      class="btn primary"
-                      type="button"
-                      [disabled]="completing"
-                      (click)="markCompleteAndNext(st.data, lesson.id)"
-                    >
-                      {{ completing ? 'Saving…' : 'Complete & Next' }}
-                    </button>
-                  </div>
+                  <div class="em-title">No video yet</div>
+                  <div class="em-desc">The instructor hasn't uploaded a video for this lesson.</div>
                 </div>
+              </ng-template>
+            </div>
 
-                <!-- VIDEO -->
-                <div class="media" *ngIf="isVideo(lesson.type)">
-                  <ng-container *ngIf="assetUrl(lesson.contentUrl) as videoUrl; else noVideo">
-                    <div class="media-frame video-frame">
-                      <video class="video" [src]="videoUrl" controls playsinline preload="metadata"></video>
-                    </div>
-                    <div class="muted small tip">
-                      If the video doesn’t play: ensure the API is running and static files are enabled.
-                    </div>
-                  </ng-container>
-
-                  <ng-template #noVideo>
-                    <div class="empty-box">
-                      <div class="empty-title">No video uploaded yet</div>
-                      <div class="muted">Instructor needs to upload a video for this lesson.</div>
-                    </div>
-                  </ng-template>
-                </div>
-
-                <!-- DOCUMENT -->
-                <div class="media" *ngIf="isDoc(lesson.type)">
-                  <ng-container *ngIf="assetUrl(lesson.contentUrl) as docUrl; else noDoc">
-                    <div class="doc-actions">
-                      <a class="btn ghost small" [href]="docUrl" target="_blank" rel="noopener">Open</a>
-                      <a class="btn ghost small" [href]="docUrl" download>Download</a>
-                    </div>
-
-                    <!-- ✅ fixed preview frame -->
-                    <div class="media-frame doc-frame">
-                      <iframe class="doc" [src]="safePdfUrl(docUrl)" title="Document preview"></iframe>
-                    </div>
-
-                    <div class="muted small tip">
-                      Preview shows the uploaded PDF directly in the lesson card.
-                    </div>
-                  </ng-container>
-
-                  <ng-template #noDoc>
-                    <div class="empty-box">
-                      <div class="empty-title">No file uploaded yet</div>
-                      <div class="muted">Instructor needs to upload a document for this lesson.</div>
-                    </div>
-                  </ng-template>
-                </div>
-
-                <!-- TEXT -->
-                <div class="text" *ngIf="isText(lesson.type)">
-                  <div class="prose" [innerHTML]="lesson.htmlContent || '<p>No content</p>'"></div>
-                </div>
-
-                <!-- QUIZ -->
-                <div class="quiz" *ngIf="isQuiz(lesson.type)">
-                  <app-quiz-player #qp [lessonId]="lesson.id"></app-quiz-player>
-                </div>
-
-                <!-- OTHER -->
-                <div
-                  class="empty-box"
-                  *ngIf="!isVideo(lesson.type) && !isDoc(lesson.type) && !isText(lesson.type) && !isQuiz(lesson.type)"
-                >
-                  <div class="empty-title">Not supported yet</div>
-                  <div class="muted">This lesson type is not implemented in the player yet.</div>
-                  <a
-                    class="btn ghost small"
-                    *ngIf="assetUrl(lesson.contentUrl)"
-                    [href]="assetUrl(lesson.contentUrl)!"
-                    target="_blank"
-                    rel="noopener"
-                  >
-                    Open resource
+            <!-- ── DOCUMENT ── -->
+            <div class="media-block" *ngIf="isDoc(lesson.type)">
+              <ng-container *ngIf="assetUrl(lesson.contentUrl) as docUrl; else noDoc">
+                <div class="doc-toolbar">
+                  <a class="btn btn-ghost btn-sm" [href]="docUrl" target="_blank" rel="noopener">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                    Open in tab
+                  </a>
+                  <a class="btn btn-ghost btn-sm" [href]="docUrl" download>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Download
                   </a>
                 </div>
+                <div class="doc-frame">
+                  <iframe class="doc-embed" [src]="safePdfUrl(docUrl)" title="Document preview"></iframe>
+                </div>
+                <p class="media-hint">PDF renders inline. Use the buttons above to open or download.</p>
               </ng-container>
-            </section>
-          </div>
-        </ng-container>
-      </ng-container>
-    </div>
-  </div>
+              <ng-template #noDoc>
+                <div class="empty-media">
+                  <div class="em-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="28" height="28">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="currentColor" opacity="0.12"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+                    </svg>
+                  </div>
+                  <div class="em-title">No document yet</div>
+                  <div class="em-desc">The instructor hasn't uploaded a file for this lesson.</div>
+                </div>
+              </ng-template>
+            </div>
+
+            <!-- ── TEXT ── -->
+            <div class="text-block" *ngIf="isText(lesson.type)">
+              <div class="prose" [innerHTML]="lesson.htmlContent || '<p>No content yet.</p>'"></div>
+            </div>
+
+            <!-- ── QUIZ ── -->
+            <div class="quiz-block" *ngIf="isQuiz(lesson.type)">
+              <app-quiz-player #qp [lessonId]="lesson.id"></app-quiz-player>
+            </div>
+
+            <!-- ── UNSUPPORTED ── -->
+            <div class="empty-media"
+                 *ngIf="!isVideo(lesson.type) && !isDoc(lesson.type) && !isText(lesson.type) && !isQuiz(lesson.type)">
+              <div class="em-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="28" height="28">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/>
+                </svg>
+              </div>
+              <div class="em-title">Not yet supported</div>
+              <div class="em-desc">This lesson type isn't available in the player yet.</div>
+              <a class="btn btn-ghost btn-sm" *ngIf="assetUrl(lesson.contentUrl)"
+                 [href]="assetUrl(lesson.contentUrl)!" target="_blank" rel="noopener">
+                Open resource
+              </a>
+            </div>
+
+          </ng-container>
+        </section>
+
+      </div>
+    </ng-container>
+  </ng-container>
+
 </div>

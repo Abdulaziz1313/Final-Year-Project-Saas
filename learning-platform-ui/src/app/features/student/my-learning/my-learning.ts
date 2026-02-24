@@ -21,9 +21,10 @@ export class MyLearningComponent {
   api = environment.apiBaseUrl;
 
   sort: SortKey = 'recent';
-
   query = '';
   hideUnavailable = false;
+
+  downloading = new Set<string>();
 
   private reload$ = new BehaviorSubject<void>(undefined);
   state$: Observable<LoadState<MyLearningItem[]>>;
@@ -70,12 +71,56 @@ export class MyLearningComponent {
     return x.enrollment.lastLessonId ? 'Continue' : 'Start';
   }
 
+  downloadCert(x: MyLearningItem, ev: Event) {
+    ev.preventDefault();
+    ev.stopPropagation();
+
+    if (x.course.isHidden) return;
+
+    const percent = x.progress?.percent ?? 0;
+    if (percent < 100) {
+      this.toast.info('Finish the course to unlock the certificate.');
+      return;
+    }
+
+    const courseId = x.course.id;
+
+    if (this.downloading.has(courseId)) return;
+    this.downloading.add(courseId);
+
+    this.student.issueCertificate(courseId).subscribe({
+      next: (res) => {
+        this.student.downloadCertificatePdf(res.id).subscribe({
+          next: (blob) => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `certificate-${res.certificateNumber}.pdf`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+
+            this.toast.success('Certificate downloaded.');
+            this.downloading.delete(courseId);
+          },
+          error: () => {
+            this.toast.error('Failed to download certificate PDF.');
+            this.downloading.delete(courseId);
+          },
+        });
+      },
+      error: (err) => {
+        const msg = err?.error || 'You must complete the course first.';
+        this.toast.error(typeof msg === 'string' ? msg : 'Could not issue certificate.');
+        this.downloading.delete(courseId);
+      },
+    });
+  }
+
   visible(items: MyLearningItem[]) {
     const q = (this.query || '').trim().toLowerCase();
 
     return (items || []).filter((x) => {
       if (this.hideUnavailable && x.course.isHidden) return false;
-
       if (!q) return true;
 
       const title = (x.course.title || '').toLowerCase();

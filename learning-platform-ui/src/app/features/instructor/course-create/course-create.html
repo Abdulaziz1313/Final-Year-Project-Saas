@@ -1,41 +1,39 @@
-<!-- course-create.html (FULL UPDATED) -->
-<main class="page">
-  <!-- Background blobs (same as home/courses) -->
-  <div class="bg" aria-hidden="true">
-    <span class="blob b1"></span>
-    <span class="blob b2"></span>
-    <span class="blob b3"></span>
-    <span class="grid"></span>
+<!-- course-create.html (ADMIN-STYLE / FULL UPDATED) -->
+<main class="course-create-page">
+
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">Instructor panel</span>
+      </div>
+
+      <h1 class="page-title">Create <em>course</em></h1>
+      <p class="page-desc">Create a draft course now, then build modules & lessons in the builder.</p>
+    </div>
+
+    <div class="hero-right">
+      <div class="action-group">
+        <a class="btn btn-ghost" [routerLink]="['/instructor/courses', academyId]">Back</a>
+      </div>
+    </div>
   </div>
 
-  <header class="header">
-    <div class="head-left">
-      <div class="kicker">Instructor • Courses</div>
-      <h1>Create course</h1>
-      <p>Create a draft course now, then build modules & lessons in the builder.</p>
-    </div>
-
-    <div class="head-actions">
-      <a class="btn ghost" [routerLink]="['/instructor/courses', academyId]">Back</a>
-    </div>
-  </header>
-
   <section class="grid-layout">
-    <!-- Form -->
+    <!-- FORM -->
     <div class="card">
       <div class="card-head">
         <div>
-          <h2>Course details</h2>
-          <p class="muted">Fields marked with <span class="req">*</span> are required.</p>
+          <div class="card-title">Course details</div>
+          <div class="muted small">Fields marked with <span class="req">*</span> are required.</div>
         </div>
 
-        <div class="pill">
-          <span class="dot"></span>
-          Draft
-        </div>
+        <span class="status-badge">Draft</span>
       </div>
 
       <form class="form" [formGroup]="form" (ngSubmit)="submit()">
+
         <!-- BASICS -->
         <div class="section">
           <div class="section-top">
@@ -44,7 +42,7 @@
           </div>
 
           <div class="field">
-            <label>Title <span class="req">*</span></label>
+            <label class="field-label">Title <span class="req">*</span></label>
             <input class="input" formControlName="title" placeholder="e.g. Web Development Basics" />
             <small class="hint error" *ngIf="titleCtrl?.touched && titleCtrl?.invalid">
               Title is required (min 3 characters).
@@ -52,7 +50,7 @@
           </div>
 
           <div class="field">
-            <label class="row-label">
+            <label class="field-label row-label">
               <span>Short description</span>
               <span class="counter" [class.over]="shortCount() > shortMax">{{ shortCount() }}/{{ shortMax }}</span>
             </label>
@@ -70,24 +68,24 @@
           </div>
 
           <div class="field">
-            <label>Full description</label>
+            <label class="field-label">Full description</label>
             <textarea
-              class="input"
+              class="input textarea"
               formControlName="fullDescription"
               rows="6"
               placeholder="Course overview, outcomes, who it’s for…"
             ></textarea>
-            <small class="muted">You can format this later in the builder (HTML supported).</small>
+            <small class="muted small">You can format this later in the builder (HTML supported).</small>
           </div>
 
           <div class="row">
             <div class="field">
-              <label>Category</label>
+              <label class="field-label">Category</label>
               <input class="input" formControlName="category" placeholder="e.g. Web Development" />
             </div>
 
             <div class="field">
-              <label>Tags</label>
+              <label class="field-label">Tags</label>
               <div class="tag-row">
                 <input
                   class="input"
@@ -96,8 +94,8 @@
                   (keydown.enter)="$event.preventDefault(); addTag()"
                   placeholder="Type a tag then press Add"
                 />
-                <button type="button" class="btn ghost small" (click)="addTag()">Add</button>
-                <button type="button" class="btn ghost small" (click)="clearTags()" [disabled]="tags.length===0">Clear</button>
+                <button type="button" class="btn btn-ghost btn-sm" (click)="addTag()">Add</button>
+                <button type="button" class="btn btn-ghost btn-sm" (click)="clearTags()" [disabled]="tags.length===0">Clear</button>
               </div>
 
               <div class="tags" *ngIf="tags.length > 0">
@@ -107,7 +105,7 @@
                 </span>
               </div>
 
-              <small class="muted">Up to 10 tags. Use short keywords.</small>
+              <small class="muted small">Up to 10 tags. Use short keywords.</small>
             </div>
           </div>
         </div>
@@ -134,7 +132,7 @@
 
           <div class="row" *ngIf="!form.value.isFree">
             <div class="field">
-              <label>Price <span class="req">*</span></label>
+              <label class="field-label">Price <span class="req">*</span></label>
               <input
                 class="input"
                 type="number"
@@ -149,8 +147,8 @@
             </div>
 
             <div class="field">
-              <label>Currency</label>
-              <select class="input" formControlName="currency">
+              <label class="field-label">Currency</label>
+              <select class="input select-input" formControlName="currency">
                 <option value="EUR">EUR</option>
                 <option value="USD">USD</option>
                 <option value="GBP">GBP</option>
@@ -195,7 +193,7 @@
             </div>
 
             <div class="drop-actions">
-              <label class="btn primary small">
+              <label class="btn btn-primary btn-sm">
                 <input
                   #thumbInput
                   type="file"
@@ -206,7 +204,7 @@
                 {{ thumbPreview ? 'Replace' : 'Choose file' }}
               </label>
 
-              <button class="btn ghost small" type="button" (click)="clearThumb(thumbInput)" [disabled]="!thumbPreview">
+              <button class="btn btn-ghost btn-sm" type="button" (click)="clearThumb(thumbInput)" [disabled]="!thumbPreview">
                 Remove
               </button>
             </div>
@@ -241,24 +239,25 @@
 
         <!-- ACTIONS -->
         <div class="actions">
-          <button class="btn primary" type="submit" [disabled]="loading || form.invalid || (!form.value.isFree && priceInvalid())">
+          <button class="btn btn-primary" type="submit"
+                  [disabled]="loading || form.invalid || (!form.value.isFree && priceInvalid())">
             <span class="spinner" *ngIf="loading"></span>
             {{ loading ? 'Creating…' : 'Create course' }}
           </button>
 
-          <span class="muted" *ngIf="loading">Saving and uploading thumbnail…</span>
+          <span class="muted small" *ngIf="loading">Saving and uploading thumbnail…</span>
         </div>
 
-        <div class="alert error" *ngIf="error">{{ error }}</div>
+        <div class="alert-error" *ngIf="error"><span>⚠</span> {{ error }}</div>
       </form>
     </div>
 
-    <!-- Preview -->
+    <!-- PREVIEW -->
     <aside class="card preview">
       <div class="card-head">
         <div>
-          <h2>Preview</h2>
-          <p class="muted">How it will appear to students.</p>
+          <div class="card-title">Preview</div>
+          <div class="muted small">How it will appear to students.</div>
         </div>
       </div>
 
@@ -273,17 +272,17 @@
           <div class="preview-sub">{{ form.value.shortDescription || 'Short description…' }}</div>
 
           <div class="preview-meta">
-            <span class="chip">{{ form.value.category || 'Category' }}</span>
-            <span class="chip price">{{ previewPrice() }}</span>
+            <span class="pill">{{ form.value.category || 'Category' }}</span>
+            <span class="pill pill-strong">{{ previewPrice() }}</span>
           </div>
 
           <div class="preview-tags" *ngIf="tags.length > 0">
-            <span class="chip" *ngFor="let t of tags">{{ t }}</span>
+            <span class="pill" *ngFor="let t of tags">{{ t }}</span>
           </div>
         </div>
       </div>
 
-      <div class="muted small hint-box">
+      <div class="hint muted small">
         Tip: Use a clear title and a clean thumbnail to increase enrollments.
       </div>
     </aside>

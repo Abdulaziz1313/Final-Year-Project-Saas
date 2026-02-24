@@ -1,347 +1,417 @@
 <div class="course-public" [style.--brand]="brandColor" [style.fontFamily]="brandFontFamily">
-  <!-- Background (same as Home / My Learning) -->
-  <div class="bg" aria-hidden="true">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
-    <div class="blob b3"></div>
-    <div class="bg-grid"></div>
-  </div>
 
-  <!-- content wrapper above background -->
-  <div class="wrap">
-    <div class="container">
-      <ng-container *ngIf="state$ | async as st">
-        <div *ngIf="st.loading" class="muted">Loading…</div>
+  <ng-container *ngIf="state$ | async as st">
 
-        <!-- Error state -->
-        <div *ngIf="st.error && !st.loading" class="error-card card">
-          <div class="error-top">
-            <div class="error-badge" [class.hidden]="(st.error || '').toLowerCase().includes('hidden by admin')">
-              {{ (st.error || '').toLowerCase().includes('hidden by admin') ? 'Hidden' : 'Unavailable' }}
-            </div>
-            <div class="error-title">This course is not available</div>
-            <div class="error-sub muted">{{ st.error }}</div>
-          </div>
-
-          <div class="error-actions">
-            <a class="btn primary" routerLink="/academies">Explore academies</a>
-            <a class="btn ghost" routerLink="/home">Go home</a>
-          </div>
-
-          <div class="muted small">
-            If you believe this is a mistake, contact the academy owner or support.
+    <!-- Loading -->
+    <div class="state-loading" *ngIf="st.loading">
+      <div class="loading-shimmer">
+        <div class="ls-banner skel"></div>
+        <div class="ls-body">
+          <div class="ls-thumb skel"></div>
+          <div class="ls-lines">
+            <div class="ls-line w75 skel"></div>
+            <div class="ls-line w50 skel"></div>
+            <div class="ls-line w35 skel"></div>
           </div>
         </div>
+      </div>
+    </div>
 
-        <ng-container *ngIf="st.data as vm">
-          <!-- Banner -->
-          <div
-            class="banner"
-            *ngIf="vm.academy?.bannerUrl"
-            [style.backgroundImage]="'url(' + img(vm.academy?.bannerUrl) + ')'"
-          ></div>
+    <!-- Error -->
+    <div class="error-panel" *ngIf="st.error && !st.loading">
+      <div class="error-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+      <div class="error-status">
+        {{ (st.error || '').toLowerCase().includes('hidden by admin') ? 'Course Hidden' : 'Unavailable' }}
+      </div>
+      <h2 class="error-title">This course is not available</h2>
+      <p class="error-desc">{{ st.error }}</p>
+      <div class="error-actions">
+        <a class="btn btn-primary" routerLink="/academies">Explore academies</a>
+        <a class="btn btn-ghost" routerLink="/home">Go home</a>
+      </div>
+      <p class="error-hint">If you believe this is a mistake, contact the academy owner or support.</p>
+    </div>
 
-          <div class="layout">
-            <!-- Main -->
-            <div class="main">
-              <header class="hero">
-                <div class="thumb">
-                  <img *ngIf="img(vm.thumbnailUrl) as t" [src]="t" alt="thumb" />
-                  <div class="thumb-fallback" *ngIf="!img(vm.thumbnailUrl)">Course</div>
-                </div>
+    <!-- Main content -->
+    <ng-container *ngIf="st.data as vm">
 
-                <div class="info">
-                  <div class="crumbs">
-                    <a class="crumb" routerLink="/academies">Academies</a>
-                    <span class="sep">/</span>
-                    <a class="crumb" *ngIf="vm.academy?.slug" [routerLink]="['/academy', vm.academy?.slug]">
-                      {{ vm.academy?.name || 'Academy' }}
-                    </a>
-                  </div>
+      <!-- Academy banner -->
+      <div class="academy-banner" *ngIf="vm.academy?.bannerUrl"
+           [style.backgroundImage]="'url(' + img(vm.academy?.bannerUrl) + ')'">
+        <div class="academy-banner-scrim"></div>
+      </div>
 
-                  <h1 class="page-title">{{ vm.title }}</h1>
-                  <p class="page-sub">{{ subtitle(vm) }}</p>
+      <!-- Breadcrumb -->
+      <div class="breadcrumb">
+        <a class="bc-link" routerLink="/academies">Academies</a>
+        <svg class="bc-sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+        <a class="bc-link" *ngIf="vm.academy?.slug" [routerLink]="['/academy', vm.academy?.slug]">
+          {{ vm.academy?.name || 'Academy' }}
+        </a>
+        <svg class="bc-sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+        <span class="bc-current">{{ vm.title }}</span>
+      </div>
 
-                  <div class="meta">
-                    <span class="badge">{{ categoryLabel(vm) }}</span>
-                    <span class="badge price">{{ priceLabel(vm) }}</span>
+      <!-- Two-column layout -->
+      <div class="layout">
 
-                    <span class="badge ghost">
-                      {{ vm.modulesCount }} module{{ vm.modulesCount === 1 ? '' : 's' }}
-                    </span>
+        <!-- ── LEFT / MAIN ── -->
+        <div class="main">
 
-                    <span class="badge ghost">
-                      {{ vm.lessonsCount }} lesson{{ vm.lessonsCount === 1 ? '' : 's' }}
-                    </span>
+          <!-- Hero card -->
+          <div class="hero-card">
 
-                    <span class="badge ghost" *ngIf="vm.previewLessonsCount > 0">
-                      {{ vm.previewLessonsCount }} preview{{ vm.previewLessonsCount === 1 ? '' : 's' }}
-                    </span>
-                  </div>
-
-                  <div class="tags" *ngIf="tags(vm).length > 0">
-                    <span class="tag" *ngFor="let t of tags(vm)">{{ t }}</span>
-                  </div>
-
-                  <div class="hero-actions">
-                    <a class="btn ghost" *ngIf="vm.academy?.slug" [routerLink]="['/academy', vm.academy?.slug]">
-                      View academy
-                    </a>
-                    <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
-                  </div>
-                </div>
-              </header>
-
-              <section class="card" *ngIf="vm.safeFullDescription">
-                <div class="card-title">About this course</div>
-                <div class="desc" [innerHTML]="vm.safeFullDescription"></div>
-              </section>
-
-              <!-- Curriculum -->
-              <section class="card curriculum">
-                <div class="card-title-row">
-                  <div>
-                    <div class="card-title">Curriculum</div>
-                    <div class="muted small">
-                      {{ vm.modulesCount }} modules • {{ vm.lessonsCount }} lessons
-                      <span *ngIf="vm.previewLessonsCount > 0">• {{ vm.previewLessonsCount }} previews</span>
-                    </div>
-                  </div>
-                  <div class="curr-actions">
-                    <button class="btn ghost small" type="button" (click)="expandAll(vm)">Expand all</button>
-                    <button class="btn ghost small" type="button" (click)="collapseAll()">Collapse</button>
-                  </div>
-                </div>
-
-                <div class="modules">
-                  <div class="module" *ngFor="let m of vm.modules; let i = index">
-                    <button
-                      class="module-head"
-                      type="button"
-                      (click)="toggleModule(moduleKey(m.title, i))"
-                      [attr.aria-expanded]="isExpanded(moduleKey(m.title, i))"
-                    >
-                      <div class="module-left">
-                        <div class="module-index">{{ i + 1 }}</div>
-
-                        <div class="module-text">
-                          <div class="module-title">{{ m.title || ('Module ' + (i + 1)) }}</div>
-                          <div class="muted small">
-                            {{ lessonCount(m) }} lesson{{ lessonCount(m) === 1 ? '' : 's' }}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div class="module-right">
-                        <span class="pill-mini ghost" *ngIf="hasPreviewLessons(m)">Has preview</span>
-                        <span class="chev" [class.on]="isExpanded(moduleKey(m.title, i))">›</span>
-                      </div>
-                    </button>
-
-                    <div class="module-body" *ngIf="isExpanded(moduleKey(m.title, i))">
-                      <div class="lesson" *ngFor="let l of m.lessons; let j = index">
-                        <div class="lesson-left">
-                          <div class="lesson-ico" [class.preview]="l.isPreviewFree">▶</div>
-
-                          <div class="lesson-main">
-                            <div class="lesson-title">
-                              <span class="lesson-no">{{ i + 1 }}.{{ j + 1 }}</span>
-                              {{ l.title }}
-                            </div>
-                            <div class="muted tiny">
-                              {{ l.isPreviewFree ? 'Preview available' : 'Enroll to access' }}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div class="lesson-right">
-                          <span class="pill-mini" *ngIf="l.isPreviewFree">Preview</span>
-                          <span class="pill-mini ghost" *ngIf="!l.isPreviewFree">Locked</span>
-                        </div>
-                      </div>
-
-                      <div class="module-foot muted small" *ngIf="lessonCount(m) === 0">
-                        No lessons yet.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              <!-- Reviews -->
-              <section class="card reviews">
-                <div class="reviews-head">
-                  <div>
-                    <div class="card-title">Student reviews</div>
-                    <ng-container *ngIf="reviewsState$ | async as rs">
-                      <div class="muted small" *ngIf="!rs.loading && rs.data">
-                        {{ rs.data.summary.avgRating | number:'1.1-1' }} / 5 • {{ rs.data.summary.count }}
-                        review{{ rs.data.summary.count === 1 ? '' : 's' }}
-                      </div>
-                    </ng-container>
-                  </div>
-
-                  <div class="reviews-actions">
-                    <button class="btn ghost small" type="button" (click)="loadReviews()">Refresh</button>
-                  </div>
-                </div>
-
-                <ng-container *ngIf="reviewsState$ | async as rs">
-                  <div class="muted" *ngIf="rs.loading">Loading reviews…</div>
-                  <div class="alert" *ngIf="rs.error && !rs.loading">{{ rs.error }}</div>
-
-                  <ng-container *ngIf="!rs.loading && rs.data as rv">
-                    <!-- My review form -->
-                    <div class="my-review">
-                      <div class="my-title">
-                        <div class="my-label">Your review</div>
-                        <div class="muted small" *ngIf="rv.mine">
-                          Last updated: {{ when(rv.mine.updatedAt || rv.mine.createdAt) }}
-                        </div>
-                      </div>
-
-                      <div class="my-form">
-                        <div class="field">
-                          <label class="lbl">Rating</label>
-                          <select class="input" [formControl]="ratingCtrl">
-                            <option [ngValue]="5">5 - Excellent</option>
-                            <option [ngValue]="4">4 - Good</option>
-                            <option [ngValue]="3">3 - OK</option>
-                            <option [ngValue]="2">2 - Poor</option>
-                            <option [ngValue]="1">1 - Bad</option>
-                          </select>
-                        </div>
-
-                        <div class="field">
-                          <label class="lbl">Comment</label>
-                          <textarea class="input area" rows="3" [formControl]="commentCtrl" placeholder="Share your experience (optional)"></textarea>
-                        </div>
-
-                        <div class="my-actions">
-                          <button class="btn primary" type="button" (click)="submitReview()" [disabled]="reviewSubmitting">
-                            {{ reviewSubmitting ? 'Saving…' : (rv.mine ? 'Update review' : 'Post review') }}
-                          </button>
-
-                          <button class="btn ghost" type="button" (click)="goLoginForReview()" *ngIf="!isLoggedIn">
-                            Login to review
-                          </button>
-
-                          <span class="muted small tip">
-                            Please keep it respectful. Reviews are visible to other students.
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Reviews list -->
-                    <div class="reviews-list" *ngIf="rv.items.length > 0; else noReviews">
-                      <article class="review" *ngFor="let r of rv.items">
-                        <div class="review-left">
-                          <div class="avatar">{{ initial(r) }}</div>
-                        </div>
-
-                        <div class="review-body">
-                          <div class="review-top">
-                            <div class="name">{{ displayName(r) }}</div>
-                            <div class="stars" [attr.aria-label]="'Rating ' + r.rating + ' out of 5'">
-                              <span class="star" *ngFor="let s of stars(r.rating)">{{ s }}</span>
-                            </div>
-                            <div class="date muted small">{{ when(r.updatedAt || r.createdAt) }}</div>
-                          </div>
-
-                          <div class="comment" *ngIf="(r.comment || '').trim(); else emptyComment">
-                            {{ r.comment }}
-                          </div>
-                          <ng-template #emptyComment>
-                            <div class="muted small">No comment.</div>
-                          </ng-template>
-                        </div>
-                      </article>
-
-                      <div class="reviews-pager">
-                        <span class="muted small">
-                          Page {{ rv.page }} / {{ rv.totalPages }}
-                        </span>
-
-                        <button class="btn ghost small" type="button" (click)="reviewsPrev(rv)" [disabled]="rv.page <= 1">
-                          Prev
-                        </button>
-                        <button class="btn ghost small" type="button" (click)="reviewsNext(rv)" [disabled]="rv.page >= rv.totalPages">
-                          Next
-                        </button>
-                      </div>
-                    </div>
-
-                    <ng-template #noReviews>
-                      <div class="empty-reviews">
-                        <div class="muted">No reviews yet.</div>
-                        <div class="muted small">Be the first to share feedback.</div>
-                      </div>
-                    </ng-template>
-                  </ng-container>
-                </ng-container>
-              </section>
+            <!-- Thumbnail -->
+            <div class="hero-thumb">
+              <img *ngIf="img(vm.thumbnailUrl) as t" [src]="t" alt="Course thumbnail" />
+              <div class="thumb-fallback" *ngIf="!img(vm.thumbnailUrl)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 8l6 4-6 4V8Z" fill="currentColor" stroke="none"/>
+                </svg>
+              </div>
             </div>
 
-            <!-- Sticky CTA -->
-            <aside class="side">
-              <div class="cta">
-                <div class="cta-top">
-                  <div class="academy-mini" *ngIf="vm.academy">
-                    <div class="mini-logo" *ngIf="img(vm.academy.logoUrl); else miniLetter">
-                      <img [src]="img(vm.academy.logoUrl)!" alt="logo" />
-                    </div>
+            <!-- Info -->
+            <div class="hero-info">
+              <!-- Tags -->
+              <div class="hero-tags-row" *ngIf="tags(vm).length > 0">
+                <span class="hero-tag" *ngFor="let t of tags(vm)">#{{ t }}</span>
+              </div>
 
-                    <ng-template #miniLetter>
-                      <div class="mini-logo fallback">{{ (vm.academy.name || 'A').slice(0,1).toUpperCase() }}</div>
-                    </ng-template>
+              <h1 class="hero-title">{{ vm.title }}</h1>
+              <p class="hero-sub">{{ subtitle(vm) }}</p>
 
-                    <div class="mini-text">
-                      <div class="mini-name">{{ vm.academy.name }}</div>
-                      <div class="mini-sub muted">Provider</div>
-                    </div>
-                  </div>
-
-                  <div class="cta-price">
-                    <div class="price-big">{{ priceLabel(vm) }}</div>
-                    <div class="muted small" *ngIf="!vm.isFree">Payment integration next (PayPal/Stripe).</div>
-                    <div class="muted small" *ngIf="vm.isFree">Instant access after enrollment.</div>
-                  </div>
+              <!-- Meta chips -->
+              <div class="hero-chips">
+                <div class="hchip hchip-accent">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82Z"/>
+                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                  </svg>
+                  {{ categoryLabel(vm) }}
                 </div>
 
-                <button
-                  class="btn primary wide enroll"
-                  type="button"
-                  [disabled]="enrolling || !canEnroll(vm)"
-                  (click)="enroll(vm.id)"
-                >
-                  {{ ctaLabel(vm) }}
-                </button>
-
-                <a class="btn ghost wide" *ngIf="vm.academy?.slug" [routerLink]="['/academy', vm.academy?.slug]">
-                  Back to academy
-                </a>
-
-                <div class="cta-note muted">
-                  Enroll to track progress and continue where you left off.
+                <div class="hchip hchip-price">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13">
+                    <circle cx="12" cy="12" r="10"/><path d="M16 8H9.5A3.5 3.5 0 0 0 9.5 15H14a3.5 3.5 0 0 1 0 7H7M12 6v2m0 8v2"/>
+                  </svg>
+                  {{ priceLabel(vm) }}
                 </div>
 
-                <div class="cta-foot">
-                  <div class="cta-chip">
-                    <span class="cta-dot"></span>
-                    {{ vm.previewLessonsCount > 0 ? (vm.previewLessonsCount + ' preview lessons') : 'No previews' }}
-                  </div>
+                <div class="hchip">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13">
+                    <path d="M4 19V6a2 2 0 0 1 2-2h12v15"/><path d="M8 8h8M8 12h5"/>
+                  </svg>
+                  {{ vm.modulesCount }} module{{ vm.modulesCount === 1 ? '' : 's' }}
+                </div>
 
-                  <div class="cta-chip">
-                    <span class="cta-dot"></span>
-                    {{ vm.lessonsCount }} lessons
-                  </div>
+                <div class="hchip">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13">
+                    <circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8Z" fill="currentColor" stroke="none"/>
+                  </svg>
+                  {{ vm.lessonsCount }} lesson{{ vm.lessonsCount === 1 ? '' : 's' }}
+                </div>
+
+                <div class="hchip hchip-preview" *ngIf="vm.previewLessonsCount > 0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  {{ vm.previewLessonsCount }} free preview{{ vm.previewLessonsCount === 1 ? '' : 's' }}
                 </div>
               </div>
-            </aside>
+
+              <div class="hero-actions">
+                <a class="btn btn-ghost btn-sm" *ngIf="vm.academy?.slug" [routerLink]="['/academy', vm.academy?.slug]">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14">
+                    <path d="M19 12H5M12 5l-7 7 7 7"/>
+                  </svg>
+                  Back to academy
+                </a>
+                <button class="btn btn-ghost btn-sm" type="button" (click)="reload()">Refresh</button>
+              </div>
+            </div>
           </div>
-        </ng-container>
-      </ng-container>
-    </div>
-  </div>
+
+          <!-- About this course -->
+          <div class="section-card" *ngIf="vm.safeFullDescription">
+            <div class="section-head">
+              <div class="section-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 19V6a2 2 0 0 1 2-2h12v15"/><path d="M8 8h8M8 12h6"/>
+                </svg>
+              </div>
+              <div>
+                <div class="section-title">About this course</div>
+                <div class="section-sub">What you'll learn</div>
+              </div>
+            </div>
+            <div class="course-desc" [innerHTML]="vm.safeFullDescription"></div>
+          </div>
+
+          <!-- Curriculum -->
+          <div class="section-card">
+            <div class="section-head">
+              <div class="section-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                  <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                </svg>
+              </div>
+              <div>
+                <div class="section-title">Curriculum</div>
+                <div class="section-sub">
+                  {{ vm.modulesCount }} modules · {{ vm.lessonsCount }} lessons
+                  <span *ngIf="vm.previewLessonsCount > 0"> · {{ vm.previewLessonsCount }} previews</span>
+                </div>
+              </div>
+              <div class="section-head-actions">
+                <button class="btn btn-ghost btn-xs" type="button" (click)="expandAll(vm)">Expand all</button>
+                <button class="btn btn-ghost btn-xs" type="button" (click)="collapseAll()">Collapse</button>
+              </div>
+            </div>
+
+            <div class="modules">
+              <div class="module-item" *ngFor="let m of vm.modules; let i = index">
+
+                <button class="module-toggle" type="button"
+                        (click)="toggleModule(moduleKey(m.title, i))"
+                        [attr.aria-expanded]="isExpanded(moduleKey(m.title, i))">
+                  <div class="module-num">{{ i + 1 }}</div>
+                  <div class="module-text">
+                    <div class="module-name">{{ m.title || ('Module ' + (i + 1)) }}</div>
+                    <div class="module-meta">{{ lessonCount(m) }} lesson{{ lessonCount(m) === 1 ? '' : 's' }}</div>
+                  </div>
+                  <div class="module-right-row">
+                    <span class="preview-chip" *ngIf="hasPreviewLessons(m)">Has preview</span>
+                    <div class="module-chev" [class.open]="isExpanded(moduleKey(m.title, i))">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14">
+                        <path d="M6 9l6 6 6-6"/>
+                      </svg>
+                    </div>
+                  </div>
+                </button>
+
+                <div class="module-lessons" *ngIf="isExpanded(moduleKey(m.title, i))">
+                  <div class="lesson-row" *ngFor="let l of m.lessons; let j = index">
+                    <div class="lesson-play" [class.free]="l.isPreviewFree">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12">
+                        <path d="M5 3l14 9-14 9V3Z" [attr.fill]="l.isPreviewFree ? 'currentColor' : 'none'" stroke="none"/>
+                        <path *ngIf="!l.isPreviewFree" d="M5 3l14 9-14 9V3Z"/>
+                        <path *ngIf="l.isPreviewFree" d="M5 3l14 9-14 9V3Z" fill="currentColor"/>
+                      </svg>
+                    </div>
+                    <div class="lesson-text">
+                      <div class="lesson-name">
+                        <span class="lesson-num">{{ i + 1 }}.{{ j + 1 }}</span>
+                        {{ l.title }}
+                      </div>
+                      <div class="lesson-status">{{ l.isPreviewFree ? 'Free preview' : 'Enroll to access' }}</div>
+                    </div>
+                    <div class="lesson-badge-wrap">
+                      <span class="lesson-badge preview-badge" *ngIf="l.isPreviewFree">Preview</span>
+                      <span class="lesson-badge lock-badge" *ngIf="!l.isPreviewFree">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="10" height="10">
+                          <rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+                        </svg>
+                        Locked
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="lessons-empty" *ngIf="lessonCount(m) === 0">No lessons yet.</div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Reviews -->
+          <div class="section-card">
+            <div class="section-head">
+              <div class="section-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+              </div>
+              <div>
+                <div class="section-title">Student reviews</div>
+                <ng-container *ngIf="reviewsState$ | async as rs">
+                  <div class="section-sub" *ngIf="!rs.loading && rs.data">
+                    {{ rs.data.summary.avgRating | number:'1.1-1' }} / 5 &nbsp;·&nbsp; {{ rs.data.summary.count }} review{{ rs.data.summary.count === 1 ? '' : 's' }}
+                  </div>
+                </ng-container>
+              </div>
+              <div class="section-head-actions">
+                <button class="btn btn-ghost btn-xs" type="button" (click)="loadReviews()">Refresh</button>
+              </div>
+            </div>
+
+            <ng-container *ngIf="reviewsState$ | async as rs">
+              <div class="state-loading-inline" *ngIf="rs.loading">Loading reviews…</div>
+              <div class="alert-error" *ngIf="rs.error && !rs.loading">{{ rs.error }}</div>
+
+              <ng-container *ngIf="!rs.loading && rs.data as rv">
+
+                <!-- My review form -->
+                <div class="my-review-card">
+                  <div class="mrc-head">
+                    <div class="mrc-label">Your review</div>
+                    <div class="mrc-date" *ngIf="rv.mine">Updated {{ when(rv.mine.updatedAt || rv.mine.createdAt) }}</div>
+                  </div>
+
+                  <div class="review-form">
+                    <div class="rf-field">
+                      <label class="rf-label">Rating</label>
+                      <select class="rf-select" [formControl]="ratingCtrl">
+                        <option [ngValue]="5">⭐⭐⭐⭐⭐ Excellent</option>
+                        <option [ngValue]="4">⭐⭐⭐⭐ Good</option>
+                        <option [ngValue]="3">⭐⭐⭐ OK</option>
+                        <option [ngValue]="2">⭐⭐ Poor</option>
+                        <option [ngValue]="1">⭐ Bad</option>
+                      </select>
+                    </div>
+
+                    <div class="rf-field">
+                      <label class="rf-label">Comment <span class="rf-opt">(optional)</span></label>
+                      <textarea class="rf-textarea" rows="3" [formControl]="commentCtrl"
+                                placeholder="Share your honest experience…"></textarea>
+                    </div>
+
+                    <div class="rf-actions">
+                      <button class="btn btn-primary" type="button" (click)="submitReview()" [disabled]="reviewSubmitting">
+                        {{ reviewSubmitting ? 'Saving…' : (rv.mine ? 'Update review' : 'Post review') }}
+                      </button>
+                      <button class="btn btn-ghost" type="button" *ngIf="!isLoggedIn" (click)="goLoginForReview()">
+                        Log in to review
+                      </button>
+                      <span class="rf-hint">Reviews are visible to other students.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Reviews list -->
+                <div class="reviews-list" *ngIf="rv.items.length > 0; else noReviews">
+                  <div class="review-card" *ngFor="let r of rv.items">
+                    <div class="rv-avatar">{{ initial(r) }}</div>
+                    <div class="rv-body">
+                      <div class="rv-top">
+                        <div class="rv-name">{{ displayName(r) }}</div>
+                        <div class="rv-stars">
+                          <span *ngFor="let s of stars(r.rating)">{{ s }}</span>
+                        </div>
+                        <div class="rv-date">{{ when(r.updatedAt || r.createdAt) }}</div>
+                      </div>
+                      <div class="rv-comment" *ngIf="(r.comment || '').trim()">{{ r.comment }}</div>
+                      <div class="rv-no-comment" *ngIf="!(r.comment || '').trim()">No comment.</div>
+                    </div>
+                  </div>
+
+                  <!-- Pagination -->
+                  <div class="reviews-pager">
+                    <span class="pager-info">Page {{ rv.page }} of {{ rv.totalPages }}</span>
+                    <div class="pager-btns">
+                      <button class="btn btn-ghost btn-sm" type="button" (click)="reviewsPrev(rv)" [disabled]="rv.page <= 1">← Prev</button>
+                      <button class="btn btn-ghost btn-sm" type="button" (click)="reviewsNext(rv)" [disabled]="rv.page >= rv.totalPages">Next →</button>
+                    </div>
+                  </div>
+                </div>
+
+                <ng-template #noReviews>
+                  <div class="reviews-empty">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="28" height="28">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    <div class="re-title">No reviews yet</div>
+                    <div class="re-sub">Be the first to share feedback.</div>
+                  </div>
+                </ng-template>
+
+              </ng-container>
+            </ng-container>
+          </div>
+
+        </div>
+
+        <!-- ── RIGHT / STICKY CTA ── -->
+        <aside class="cta-aside">
+          <div class="cta-card">
+
+            <!-- Academy provider -->
+            <div class="cta-academy" *ngIf="vm.academy">
+              <div class="cta-academy-logo">
+                <img *ngIf="img(vm.academy.logoUrl) as l" [src]="l" alt="" />
+                <span *ngIf="!img(vm.academy.logoUrl)" class="cta-logo-initial">
+                  {{ (vm.academy.name || 'A').slice(0, 1).toUpperCase() }}
+                </span>
+              </div>
+              <div class="cta-academy-text">
+                <div class="cta-academy-name">{{ vm.academy.name }}</div>
+                <div class="cta-academy-role">Course provider</div>
+              </div>
+            </div>
+
+            <div class="cta-divider"></div>
+
+            <!-- Price block -->
+            <div class="cta-price-block">
+              <div class="cta-price-label">Price</div>
+              <div class="cta-price-value">{{ priceLabel(vm) }}</div>
+              <div class="cta-price-note" *ngIf="vm.isFree">Free — instant access after enrollment</div>
+              <div class="cta-price-note" *ngIf="!vm.isFree">Payment integration coming soon</div>
+            </div>
+
+            <!-- Enroll CTA -->
+            <button class="cta-enroll-btn" type="button"
+                    [disabled]="enrolling || !canEnroll(vm)"
+                    (click)="enroll(vm.id)">
+              {{ ctaLabel(vm) }}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </button>
+
+            <a class="btn btn-ghost cta-back-btn" *ngIf="vm.academy?.slug" [routerLink]="['/academy', vm.academy?.slug]">
+              View all courses
+            </a>
+
+            <div class="cta-divider"></div>
+
+            <!-- Course stats -->
+            <div class="cta-stats">
+              <div class="cta-stat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15">
+                  <circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8Z" fill="currentColor" stroke="none"/>
+                </svg>
+                <span><strong>{{ vm.lessonsCount }}</strong> lessons</span>
+              </div>
+              <div class="cta-stat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15">
+                  <path d="M4 19V6a2 2 0 0 1 2-2h12v15"/><path d="M8 8h8M8 12h5"/>
+                </svg>
+                <span><strong>{{ vm.modulesCount }}</strong> modules</span>
+              </div>
+              <div class="cta-stat" *ngIf="vm.previewLessonsCount > 0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+                <span><strong>{{ vm.previewLessonsCount }}</strong> free previews</span>
+              </div>
+            </div>
+
+            <p class="cta-note">Enroll to track your progress and continue where you left off.</p>
+
+          </div>
+        </aside>
+
+      </div>
+    </ng-container>
+  </ng-container>
 </div>

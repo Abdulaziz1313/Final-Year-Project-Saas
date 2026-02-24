@@ -1,45 +1,52 @@
-<!-- admin.html (FULL UPDATED with background + FIXED) -->
+<main class="admin-page">
 
-<main class="page">
-  <!-- Background blobs -->
-  <div class="bg" aria-hidden="true">
-    <span class="blob b1"></span>
-    <span class="blob b2"></span>
-    <span class="blob b3"></span>
-    <!-- ✅ FIX: renamed to avoid conflict with layout .grid -->
-    <span class="bg-grid"></span>
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">Admin panel</span>
+      </div>
+      <h1 class="page-title">Moderation &amp; <em>Control</em></h1>
+      <p class="page-desc">Manage users and hide content that violates policy.</p>
+    </div>
+
+    <div class="hero-right">
+      <div class="tab-group" role="tablist" aria-label="Admin sections">
+        <button class="tab-btn" type="button" [class.active]="tab==='academies'" (click)="setTab('academies')">
+          <span class="tab-ico">🏫</span>
+          <span>Academies</span>
+        </button>
+        <button class="tab-btn" type="button" [class.active]="tab==='courses'" (click)="setTab('courses')">
+          <span class="tab-ico">📚</span>
+          <span>Courses</span>
+        </button>
+        <button class="tab-btn" type="button" [class.active]="tab==='users'" (click)="setTab('users')">
+          <span class="tab-ico">👥</span>
+          <span>Users</span>
+        </button>
+        <button class="tab-btn" type="button" [class.active]="tab==='audit'" (click)="setTab('audit')">
+          <span class="tab-ico">🧾</span>
+          <span>Audit</span>
+        </button>
+      </div>
+    </div>
   </div>
 
-  <div class="container">
-    <header class="page-head">
-      <div class="head-left">
-        <div class="kicker">Admin</div>
-        <h1 class="page-title">Moderation & Control</h1>
-        <p class="page-sub">Manage users and hide content that violates policy.</p>
+  <!-- ── TOOLBAR ── -->
+  <div class="toolbar" [formGroup]="form">
+    <div class="toolbar-main">
+      <div class="search-wrap">
+        <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="10.5" cy="10.5" r="7.5"/><path d="M21 21l-4.3-4.3"/>
+        </svg>
+        <input class="input search-input" formControlName="q" placeholder="Search…" />
       </div>
 
-      <div class="head-right">
-        <div class="tabs" role="tablist" aria-label="Admin sections">
-          <button class="tab" type="button" [class.active]="tab==='academies'" (click)="setTab('academies')">Academies</button>
-          <button class="tab" type="button" [class.active]="tab==='courses'" (click)="setTab('courses')">Courses</button>
-          <button class="tab" type="button" [class.active]="tab==='users'" (click)="setTab('users')">Users</button>
-          <button class="tab" type="button" [class.active]="tab==='audit'" (click)="setTab('audit')">Audit</button>
-        </div>
-      </div>
-    </header>
-
-    <!-- Toolbar -->
-    <section class="toolbar card" [formGroup]="form">
-      <div class="search">
-        <span class="icon" aria-hidden="true">🔎</span>
-        <input class="input" formControlName="q" placeholder="Search…" />
-      </div>
-
-      <!-- ✅ Status only for academies/courses -->
       <ng-container *ngIf="tab === 'academies' || tab === 'courses'">
         <div class="field">
-          <label class="lbl">Status</label>
-          <select class="input" formControlName="status">
+          <label class="field-label">Status</label>
+          <select class="input select-input" formControlName="status">
             <option value="all">All</option>
             <option value="published">Published</option>
             <option value="draft">Draft</option>
@@ -49,11 +56,10 @@
         </div>
       </ng-container>
 
-      <!-- ✅ Role only for users -->
       <ng-container *ngIf="tab === 'users'">
         <div class="field">
-          <label class="lbl">Role</label>
-          <select class="input" formControlName="role">
+          <label class="field-label">Role</label>
+          <select class="input select-input" formControlName="role">
             <option value="all">All roles</option>
             <option value="Student">Student</option>
             <option value="Instructor">Instructor</option>
@@ -63,11 +69,10 @@
         </div>
       </ng-container>
 
-      <!-- ✅ Audit filters -->
       <ng-container *ngIf="tab === 'audit'">
         <div class="field">
-          <label class="lbl">Action</label>
-          <select class="input" [formControl]="auditActionCtrl">
+          <label class="field-label">Action</label>
+          <select class="input select-input" [formControl]="auditActionCtrl">
             <option value="all">All</option>
             <option value="academy.hide">academy.hide</option>
             <option value="academy.unhide">academy.unhide</option>
@@ -82,8 +87,8 @@
         </div>
 
         <div class="field">
-          <label class="lbl">Target</label>
-          <select class="input" [formControl]="auditTargetCtrl">
+          <label class="field-label">Target</label>
+          <select class="input select-input" [formControl]="auditTargetCtrl">
             <option value="all">All</option>
             <option value="academy">academy</option>
             <option value="course">course</option>
@@ -91,413 +96,321 @@
           </select>
         </div>
       </ng-container>
-
-      <div class="toolbar-right">
-        <span class="pill ghost">
-          Page <span class="mono">{{ page }}</span> / <span class="mono">{{ totalPages }}</span>
-        </span>
-
-        <button class="btn ghost small" type="button" (click)="prevPage()" [disabled]="loading || !canPrev">Prev</button>
-        <button class="btn ghost small" type="button" (click)="nextPage()" [disabled]="loading || !canNext">Next</button>
-      </div>
-    </section>
-
-    <!-- KPI strip -->
-    <section class="kpis" *ngIf="!loading && !error">
-      <div class="kpi card">
-        <div class="kpi-top">
-          <div class="kpi-label">Total</div>
-          <div class="kpi-ic">📦</div>
-        </div>
-        <div class="kpi-value">{{ kpiTotal }}</div>
-        <div class="kpi-sub muted small">Across all pages</div>
-      </div>
-
-      <div class="kpi card danger-kpi" *ngIf="tab !== 'users' && tab !== 'audit'">
-        <div class="kpi-top">
-          <div class="kpi-label">Hidden</div>
-          <div class="kpi-ic">⛔</div>
-        </div>
-        <div class="kpi-value">{{ kpiHidden }}</div>
-        <div class="kpi-sub muted small">Moderated items</div>
-      </div>
-
-      <div class="kpi card" *ngIf="tab !== 'users' && tab !== 'audit'">
-        <div class="kpi-top">
-          <div class="kpi-label">Published</div>
-          <div class="kpi-ic">✅</div>
-        </div>
-        <div class="kpi-value">{{ kpiPublished }}</div>
-        <div class="kpi-sub muted small">Visible items</div>
-      </div>
-
-      <div class="kpi card" *ngIf="tab === 'academies'">
-        <div class="kpi-top">
-          <div class="kpi-label">Draft</div>
-          <div class="kpi-ic">📝</div>
-        </div>
-        <div class="kpi-value">{{ kpiDraft }}</div>
-        <div class="kpi-sub muted small">Not published</div>
-      </div>
-
-      <div class="kpi card" *ngIf="tab === 'courses'">
-        <div class="kpi-top">
-          <div class="kpi-label">Private</div>
-          <div class="kpi-ic">🔒</div>
-        </div>
-        <div class="kpi-value">{{ kpiPrivate }}</div>
-        <div class="kpi-sub muted small">Restricted</div>
-      </div>
-
-      <div class="kpi card" *ngIf="tab === 'users'">
-        <div class="kpi-top">
-          <div class="kpi-label">Locked</div>
-          <div class="kpi-ic">🧷</div>
-        </div>
-        <div class="kpi-value">{{ kpiLocked }}</div>
-        <div class="kpi-sub muted small">Accounts</div>
-      </div>
-
-      <div class="kpi card" *ngIf="tab === 'audit'">
-        <div class="kpi-top">
-          <div class="kpi-label">Showing</div>
-          <div class="kpi-ic">🧾</div>
-        </div>
-        <div class="kpi-value">{{ (audit || []).length }}</div>
-        <div class="kpi-sub muted small">Logs on this page</div>
-      </div>
-    </section>
-
-    <div class="state muted" *ngIf="loading">Loading…</div>
-    <div class="alert error" *ngIf="error">{{ error }}</div>
-
-    <!-- ✅ Moderation drawer (sticky panel) -->
-    <section class="card drawer" *ngIf="hideOpen && hideId">
-      <div class="drawer-head">
-        <div>
-          <div class="drawer-title">Hide {{ hideKind }}</div>
-          <div class="muted small">Target: <span class="mono">{{ hideTitle }}</span></div>
-        </div>
-
-        <button class="btn ghost small" type="button" (click)="closeHideDrawer()">Close</button>
-      </div>
-
-      <div class="drawer-body">
-        <div class="field">
-          <label class="lbl">Reason</label>
-          <textarea class="input area" [formControl]="reasonCtrl" rows="3" placeholder="Write a short reason…"></textarea>
-        </div>
-
-        <div class="reasons">
-          <button class="chip" type="button" *ngFor="let r of quickReasons" (click)="pickReason(r)">
-            {{ r }}
-          </button>
-        </div>
-
-        <div class="drawer-actions">
-          <button class="btn danger" type="button" (click)="confirmHide()" [disabled]="isBusy(hideId)">
-            {{ isBusy(hideId) ? 'Working…' : 'Confirm Hide' }}
-          </button>
-          <button class="btn ghost" type="button" (click)="closeHideDrawer()">Cancel</button>
-
-          <span class="muted small drawer-foot">This content will be removed from public pages immediately.</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- ✅ Delete drawer -->
-    <section class="card drawer delete-drawer" *ngIf="deleteOpen && deleteId">
-      <div class="drawer-head">
-        <div>
-          <div class="drawer-title">Delete {{ deleteKind }}</div>
-          <div class="muted small">Target: <span class="mono">{{ deleteTitle }}</span></div>
-        </div>
-
-        <button class="btn ghost small" type="button" (click)="closeDeleteDrawer()">Close</button>
-      </div>
-
-      <div class="drawer-body">
-        <div class="alert-warn">
-          <b>Warning:</b> This action is permanent and cannot be undone.
-        </div>
-
-        <div class="field">
-          <label class="lbl">Reason</label>
-          <textarea class="input area" [formControl]="deleteReasonCtrl" rows="3" placeholder="Write a short reason…"></textarea>
-        </div>
-
-        <div class="reasons">
-          <button class="chip" type="button" *ngFor="let r of deleteQuickReasons" (click)="pickDeleteReason(r)">
-            {{ r }}
-          </button>
-        </div>
-
-        <div class="drawer-actions">
-          <button class="btn danger" type="button" (click)="confirmDelete()" [disabled]="isBusy(deleteId)">
-            {{ isBusy(deleteId) ? 'Working…' : 'Confirm Delete' }}
-          </button>
-          <button class="btn ghost" type="button" (click)="closeDeleteDrawer()">Cancel</button>
-
-          <span class="muted small drawer-foot">Owner will be notified automatically.</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- ✅ Roles drawer -->
-    <section class="card drawer roles-drawer" *ngIf="rolesOpen && rolesUser">
-      <div class="drawer-head">
-        <div>
-          <div class="drawer-title">Edit roles</div>
-          <div class="muted small">
-            User: <span class="mono">{{ rolesUser.email }}</span>
-          </div>
-        </div>
-
-        <button class="btn ghost small" type="button" (click)="closeRolesDrawer()">Close</button>
-      </div>
-
-      <div class="drawer-body">
-        <div class="muted small">
-          Select the roles for this user. Removing all roles is allowed but not recommended.
-        </div>
-
-        <div class="roles-grid">
-          <label class="role-item" *ngFor="let r of roleOptions">
-            <input type="checkbox" [checked]="roleSelected(r)" (change)="toggleRole(r, $any($event.target).checked)" />
-            <span class="role-name">{{ r }}</span>
-            <span class="role-desc muted small">{{ roleHint(r) }}</span>
-          </label>
-        </div>
-
-        <div class="drawer-actions">
-          <button class="btn primary" type="button" (click)="saveRoles()" [disabled]="rolesSaving || !rolesUser || isBusy(rolesUser.id)">
-            {{ rolesSaving ? 'Saving…' : 'Save roles' }}
-          </button>
-          <button class="btn ghost" type="button" (click)="closeRolesDrawer()" [disabled]="rolesSaving">Cancel</button>
-
-          <span class="muted small drawer-foot">
-            Tip: Keep at least one role (e.g., Student).
-          </span>
-        </div>
-      </div>
-    </section>
-
-    <!-- ✅ Lock drawer -->
-    <section class="card drawer lock-drawer" *ngIf="lockOpen && lockUser">
-      <div class="drawer-head">
-        <div>
-          <div class="drawer-title">Lock user</div>
-          <div class="muted small">Target: <span class="mono">{{ lockUser.email }}</span></div>
-        </div>
-
-        <button class="btn ghost small" type="button" (click)="closeLockDrawer()">Close</button>
-      </div>
-
-      <div class="drawer-body">
-        <div class="muted small">
-          Choose how long this user should be locked out.
-        </div>
-
-        <div class="lock-presets">
-          <button class="chip" type="button" [class.on]="lockPreset==='1d'" (click)="pickLockPreset('1d')">1 day</button>
-          <button class="chip" type="button" [class.on]="lockPreset==='7d'" (click)="pickLockPreset('7d')">7 days</button>
-          <button class="chip" type="button" [class.on]="lockPreset==='30d'" (click)="pickLockPreset('30d')">30 days</button>
-          <button class="chip" type="button" [class.on]="lockPreset==='perm'" (click)="pickLockPreset('perm')">Permanent</button>
-        </div>
-
-        <div class="drawer-actions">
-          <button class="btn danger" type="button"
-                  (click)="confirmLock()"
-                  [disabled]="lockSaving || !lockUser || isBusy(lockUser.id)">
-            {{ lockSaving ? 'Locking…' : 'Confirm lock' }}
-          </button>
-
-          <button class="btn ghost" type="button" (click)="closeLockDrawer()" [disabled]="lockSaving">
-            Cancel
-          </button>
-
-          <span class="muted small drawer-foot">
-            Locked users cannot sign in until lockout ends.
-          </span>
-        </div>
-      </div>
-    </section>
-
-    <!-- Academies -->
-    <section class="grid" *ngIf="!loading && tab==='academies'">
-      <article class="item card" *ngFor="let a of academies; trackBy: trackById">
-        <div class="item-top">
-          <div class="title" [title]="a.name">{{ a.name }}</div>
-
-          <span class="badge"
-                [class.bad]="a.isHidden"
-                [class.good]="!a.isHidden && a.isPublished">
-            {{ a.isHidden ? 'Hidden' : (a.isPublished ? 'Published' : 'Draft') }}
-          </span>
-        </div>
-
-        <div class="meta-row">
-          <div class="muted small">Slug: <span class="mono">{{ a.slug }}</span></div>
-          <button class="link" type="button" (click)="copy(a.slug)">Copy</button>
-        </div>
-
-        <div class="meta-row">
-          <div class="muted small">Owner: <span class="mono">{{ a.ownerUserId }}</span></div>
-          <button class="link" type="button" (click)="copy(a.ownerUserId)">Copy</button>
-        </div>
-
-        <div class="hidden-box" *ngIf="a.isHidden">
-          <div class="muted small"><b>Reason:</b> {{ a.hiddenReason || '—' }}</div>
-          <div class="muted small" *ngIf="formatDate(a.hiddenAt) as d"><b>Hidden at:</b> {{ d }}</div>
-        </div>
-
-        <div class="actions">
-          <a class="btn ghost small" [routerLink]="['/academy', a.slug]">Open</a>
-
-          <button class="btn ghost small" type="button"
-                  *ngIf="!a.isHidden"
-                  (click)="openHideDrawer('academy', a.id, a.name, a.hiddenReason)"
-                  [disabled]="isBusy(a.id)">
-            Hide
-          </button>
-
-          <button class="btn ghost small" type="button"
-                  *ngIf="a.isHidden"
-                  (click)="unhideAcademy(a)"
-                  [disabled]="isBusy(a.id)">
-            Unhide
-          </button>
-
-          <button class="btn danger-outline small" type="button"
-                  (click)="openDeleteDrawer('academy', a.id, a.name)"
-                  [disabled]="isBusy(a.id)">
-            Delete…
-          </button>
-        </div>
-      </article>
-    </section>
-
-    <!-- Courses -->
-    <section class="grid" *ngIf="!loading && tab==='courses'">
-      <article class="item card" *ngFor="let c of courses; trackBy: trackById">
-        <div class="item-top">
-          <div class="title" [title]="c.title">{{ c.title }}</div>
-
-          <span class="badge"
-                [class.bad]="c.isHidden"
-                [class.good]="!c.isHidden && c.status === 1">
-            {{ c.isHidden ? 'Hidden' : courseStatusLabel(c.status) }}
-          </span>
-        </div>
-
-        <div class="muted small">Category: {{ c.category || '—' }}</div>
-
-        <div class="meta-row">
-          <div class="muted small">AcademyId: <span class="mono">{{ c.academyId }}</span></div>
-          <button class="link" type="button" (click)="copy(c.academyId)">Copy</button>
-        </div>
-
-        <div class="hidden-box" *ngIf="c.isHidden">
-          <div class="muted small"><b>Reason:</b> {{ c.hiddenReason || '—' }}</div>
-          <div class="muted small" *ngIf="formatDate(c.hiddenAt) as d"><b>Hidden at:</b> {{ d }}</div>
-        </div>
-
-        <div class="actions">
-          <a class="btn ghost small" [routerLink]="['/course', c.id]">Open</a>
-
-          <button class="btn ghost small" type="button"
-                  *ngIf="!c.isHidden"
-                  (click)="openHideDrawer('course', c.id, c.title, c.hiddenReason)"
-                  [disabled]="isBusy(c.id)">
-            Hide
-          </button>
-
-          <button class="btn ghost small" type="button"
-                  *ngIf="c.isHidden"
-                  (click)="unhideCourse(c)"
-                  [disabled]="isBusy(c.id)">
-            Unhide
-          </button>
-
-          <button class="btn danger-outline small" type="button"
-                  (click)="openDeleteDrawer('course', c.id, c.title)"
-                  [disabled]="isBusy(c.id)">
-            Delete…
-          </button>
-        </div>
-      </article>
-    </section>
-
-    <!-- Users -->
-    <section class="grid" *ngIf="!loading && tab==='users'">
-      <article class="item card" *ngFor="let u of users; trackBy: trackById">
-        <div class="item-top">
-          <div class="title" [title]="u.email">{{ u.email }}</div>
-
-          <span class="badge"
-                [class.bad]="isUserLocked(u)"
-                [class.good]="!isUserLocked(u)">
-            {{ isUserLocked(u) ? 'Locked' : 'Active' }}
-          </span>
-        </div>
-
-        <div class="muted small">Name: {{ u.displayName || '—' }}</div>
-        <div class="muted small">Roles: {{ (u.roles || []).join(', ') || '—' }}</div>
-
-        <div class="muted small" *ngIf="u.lockoutEnd && formatDate(u.lockoutEnd) as d">
-          Lockout end: <span class="mono">{{ d }}</span>
-        </div>
-
-        <div class="actions">
-          <button class="btn ghost small" type="button" (click)="openRolesDrawer(u)" [disabled]="isBusy(u.id)">
-            Edit roles
-          </button>
-
-          <button class="btn ghost small" type="button"
-                  *ngIf="!isUserLocked(u)"
-                  (click)="openLockDrawer(u)"
-                  [disabled]="isBusy(u.id)">
-            Lock…
-          </button>
-
-          <button class="btn ghost small" type="button"
-                  *ngIf="isUserLocked(u)"
-                  (click)="unlockUser(u)"
-                  [disabled]="isBusy(u.id)">
-            Unlock
-          </button>
-
-          <button class="btn ghost small" type="button" (click)="copy(u.id)">
-            Copy ID
-          </button>
-        </div>
-      </article>
-    </section>
-
-    <!-- ✅ Audit -->
-    <section class="grid" *ngIf="!loading && tab==='audit'">
-      <article class="item card" *ngFor="let x of audit; trackBy: trackByAuditId">
-        <div class="item-top">
-          <div class="title" [title]="x.action">{{ x.action }}</div>
-          <span class="badge">{{ x.targetType }}</span>
-        </div>
-
-        <div class="muted small">Target: <span class="mono">{{ x.targetLabel || x.targetId }}</span></div>
-        <div class="muted small">Actor: <span class="mono">{{ x.actorUserId }}</span></div>
-
-        <div class="hidden-box" *ngIf="x.reason">
-          <div class="muted small"><b>Reason:</b> {{ x.reason }}</div>
-        </div>
-
-        <div class="muted small" *ngIf="formatDate(x.createdAt) as d">
-          Time: <span class="mono">{{ d }}</span>
-        </div>
-
-        <div class="actions">
-          <button class="btn ghost small" type="button" (click)="copy(x.targetId)">Copy Target ID</button>
-          <button class="btn ghost small" type="button" (click)="copy(x.actorUserId)">Copy Actor ID</button>
-        </div>
-      </article>
-    </section>
+    </div>
+
+    <div class="toolbar-right">
+      <span class="page-pill">
+        Page <strong>{{ page }}</strong> / <strong>{{ totalPages }}</strong>
+      </span>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="prevPage()" [disabled]="loading || !canPrev">← Prev</button>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="nextPage()" [disabled]="loading || !canNext">Next →</button>
+    </div>
   </div>
+
+  <!-- ── KPI STRIP ── -->
+  <div class="kpi-strip" *ngIf="!loading && !error">
+
+    <div class="kpi-card">
+      <div class="kpi-header">
+        <span class="kpi-label">Total</span>
+        <span class="kpi-icon">📦</span>
+      </div>
+      <div class="kpi-value">{{ kpiTotal }}</div>
+      <div class="kpi-sub">Across all pages</div>
+    </div>
+
+    <div class="kpi-card kpi-danger" *ngIf="tab !== 'users' && tab !== 'audit'">
+      <div class="kpi-header">
+        <span class="kpi-label">Hidden</span>
+        <span class="kpi-icon">⛔</span>
+      </div>
+      <div class="kpi-value">{{ kpiHidden }}</div>
+      <div class="kpi-sub">Moderated items</div>
+    </div>
+
+    <div class="kpi-card kpi-success" *ngIf="tab !== 'users' && tab !== 'audit'">
+      <div class="kpi-header">
+        <span class="kpi-label">Published</span>
+        <span class="kpi-icon">✅</span>
+      </div>
+      <div class="kpi-value">{{ kpiPublished }}</div>
+      <div class="kpi-sub">Visible items</div>
+    </div>
+
+    <div class="kpi-card" *ngIf="tab === 'academies'">
+      <div class="kpi-header">
+        <span class="kpi-label">Draft</span>
+        <span class="kpi-icon">📝</span>
+      </div>
+      <div class="kpi-value">{{ kpiDraft }}</div>
+      <div class="kpi-sub">Not published</div>
+    </div>
+
+    <div class="kpi-card" *ngIf="tab === 'courses'">
+      <div class="kpi-header">
+        <span class="kpi-label">Private</span>
+        <span class="kpi-icon">🔒</span>
+      </div>
+      <div class="kpi-value">{{ kpiPrivate }}</div>
+      <div class="kpi-sub">Restricted</div>
+    </div>
+
+    <div class="kpi-card kpi-warn" *ngIf="tab === 'users'">
+      <div class="kpi-header">
+        <span class="kpi-label">Locked</span>
+        <span class="kpi-icon">🧷</span>
+      </div>
+      <div class="kpi-value">{{ kpiLocked }}</div>
+      <div class="kpi-sub">Accounts</div>
+    </div>
+
+    <div class="kpi-card" *ngIf="tab === 'audit'">
+      <div class="kpi-header">
+        <span class="kpi-label">Showing</span>
+        <span class="kpi-icon">🧾</span>
+      </div>
+      <div class="kpi-value">{{ (audit || []).length }}</div>
+      <div class="kpi-sub">Logs on this page</div>
+    </div>
+
+  </div>
+
+  <!-- State / Error -->
+  <div class="state-loading" *ngIf="loading">Loading…</div>
+  <div class="alert-error" *ngIf="error"><span>⚠</span> {{ error }}</div>
+
+  <!-- ── DRAWERS ── -->
+
+  <!-- Hide drawer -->
+  <div class="drawer" *ngIf="hideOpen && hideId">
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-title">Hide {{ hideKind }}</div>
+        <div class="drawer-sub">Target: <code>{{ hideTitle }}</code></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="closeHideDrawer()">Close</button>
+    </div>
+    <div class="drawer-body">
+      <div class="field">
+        <label class="field-label">Reason</label>
+        <textarea class="input textarea" [formControl]="reasonCtrl" rows="3" placeholder="Write a short reason…"></textarea>
+      </div>
+      <div class="chip-row">
+        <button class="chip-btn" type="button" *ngFor="let r of quickReasons" (click)="pickReason(r)">{{ r }}</button>
+      </div>
+      <div class="drawer-actions">
+        <button class="btn btn-danger" type="button" (click)="confirmHide()" [disabled]="isBusy(hideId)">
+          {{ isBusy(hideId) ? 'Working…' : 'Confirm Hide' }}
+        </button>
+        <button class="btn btn-ghost" type="button" (click)="closeHideDrawer()">Cancel</button>
+        <span class="drawer-note">This content will be removed from public pages immediately.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete drawer -->
+  <div class="drawer drawer-delete" *ngIf="deleteOpen && deleteId">
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-title">Delete {{ deleteKind }}</div>
+        <div class="drawer-sub">Target: <code>{{ deleteTitle }}</code></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="closeDeleteDrawer()">Close</button>
+    </div>
+    <div class="drawer-body">
+      <div class="alert-warn"><strong>Warning:</strong> This action is permanent and cannot be undone.</div>
+      <div class="field">
+        <label class="field-label">Reason</label>
+        <textarea class="input textarea" [formControl]="deleteReasonCtrl" rows="3" placeholder="Write a short reason…"></textarea>
+      </div>
+      <div class="chip-row">
+        <button class="chip-btn" type="button" *ngFor="let r of deleteQuickReasons" (click)="pickDeleteReason(r)">{{ r }}</button>
+      </div>
+      <div class="drawer-actions">
+        <button class="btn btn-danger" type="button" (click)="confirmDelete()" [disabled]="isBusy(deleteId)">
+          {{ isBusy(deleteId) ? 'Working…' : 'Confirm Delete' }}
+        </button>
+        <button class="btn btn-ghost" type="button" (click)="closeDeleteDrawer()">Cancel</button>
+        <span class="drawer-note">Owner will be notified automatically.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Roles drawer -->
+  <div class="drawer drawer-roles" *ngIf="rolesOpen && rolesUser">
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-title">Edit roles</div>
+        <div class="drawer-sub">User: <code>{{ rolesUser.email }}</code></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="closeRolesDrawer()">Close</button>
+    </div>
+    <div class="drawer-body">
+      <p class="drawer-hint">Select the roles for this user. Removing all roles is allowed but not recommended.</p>
+      <div class="roles-grid">
+        <label class="role-tile" *ngFor="let r of roleOptions">
+          <input type="checkbox" [checked]="roleSelected(r)" (change)="toggleRole(r, $any($event.target).checked)" />
+          <span class="role-name">{{ r }}</span>
+          <span class="role-hint">{{ roleHint(r) }}</span>
+        </label>
+      </div>
+      <div class="drawer-actions">
+        <button class="btn btn-primary" type="button" (click)="saveRoles()" [disabled]="rolesSaving || !rolesUser || isBusy(rolesUser.id)">
+          {{ rolesSaving ? 'Saving…' : 'Save roles' }}
+        </button>
+        <button class="btn btn-ghost" type="button" (click)="closeRolesDrawer()" [disabled]="rolesSaving">Cancel</button>
+        <span class="drawer-note">Tip: Keep at least one role (e.g. Student).</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lock drawer -->
+  <div class="drawer drawer-lock" *ngIf="lockOpen && lockUser">
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-title">Lock user</div>
+        <div class="drawer-sub">Target: <code>{{ lockUser.email }}</code></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="closeLockDrawer()">Close</button>
+    </div>
+    <div class="drawer-body">
+      <p class="drawer-hint">Choose how long this user should be locked out.</p>
+      <div class="chip-row">
+        <button class="chip-btn" type="button" [class.on]="lockPreset==='1d'"  (click)="pickLockPreset('1d')">1 day</button>
+        <button class="chip-btn" type="button" [class.on]="lockPreset==='7d'"  (click)="pickLockPreset('7d')">7 days</button>
+        <button class="chip-btn" type="button" [class.on]="lockPreset==='30d'" (click)="pickLockPreset('30d')">30 days</button>
+        <button class="chip-btn" type="button" [class.on]="lockPreset==='perm'" (click)="pickLockPreset('perm')">Permanent</button>
+      </div>
+      <div class="drawer-actions">
+        <button class="btn btn-danger" type="button" (click)="confirmLock()" [disabled]="lockSaving || !lockUser || isBusy(lockUser.id)">
+          {{ lockSaving ? 'Locking…' : 'Confirm lock' }}
+        </button>
+        <button class="btn btn-ghost" type="button" (click)="closeLockDrawer()" [disabled]="lockSaving">Cancel</button>
+        <span class="drawer-note">Locked users cannot sign in until lockout ends.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CONTENT GRIDS ── -->
+
+  <!-- Academies -->
+  <div class="items-grid" *ngIf="!loading && tab==='academies'">
+    <article class="item-card" *ngFor="let a of academies; trackBy: trackById">
+      <div class="item-header">
+        <div class="item-title" [title]="a.name">{{ a.name }}</div>
+        <span class="status-badge" [class.status-hidden]="a.isHidden" [class.status-good]="!a.isHidden && a.isPublished">
+          {{ a.isHidden ? 'Hidden' : (a.isPublished ? 'Published' : 'Draft') }}
+        </span>
+      </div>
+
+      <div class="meta-row">
+        <span class="meta-text">Slug: <code>{{ a.slug }}</code></span>
+        <button class="copy-btn" type="button" (click)="copy(a.slug)">Copy</button>
+      </div>
+      <div class="meta-row">
+        <span class="meta-text">Owner: <code>{{ a.ownerUserId }}</code></span>
+        <button class="copy-btn" type="button" (click)="copy(a.ownerUserId)">Copy</button>
+      </div>
+
+      <div class="hidden-info" *ngIf="a.isHidden">
+        <div class="meta-text"><strong>Reason:</strong> {{ a.hiddenReason || '—' }}</div>
+        <div class="meta-text" *ngIf="formatDate(a.hiddenAt) as d"><strong>Hidden at:</strong> {{ d }}</div>
+      </div>
+
+      <div class="item-actions">
+        <a class="btn btn-ghost btn-sm" [routerLink]="['/academy', a.slug]">Open</a>
+        <button class="btn btn-ghost btn-sm" type="button" *ngIf="!a.isHidden"
+                (click)="openHideDrawer('academy', a.id, a.name, a.hiddenReason)" [disabled]="isBusy(a.id)">Hide</button>
+        <button class="btn btn-ghost btn-sm" type="button" *ngIf="a.isHidden"
+                (click)="unhideAcademy(a)" [disabled]="isBusy(a.id)">Unhide</button>
+        <button class="btn btn-danger-outline btn-sm" type="button"
+                (click)="openDeleteDrawer('academy', a.id, a.name)" [disabled]="isBusy(a.id)">Delete…</button>
+      </div>
+    </article>
+  </div>
+
+  <!-- Courses -->
+  <div class="items-grid" *ngIf="!loading && tab==='courses'">
+    <article class="item-card" *ngFor="let c of courses; trackBy: trackById">
+      <div class="item-header">
+        <div class="item-title" [title]="c.title">{{ c.title }}</div>
+        <span class="status-badge" [class.status-hidden]="c.isHidden" [class.status-good]="!c.isHidden && c.status === 1">
+          {{ c.isHidden ? 'Hidden' : courseStatusLabel(c.status) }}
+        </span>
+      </div>
+
+      <div class="meta-text">Category: {{ c.category || '—' }}</div>
+      <div class="meta-row">
+        <span class="meta-text">AcademyId: <code>{{ c.academyId }}</code></span>
+        <button class="copy-btn" type="button" (click)="copy(c.academyId)">Copy</button>
+      </div>
+
+      <div class="hidden-info" *ngIf="c.isHidden">
+        <div class="meta-text"><strong>Reason:</strong> {{ c.hiddenReason || '—' }}</div>
+        <div class="meta-text" *ngIf="formatDate(c.hiddenAt) as d"><strong>Hidden at:</strong> {{ d }}</div>
+      </div>
+
+      <div class="item-actions">
+        <a class="btn btn-ghost btn-sm" [routerLink]="['/course', c.id]">Open</a>
+        <button class="btn btn-ghost btn-sm" type="button" *ngIf="!c.isHidden"
+                (click)="openHideDrawer('course', c.id, c.title, c.hiddenReason)" [disabled]="isBusy(c.id)">Hide</button>
+        <button class="btn btn-ghost btn-sm" type="button" *ngIf="c.isHidden"
+                (click)="unhideCourse(c)" [disabled]="isBusy(c.id)">Unhide</button>
+        <button class="btn btn-danger-outline btn-sm" type="button"
+                (click)="openDeleteDrawer('course', c.id, c.title)" [disabled]="isBusy(c.id)">Delete…</button>
+      </div>
+    </article>
+  </div>
+
+  <!-- Users -->
+  <div class="items-grid" *ngIf="!loading && tab==='users'">
+    <article class="item-card" *ngFor="let u of users; trackBy: trackById">
+      <div class="item-header">
+        <div class="item-title" [title]="u.email">{{ u.email }}</div>
+        <span class="status-badge" [class.status-hidden]="isUserLocked(u)" [class.status-good]="!isUserLocked(u)">
+          {{ isUserLocked(u) ? 'Locked' : 'Active' }}
+        </span>
+      </div>
+
+      <div class="meta-text">Name: {{ u.displayName || '—' }}</div>
+      <div class="meta-text">Roles: {{ (u.roles || []).join(', ') || '—' }}</div>
+      <div class="meta-text" *ngIf="u.lockoutEnd && formatDate(u.lockoutEnd) as d">
+        Lockout end: <code>{{ d }}</code>
+      </div>
+
+      <div class="item-actions">
+        <button class="btn btn-ghost btn-sm" type="button" (click)="openRolesDrawer(u)" [disabled]="isBusy(u.id)">Edit roles</button>
+        <button class="btn btn-ghost btn-sm" type="button" *ngIf="!isUserLocked(u)"
+                (click)="openLockDrawer(u)" [disabled]="isBusy(u.id)">Lock…</button>
+        <button class="btn btn-ghost btn-sm" type="button" *ngIf="isUserLocked(u)"
+                (click)="unlockUser(u)" [disabled]="isBusy(u.id)">Unlock</button>
+        <button class="btn btn-ghost btn-sm" type="button" (click)="copy(u.id)">Copy ID</button>
+      </div>
+    </article>
+  </div>
+
+  <!-- Audit -->
+  <div class="items-grid" *ngIf="!loading && tab==='audit'">
+    <article class="item-card" *ngFor="let x of audit; trackBy: trackByAuditId">
+      <div class="item-header">
+        <div class="item-title" [title]="x.action">{{ x.action }}</div>
+        <span class="status-badge">{{ x.targetType }}</span>
+      </div>
+
+      <div class="meta-text">Target: <code>{{ x.targetLabel || x.targetId }}</code></div>
+      <div class="meta-text">Actor: <code>{{ x.actorUserId }}</code></div>
+
+      <div class="hidden-info" *ngIf="x.reason">
+        <div class="meta-text"><strong>Reason:</strong> {{ x.reason }}</div>
+      </div>
+
+      <div class="meta-text" *ngIf="formatDate(x.createdAt) as d">Time: <code>{{ d }}</code></div>
+
+      <div class="item-actions">
+        <button class="btn btn-ghost btn-sm" type="button" (click)="copy(x.targetId)">Copy Target ID</button>
+        <button class="btn btn-ghost btn-sm" type="button" (click)="copy(x.actorUserId)">Copy Actor ID</button>
+      </div>
+    </article>
+  </div>
+
 </main>

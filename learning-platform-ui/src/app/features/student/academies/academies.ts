@@ -5,6 +5,7 @@ import { BehaviorSubject, Observable, Subject, of } from 'rxjs';
 import { catchError, map, shareReplay, startWith, switchMap, takeUntil, debounceTime } from 'rxjs/operators';
 
 import { StudentApi, PublicAcademy } from '../../../core/services/student-api';
+import { Auth } from '../../../core/services/auth';
 import { environment } from '../../../../environments/environment';
 
 type LoadState<T> = { loading: boolean; data: T; error: string | null };
@@ -36,9 +37,15 @@ type Vm = {
 export class AcademiesComponent implements OnDestroy {
   api = environment.apiBaseUrl;
 
+  // ---- Auth state (used by topbar) ----
+  get isLoggedIn(): boolean  { return this.auth.isLoggedIn(); }
+  get isInstructor(): boolean { return this.auth.isInstructor(); }
+  get isStudent(): boolean    { return this.auth.isStudent(); }
+
   q = '';
   sort: SortKey = 'newest';
   onlyNew = false;
+  year = new Date().getFullYear();
 
   skeleton = Array.from({ length: 9 });
 
@@ -50,6 +57,7 @@ export class AcademiesComponent implements OnDestroy {
 
   constructor(
     private student: StudentApi,
+    private auth: Auth,
     private router: Router,
     private route: ActivatedRoute
   ) {
@@ -186,7 +194,7 @@ export class AcademiesComponent implements OnDestroy {
   }
 
   brand(a: PublicAcademy) {
-    return a.primaryColor || '#7c3aed';
+    return a.primaryColor || '#1a56db';
   }
 
   subtitle(a: PublicAcademy) {

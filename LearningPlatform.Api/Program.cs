@@ -22,19 +22,18 @@ var smsOpt = builder.Configuration.GetSection("Sms").Get<SmsOptions>()
              ?? throw new Exception("Missing Sms config");
 builder.Services.AddSingleton(smsOpt);
 
-// ✅ Choose ONE sender implementation (Twilio in normal cases)
+// ✅ Choose ONE sender implementation
 builder.Services.AddScoped<ISmsSender, TwilioSmsSender>();
+// builder.Services.AddScoped<ISmsSender, ConsoleSmsSender>(); // optional local fallback
+
 builder.Services.AddScoped<AdminAuditWriter>();
+builder.Services.AddScoped<NotificationWriter>();
 
-
-// If you want console-only fallback for local testing, comment Twilio and uncomment this:
-// builder.Services.AddScoped<ISmsSender, ConsoleSmsSender>();
-
-builder.Services.AddScoped<LearningPlatform.Api.Services.NotificationWriter>();
+// ✅ Certificates PDF
+builder.Services.AddSingleton<ICertificatePdfService, CertificatePdfService>();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
 
 builder.Services.AddSwaggerGen(c =>
 {
@@ -70,14 +69,22 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddCors(opt =>
 {
     opt.AddPolicy("dev", p =>
-        p.WithOrigins("http://localhost:4200", "http://localhost:4201")
-         .AllowAnyHeader()
-         .AllowAnyMethod());
+        p.WithOrigins(
+            "http://localhost:4200",
+            "http://localhost:4201",
+            "http://127.0.0.1:4200",
+            "http://127.0.0.1:4201"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod());
 });
 
-// EF Core + SQL Server
-builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
+// ✅ EF Core + SQL Server (FIXED KEY)
+var cs = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(cs))
+    throw new InvalidOperationException("Missing connection string: ConnectionStrings:DefaultConnection");
+
+builder.Services.AddDbContext<AppDbContext>(opt => opt.UseSqlServer(cs));
 
 // Identity
 builder.Services.AddIdentityCore<ApplicationUser>(opt =>
@@ -86,7 +93,6 @@ builder.Services.AddIdentityCore<ApplicationUser>(opt =>
     opt.Password.RequireNonAlphanumeric = false;
     opt.User.RequireUniqueEmail = true;
 
-    // Needed if you want lock/unlock to work properly
     opt.Lockout.AllowedForNewUsers = true;
 })
 .AddRoles<IdentityRole>()

@@ -188,15 +188,22 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         });
 
         builder.Entity<Certificate>(b =>
-    {
-        b.HasKey(x => x.Id);
-        b.Property(x => x.CertificateNumber).HasMaxLength(32).IsRequired();
-        b.HasIndex(x => x.CertificateNumber).IsUnique();
+            {
+                b.HasKey(x => x.Id);
 
-        b.Property(x => x.StudentName).HasMaxLength(200).IsRequired();
-        b.Property(x => x.StudentEmail).HasMaxLength(256).IsRequired();
-        b.Property(x => x.CourseTitle).HasMaxLength(200).IsRequired();
-        b.Property(x => x.AcademyName).HasMaxLength(200).IsRequired();
-    });
+                b.Property(x => x.CertificateNumber).HasMaxLength(32).IsRequired();
+                b.HasIndex(x => x.CertificateNumber).IsUnique();
+
+                b.Property(x => x.UserId).HasMaxLength(450).IsRequired(); // Identity user id length safe
+                b.HasIndex(x => new { x.CourseId, x.UserId }).IsUnique();  // ✅ prevent duplicate certs
+
+                b.Property(x => x.StudentName).HasMaxLength(200).IsRequired();
+                b.Property(x => x.StudentEmail).HasMaxLength(256).IsRequired();
+                b.Property(x => x.CourseTitle).HasMaxLength(200).IsRequired();
+                b.Property(x => x.AcademyName).HasMaxLength(200).IsRequired();
+
+                b.Property(x => x.CompletedAt).HasColumnType("datetimeoffset");
+                b.Property(x => x.CreatedAt).HasColumnType("datetimeoffset");
+            });
     }
 }

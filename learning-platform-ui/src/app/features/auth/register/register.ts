@@ -46,7 +46,7 @@ export class RegisterComponent implements OnDestroy {
   // resend cooldown
   resendIn = 0;
   private resendTimer: any = null;
-
+  year = new Date().getFullYear();
   startForm: FormGroup;
   verifyForm: FormGroup;
 

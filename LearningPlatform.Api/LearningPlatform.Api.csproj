@@ -16,6 +16,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.15.0" />
     <PackageReference Include="Microsoft.OpenApi" Version="1.6.22" />
+    <PackageReference Include="QuestPDF" Version="2026.2.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
     <PackageReference Include="Twilio" Version="7.14.3" />

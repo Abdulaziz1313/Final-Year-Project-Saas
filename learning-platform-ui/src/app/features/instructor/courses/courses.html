@@ -1,104 +1,110 @@
-<!-- courses.html (FULL UPDATED) -->
-<main class="page">
-  <!-- Background blobs (same as home) -->
-  <div class="bg" aria-hidden="true">
-    <span class="blob b1"></span>
-    <span class="blob b2"></span>
-    <span class="blob b3"></span>
-    <span class="grid"></span>
+<!-- courses.html — Elevated to match Home page aesthetics -->
+<main class="courses-page">
+
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">Instructor panel</span>
+      </div>
+      <h1 class="page-title">Courses &amp; <em>Management</em></h1>
+      <p class="page-desc">Search, update status, and manage course content.</p>
+    </div>
+
+    <div class="hero-right">
+      <div class="action-group">
+        <button class="btn btn-ghost" type="button" (click)="reload()">
+          Refresh
+        </button>
+        <a class="btn btn-primary" [routerLink]="['/instructor/course/create', academyId]">
+          + Create course
+        </a>
+      </div>
+    </div>
   </div>
 
-  <div class="wrap">
-    <!-- Top header -->
-    <header class="header">
-      <div class="head-left">
-        <div class="kicker">Instructor • Courses</div>
-        <h1>Courses</h1>
-        <p>Search, update status, and manage course content.</p>
+  <!-- ── ACADEMY CARD ── -->
+  <ng-container *ngIf="academyState$ | async as aSt">
+    <section class="academy-card" *ngIf="aSt.data && !aSt.loading && !aSt.error; else academyHeadState">
+
+      <div class="academy-top">
+        <span class="status-badge" [class.status-good]="aSt.data.isPublished">
+          {{ aSt.data.isPublished ? 'Published academy' : 'Draft academy' }}
+        </span>
+        <div class="academy-actions">
+          <a class="btn btn-ghost btn-sm" *ngIf="aSt.data.isPublished"
+            [routerLink]="['/academy', aSt.data.slug]">View public</a>
+          <button class="btn btn-ghost btn-sm" type="button"
+            *ngIf="aSt.data.isPublished" (click)="copyAcademyLink(aSt.data.slug)">
+            Copy link
+          </button>
+        </div>
       </div>
 
-      <div class="header-actions">
-        <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
-        <a class="btn primary" [routerLink]="['/instructor/course/create', academyId]">+ Create Course</a>
-      </div>
-    </header>
-
-    <!-- Academy header -->
-    <ng-container *ngIf="academyState$ | async as aSt">
-      <section class="academy-head" *ngIf="aSt.data && !aSt.loading && !aSt.error; else academyHeadState">
-        <div class="academy-banner" *ngIf="img(aSt.data.bannerUrl) as b" [style.backgroundImage]="'url(' + b + ')'"></div>
-
-        <div class="academy-body">
-          <div class="academy-left">
-            <div class="academy-logo" *ngIf="img(aSt.data.logoUrl); else academyLetter">
-              <img [src]="img(aSt.data.logoUrl)!" alt="logo" />
-            </div>
-            <ng-template #academyLetter>
-              <div class="academy-logo fallback">{{ (aSt.data.name || 'A').slice(0,1).toUpperCase() }}</div>
-            </ng-template>
-
-            <div class="academy-text">
-              <div class="academy-titleline">
-                <div class="academy-title">{{ aSt.data.name }}</div>
-
-                <span class="pill" [class.on]="aSt.data.isPublished">
-                  <span class="dot"></span>
-                  {{ aSt.data.isPublished ? 'Published' : 'Draft' }}
-                </span>
-              </div>
-
-              <div class="academy-sub muted">{{ aSt.data.description || aSt.data.slug }}</div>
-
-              <div class="academy-meta">
-                <span class="chip ghost">
-                  Academy ID: <span class="mono">{{ aSt.data.id }}</span>
-                </span>
-                <span class="chip ghost" *ngIf="aSt.data.slug">
-                  Slug: <span class="mono">{{ aSt.data.slug }}</span>
-                </span>
-              </div>
-            </div>
+      <div class="academy-body">
+        <div class="academy-left">
+          <div class="academy-logo" *ngIf="img(aSt.data.logoUrl); else academyLetter">
+            <img [src]="img(aSt.data.logoUrl)!" alt="logo" />
           </div>
+          <ng-template #academyLetter>
+            <div class="academy-logo fallback">{{ (aSt.data.name || 'A').slice(0,1).toUpperCase() }}</div>
+          </ng-template>
 
-          <div class="academy-actions">
-            <a class="btn ghost small" *ngIf="aSt.data.isPublished" [routerLink]="['/academy', aSt.data.slug]">View public</a>
-            <button class="btn ghost small" type="button" *ngIf="aSt.data.isPublished" (click)="copyAcademyLink(aSt.data.slug)">
-              Copy public link
-            </button>
+          <div class="academy-text">
+            <div class="academy-title" [title]="aSt.data.name">{{ aSt.data.name }}</div>
+            <div class="academy-sub">{{ aSt.data.description || aSt.data.slug }}</div>
+            <div class="academy-meta">
+              <span class="meta-chip">ID: <code>{{ aSt.data.id }}</code></span>
+              <span class="meta-chip" *ngIf="aSt.data.slug">Slug: <code>{{ aSt.data.slug }}</code></span>
+            </div>
           </div>
         </div>
-      </section>
 
-      <ng-template #academyHeadState>
-        <div class="state" *ngIf="aSt.loading">Loading academy…</div>
-        <div class="alert error" *ngIf="aSt.error">{{ aSt.error }}</div>
-      </ng-template>
-    </ng-container>
+        <div class="academy-banner"
+          *ngIf="img(aSt.data.bannerUrl) as b"
+          [style.backgroundImage]="'url(' + b + ')'">
+        </div>
+      </div>
 
-    <!-- Filters -->
-    <section class="filters" [formGroup]="filters" aria-label="Course filters">
-      <div class="search">
-        <span class="icon">🔎</span>
+    </section>
+
+    <ng-template #academyHeadState>
+      <div class="state-loading" *ngIf="aSt.loading">
+        <span class="loading-dot"></span> Loading academy…
+      </div>
+      <div class="alert-error" *ngIf="aSt.error"><span>⚠</span> {{ aSt.error }}</div>
+    </ng-template>
+  </ng-container>
+
+  <!-- ── TOOLBAR ── -->
+  <section class="toolbar" [formGroup]="filters" aria-label="Course filters">
+    <div class="toolbar-main">
+      <div class="search-wrap">
+        <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round">
+          <circle cx="10.5" cy="10.5" r="7.5"/><path d="M21 21l-4.3-4.3"/>
+        </svg>
         <input
-          class="input"
+          class="input search-input"
           [value]="filters.value.q"
           (input)="onQInput($any($event.target).value)"
           placeholder="Search by title…"
         />
       </div>
 
-      <div class="field">
-        <label class="lbl">Status</label>
-        <select class="input" formControlName="status">
-          <option value="all">All</option>
+      <div class="filter-field">
+        <label class="filter-label">Status</label>
+        <select class="input select-input" formControlName="status">
+          <option value="all">All statuses</option>
           <option value="draft">Draft</option>
           <option value="published">Published</option>
           <option value="private">Private</option>
         </select>
       </div>
 
-      <div class="field">
-        <label class="lbl">Category</label>
+      <div class="filter-field">
+        <label class="filter-label">Category</label>
         <input
           class="input"
           [value]="filters.value.category"
@@ -106,157 +112,156 @@
           placeholder="Filter by category…"
         />
       </div>
+    </div>
 
-      <div class="filter-actions">
-        <button class="btn ghost" type="button" (click)="clearFilters()">Clear</button>
-      </div>
-    </section>
+    <div class="toolbar-right">
+      <button class="btn btn-ghost btn-sm" type="button" (click)="clearFilters()">
+        Clear filters
+      </button>
+    </div>
+  </section>
 
-    <ng-container *ngIf="filtered$ | async as st">
-      <div class="state" *ngIf="st.loading">Loading courses…</div>
+  <!-- ── COURSES STATE ── -->
+  <ng-container *ngIf="filtered$ | async as st">
+    <div class="state-loading" *ngIf="st.loading">
+      <span class="loading-dot"></span> Loading courses…
+    </div>
+    <div class="alert-error" *ngIf="st.error"><span>⚠</span> {{ st.error }}</div>
 
-      <div class="alert error" *ngIf="st.error">
-        {{ st.error }}
-      </div>
+    <ng-container *ngIf="!st.loading && !st.error">
 
-      <section class="panel" *ngIf="!st.loading && !st.error">
-        <div class="meta">
-          <span class="chip">Academy ID: <span class="mono">{{ academyId }}</span></span>
-          <span class="chip">Showing: {{ st.data.length }}</span>
+      <!-- Meta strip -->
+      <div class="meta-strip">
+        <div class="meta-chip">
+          Academy <strong>{{ academyId }}</strong>
         </div>
-
-        <div class="empty" *ngIf="st.data.length === 0">
-          <div class="empty-ic">📚</div>
-          <div class="empty-title">No courses match your filters</div>
-          <div class="empty-sub">Try clearing filters or create a new course.</div>
-          <a class="btn primary" [routerLink]="['/instructor/course/create', academyId]">Create Course</a>
+        <div class="meta-chip">
+          Showing <strong>{{ st.data.length }}</strong>
+          course{{ st.data.length === 1 ? '' : 's' }}
         </div>
+      </div>
 
-        <!-- Upgraded cards -->
-        <div class="course-grid" *ngIf="st.data.length > 0">
-          <article class="course-card" *ngFor="let c of st.data">
-            <div class="course-top">
-              <!-- Thumbnail -->
-              <div class="course-thumb" [class.has]="!!img($any(c).thumbnailUrl)">
-                <img *ngIf="img($any(c).thumbnailUrl)" [src]="img($any(c).thumbnailUrl)!" alt="thumbnail" />
-                <div class="thumb-fallback" *ngIf="!img($any(c).thumbnailUrl)">
-                  {{ (c.title || 'C').slice(0,1).toUpperCase() }}
-                </div>
+      <!-- Empty state -->
+      <div class="empty-state" *ngIf="st.data.length === 0">
+        <div class="empty-icon">📚</div>
+        <div class="empty-title">No courses match your filters</div>
+        <p class="empty-desc">Try clearing your filters or create a new course to get started.</p>
+        <a class="btn btn-primary" [routerLink]="['/instructor/course/create', academyId]">
+          + Create course
+        </a>
+      </div>
 
-                <!-- Netflix-style price badge -->
-                <span class="price-badge" [class.free]="c.isFree">
-                  {{ c.isFree ? 'Free' : (c.price + ' ' + c.currency) }}
-                </span>
-              </div>
+      <!-- ── GRID ── -->
+      <div class="items-grid" *ngIf="st.data.length > 0">
+        <article class="item-card" *ngFor="let c of st.data">
 
-              <!-- Title + status -->
-              <div class="course-main">
-                <div class="course-head">
-                  <div class="course-title" [title]="c.title">{{ c.title }}</div>
+          <!-- Card header -->
+          <div class="card-header">
+            <div class="card-title-row">
+              <div class="item-title" [title]="c.title">{{ c.title }}</div>
+              <span class="status-badge"
+                [class.status-good]="c.status === 1 && !c.isHidden"
+                [class.status-hidden]="c.isHidden">
+                {{ c.isHidden ? 'Hidden' : statusLabel(c.status) }}
+              </span>
+            </div>
+            <div class="card-category" *ngIf="c.category">{{ c.category }}</div>
+          </div>
 
-                  <span
-                    class="status-pill"
-                    [class.pub]="c.status === 1"
-                    [class.draft]="c.status === 0"
-                    [class.priv]="c.status === 2"
-                  >
-                    {{ statusLabel(c.status) }}
-                  </span>
-                </div>
-
-                <div class="course-sub muted">
-                  {{ c.category || 'No category' }}
-                </div>
+          <!-- Stats row -->
+          <div class="card-stats">
+            <div class="stat-chip">
+              <div class="stat-chip-label">Enrolled</div>
+              <div class="stat-chip-val">{{ c.enrollmentCount || 0 }}</div>
+            </div>
+            <div class="stat-chip">
+              <div class="stat-chip-label">Price</div>
+              <div class="stat-chip-val">{{ c.isFree ? 'Free' : (c.price + ' ' + c.currency) }}</div>
+            </div>
+            <div class="stat-chip">
+              <div class="stat-chip-label">Updated</div>
+              <div class="stat-chip-val">
+                {{
+                  ($any(c).updatedAt || $any(c).lastUpdatedAt)
+                    ? (($any(c).updatedAt || $any(c).lastUpdatedAt) | date:'MMM d')
+                    : (c.createdAt | date:'MMM d')
+                }}
               </div>
             </div>
+          </div>
 
-            <!-- Hidden reason -->
-            <div class="hidden-note" *ngIf="c.isHidden">
-              <div class="hn-title">Hidden by admin</div>
-              <div class="hn-sub">{{ c.hiddenReason || '—' }}</div>
+          <!-- Hidden warning -->
+          <div class="hidden-info" *ngIf="c.isHidden">
+            <span class="hidden-icon">🚫</span>
+            <div>
+              <div class="hidden-title">Hidden by admin</div>
+              <div class="hidden-reason">{{ c.hiddenReason || 'No reason provided' }}</div>
             </div>
+          </div>
 
-            <div class="stats">
-              <div class="stat">
-                <div class="k">Enrolled</div>
-                <div class="v">{{ c.enrollmentCount || 0 }}</div>
-              </div>
-
-              <div class="stat">
-                <div class="k">Updated</div>
-                <div class="v">
-                  {{
-                    ($any(c).updatedAt || $any(c).lastUpdatedAt)
-                      ? (($any(c).updatedAt || $any(c).lastUpdatedAt) | date:'mediumDate')
-                      : (c.createdAt | date:'mediumDate')
-                  }}
-                </div>
-              </div>
-
-              <div class="stat">
-                <div class="k">Created</div>
-                <div class="v">{{ c.createdAt | date:'mediumDate' }}</div>
-              </div>
-
-              <div class="stat">
-                <div class="k">Status</div>
-                <select
-                  class="input small"
-                  [disabled]="isBusy(c.id) || c.isHidden"
-                  [value]="c.status"
-                  (change)="setStatus(c.id, $any($event.target).value)"
-                >
-                  <option [value]="0">Draft</option>
-                  <option [value]="1">Published</option>
-                  <option [value]="2">Private</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="seg" aria-label="Quick status">
-              <button class="seg-btn" type="button" [class.active]="c.status === 1"
-                      [disabled]="isBusy(c.id) || c.isHidden" (click)="quickSet(c.id, 1)">
+          <!-- Status control -->
+          <div class="control-section">
+            <div class="control-label">Quick status</div>
+            <div class="seg">
+              <button class="seg-btn" type="button"
+                [class.on]="c.status === 1"
+                [disabled]="isBusy(c.id) || c.isHidden"
+                (click)="quickSet(c.id, 1)">
                 Published
               </button>
-              <button class="seg-btn" type="button" [class.active]="c.status === 0"
-                      [disabled]="isBusy(c.id)" (click)="quickSet(c.id, 0)">
+              <button class="seg-btn" type="button"
+                [class.on]="c.status === 0"
+                [disabled]="isBusy(c.id)"
+                (click)="quickSet(c.id, 0)">
                 Draft
               </button>
-              <button class="seg-btn" type="button" [class.active]="c.status === 2"
-                      [disabled]="isBusy(c.id)" (click)="quickSet(c.id, 2)">
+              <button class="seg-btn" type="button"
+                [class.on]="c.status === 2"
+                [disabled]="isBusy(c.id)"
+                (click)="quickSet(c.id, 2)">
                 Private
               </button>
             </div>
 
-            <div class="course-actions">
-              <a class="btn ghost small" [routerLink]="['/instructor/course-builder', c.id]">🛠 Builder</a>
-              <a class="btn ghost small" [routerLink]="['/instructor/course-enrollments', c.id]">👥 Students</a>
-              <button class="btn ghost small" type="button" (click)="copyCourseLink(c.id)">🔗 Copy link</button>
-
-              <!-- Public button only when Published + not hidden -->
-              <a
-                class="btn ghost small"
-                *ngIf="c.status === 1 && !c.isHidden"
-                [href]="publicCourseLink(c.id)"
-                target="_blank"
-                rel="noopener"
-              >
-                🌐 Public
-              </a>
-
-              <span class="spacer"></span>
-
-              <button class="btn danger small" type="button" [disabled]="isBusy(c.id)" (click)="delete(c.id)">
-                {{ isBusy(c.id) ? 'Working…' : 'Delete' }}
-              </button>
+            <div class="filter-field compact">
+              <label class="filter-label">Or set via dropdown</label>
+              <select class="input select-input"
+                [disabled]="isBusy(c.id) || c.isHidden"
+                [value]="c.status"
+                (change)="setStatus(c.id, $any($event.target).value)">
+                <option [value]="0">Draft</option>
+                <option [value]="1">Published</option>
+                <option [value]="2">Private</option>
+              </select>
             </div>
+          </div>
 
-            <div class="muted small foot-note" *ngIf="c.isHidden">
-              Publishing is disabled while this course is hidden.
-            </div>
-          </article>
-        </div>
-      </section>
+          <!-- Actions -->
+          <div class="item-actions">
+            <a class="btn btn-ghost btn-sm" [routerLink]="['/instructor/course-builder', c.id]">Builder</a>
+            <a class="btn btn-ghost btn-sm" [routerLink]="['/instructor/course-enrollments', c.id]">Students</a>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="copyCourseLink(c.id)">Copy link</button>
+            <a class="btn btn-ghost btn-sm"
+              *ngIf="c.status === 1 && !c.isHidden"
+              [href]="publicCourseLink(c.id)"
+              target="_blank" rel="noopener">
+              Public ↗
+            </a>
+            <span class="spacer"></span>
+            <button class="btn btn-danger-outline btn-sm" type="button"
+              [disabled]="isBusy(c.id)" (click)="delete(c.id)">
+              {{ isBusy(c.id) ? 'Working…' : 'Delete' }}
+            </button>
+          </div>
+
+          <div class="saving-note" *ngIf="isBusy(c.id)">
+            <span class="saving-dot"></span> Saving changes…
+          </div>
+
+        </article>
+      </div>
+
     </ng-container>
-  </div>
+  </ng-container>
+
 </main>

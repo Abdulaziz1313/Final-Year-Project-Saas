@@ -1,368 +1,493 @@
-<!-- course-builder.html (FULL UPDATED) -->
+<!-- course-builder.html — upgraded to match home page -->
+<main class="builder-page">
 
-<main class="page">
-  <!-- Background blobs (same as home/courses) -->
-  <div class="bg" aria-hidden="true">
-    <span class="blob b1"></span>
-    <span class="blob b2"></span>
-    <span class="blob b3"></span>
-    <span class="grid"></span>
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span>Instructor · Builder</span>
+      </div>
+      <h1 class="page-title">Course <em>Builder</em></h1>
+      <p class="page-desc">Build modules and lessons, upload content, then publish your course.</p>
+    </div>
+
+    <div class="hero-right">
+      <div class="hero-actions">
+        <a class="btn btn-ghost btn-sm" routerLink="/instructor">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+          Dashboard
+        </a>
+        <button class="btn btn-ghost btn-sm" type="button" (click)="resetDrafts()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13">
+            <path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4h6v2"/>
+          </svg>
+          Clear drafts
+        </button>
+        <button class="btn btn-ghost btn-sm" type="button" (click)="reload()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+    </div>
   </div>
 
-  <header class="topbar">
-    <div class="top-left">
-      <div class="kicker">Instructor • Builder</div>
-      <h1>Course Builder</h1>
-      <p class="muted">Build modules and lessons, upload content, then publish.</p>
-    </div>
-
-    <div class="top-actions">
-      <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
-      <a class="btn ghost" routerLink="/instructor">Dashboard</a>
-      <button class="btn ghost" type="button" (click)="resetDrafts()">Clear drafts</button>
-    </div>
-  </header>
-
+  <!-- ── ASYNC ── -->
   <ng-container *ngIf="state$ | async as st">
-    <div class="state" *ngIf="st.loading">Loading course…</div>
 
-    <div class="alert error" *ngIf="st.error">
+    <!-- Loading skeleton -->
+    <div class="sk-layout" *ngIf="st.loading">
+      <div class="sk-sidebar">
+        <div class="sk-block skel"></div>
+        <div class="sk-block skel" style="height:120px"></div>
+        <div class="sk-block skel" style="height:80px"></div>
+      </div>
+      <div class="sk-main">
+        <div class="sk-block skel" style="height:80px"></div>
+        <div class="sk-block skel" style="height:140px"></div>
+        <div class="sk-block skel" style="height:140px"></div>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div class="alert-error" *ngIf="st.error && !st.loading">
+      <div class="ae-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/>
+        </svg>
+      </div>
       {{ st.error }}
     </div>
 
-    <!-- ✅ Hidden banner -->
-    <div class="alert warn" *ngIf="st.data && st.data.isHidden">
-      <div class="warn-title">This course is hidden by admin</div>
-      <div class="muted">Reason: {{ st.data.hiddenReason || '—' }}</div>
-      <div class="muted small">You can still view content, but publishing and uploads are disabled.</div>
+    <!-- Hidden banner -->
+    <div class="alert-warn" *ngIf="st.data && st.data.isHidden">
+      <div class="aw-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <div class="aw-body">
+        <div class="aw-title">Course hidden by admin</div>
+        <div class="aw-sub">Reason: <strong>{{ st.data.hiddenReason || '—' }}</strong> · Editing and uploads are disabled.</div>
+      </div>
     </div>
 
-    <section class="layout" *ngIf="st.data && !st.loading">
-      <!-- Left: summary + actions -->
-      <aside class="panel sticky">
-        <div class="panel-head">
-          <div>
-            <div class="panel-title">Course</div>
-            <div class="muted small">ID: <span class="mono">{{ courseId }}</span></div>
+    <!-- ── LAYOUT ── -->
+    <div class="layout" *ngIf="st.data && !st.loading">
+
+      <!-- ── LEFT SIDEBAR ── -->
+      <aside class="sidebar-panel">
+
+        <!-- Course card -->
+        <div class="panel-card">
+          <div class="panel-head">
+            <div class="ph-left">
+              <div class="panel-title">Course</div>
+              <div class="panel-id">ID: <span class="mono">{{ courseId }}</span></div>
+            </div>
+            <span class="status-badge"
+                  [class.status-published]="isPublished(st.data.status) && !st.data.isHidden"
+                  [class.status-hidden]="st.data.isHidden"
+                  [class.status-draft]="!isPublished(st.data.status) && !st.data.isHidden">
+              <span class="status-dot"></span>
+              {{ st.data.isHidden ? 'Hidden' : statusLabel(st.data.status) }}
+            </span>
           </div>
 
-          <span class="status" [class.pub]="isPublished(st.data.status)">
-            <span class="dot"></span>
-            {{ statusLabel(st.data.status) }}
-          </span>
+          <div class="course-name">{{ st.data.title }}</div>
+          <div class="course-sub">{{ st.data.shortDescription || 'No short description yet.' }}</div>
+
+          <!-- Stats row -->
+          <div class="course-stats">
+            <div class="cs-item">
+              <div class="cs-val">{{ st.data.modules?.length || 0 }}</div>
+              <div class="cs-label">Modules</div>
+            </div>
+            <div class="cs-sep"></div>
+            <div class="cs-item">
+              <div class="cs-val">{{ countLessons(st.data.modules || []) }}</div>
+              <div class="cs-label">Lessons</div>
+            </div>
+            <div class="cs-sep"></div>
+            <div class="cs-item">
+              <div class="cs-val">{{ countUploads(st.data.modules || []) }}</div>
+              <div class="cs-label">Uploads</div>
+            </div>
+          </div>
+
+          <!-- Publish row -->
+          <div class="publish-row">
+            <button
+              class="btn btn-primary"
+              type="button"
+              [disabled]="publishing || isPublished(st.data.status) || st.data.isHidden"
+              (click)="publishCourse(st.data.id)"
+            >
+              <svg *ngIf="!publishing && !isPublished(st.data.status)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+                <path d="M12 19V5M5 12l7-7 7 7"/>
+              </svg>
+              {{ publishing ? 'Publishing…' : (isPublished(st.data.status) ? '✓ Published' : 'Publish course') }}
+            </button>
+
+            <button class="btn btn-ghost btn-sm" type="button" (click)="copy(publicCourseLink())">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              Copy link
+            </button>
+          </div>
         </div>
 
-        <div class="course-title">{{ st.data.title }}</div>
-        <div class="course-sub">{{ st.data.shortDescription || 'No short description yet.' }}</div>
-
-        <div class="summary">
-          <div class="chip">
-            <div class="k">Modules</div>
-            <div class="v">{{ st.data.modules?.length || 0 }}</div>
-          </div>
-
-          <div class="chip">
-            <div class="k">Lessons</div>
-            <div class="v">{{ countLessons(st.data.modules || []) }}</div>
-          </div>
-
-          <div class="chip">
-            <div class="k">Uploads</div>
-            <div class="v">{{ countUploads(st.data.modules || []) }}</div>
-          </div>
-        </div>
-
-        <div class="tool-row">
-          <button
-            class="btn primary"
-            type="button"
-            [disabled]="publishing || isPublished(st.data.status) || st.data.isHidden"
-            (click)="publishCourse(st.data.id)"
-            [title]="st.data.isHidden ? 'Hidden by admin' : 'Publish'"
-          >
-            {{ publishing ? 'Publishing…' : (isPublished(st.data.status) ? 'Published' : 'Publish') }}
-          </button>
-
-          <button class="btn ghost" type="button" (click)="copy(publicCourseLink())">
-            Copy public link
-          </button>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="section-title">Add module</div>
-        <form class="form" [formGroup]="moduleForm" (ngSubmit)="addModule()">
-          <div class="field">
-            <label>Module title</label>
-            <input
-              class="input"
-              formControlName="title"
-              [disabled]="st.data.isHidden"
-              placeholder="e.g. Module 1 - Introduction"
-            />
-          </div>
-
-          <button class="btn primary" type="submit" [disabled]="moduleForm.invalid || st.data.isHidden">
+        <!-- Add module card -->
+        <div class="panel-card">
+          <div class="panel-section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
             Add module
-          </button>
-        </form>
+          </div>
 
-        <div class="divider"></div>
-
-        <div class="mini-actions">
-          <button class="btn ghost small" type="button" (click)="expandAll(st.data.modules || [])">Expand all</button>
-          <button class="btn ghost small" type="button" (click)="collapseAll(st.data.modules || [])">Collapse all</button>
+          <form [formGroup]="moduleForm" (ngSubmit)="addModule()" class="add-form">
+            <div class="field">
+              <label class="field-label">Module title</label>
+              <input class="input" formControlName="title"
+                     [disabled]="st.data.isHidden"
+                     placeholder="e.g. Introduction to the course" />
+            </div>
+            <button class="btn btn-primary" type="submit"
+                    [disabled]="moduleForm.invalid || st.data.isHidden">
+              Add module
+            </button>
+            <p class="disabled-note" *ngIf="st.data.isHidden">Hidden by admin — editing disabled.</p>
+          </form>
         </div>
 
-        <div class="hint muted small">
-          Tip: add modules first, then lessons. Upload video/PDF after creating a lesson. For quiz lessons, click “Edit quiz”.
+        <!-- Quick actions card -->
+        <div class="panel-card">
+          <div class="panel-section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15">
+              <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+            </svg>
+            Quick actions
+          </div>
+          <div class="quick-btns">
+            <button class="btn btn-ghost btn-sm" type="button" (click)="expandAll(st.data.modules || [])">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/>
+              </svg>
+              Expand all
+            </button>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="collapseAll(st.data.modules || [])">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12">
+                <path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3"/>
+              </svg>
+              Collapse all
+            </button>
+          </div>
         </div>
+
+        <!-- Tip card -->
+        <div class="tip-card">
+          <div class="tip-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="18" height="18">
+              <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+            </svg>
+          </div>
+          <div class="tip-body">
+            <div class="tip-title">Getting started</div>
+            <div class="tip-text">Add modules first, then lessons inside each. Upload video or PDF after creating the lesson. Quiz lessons have their own editor.</div>
+          </div>
+        </div>
+
       </aside>
 
-      <!-- Right: modules -->
-      <section class="panel">
-        <div class="panel-head">
-          <div class="panel-title">Modules</div>
-          <span class="muted">{{ st.data.modules?.length || 0 }} total</span>
+      <!-- ── RIGHT: MODULES ── -->
+      <section class="modules-panel">
+
+        <!-- Section header -->
+        <div class="mp-head">
+          <div class="mp-head-left">
+            <div class="mp-title">Modules</div>
+            <span class="mp-count">{{ st.data.modules?.length || 0 }} total</span>
+          </div>
         </div>
 
-        <div class="empty" *ngIf="(st.data.modules?.length || 0) === 0">
-          <div class="empty-title">No modules yet</div>
-          <div class="empty-sub">Add your first module from the left panel.</div>
+        <!-- Empty -->
+        <div class="modules-empty" *ngIf="(st.data.modules?.length || 0) === 0">
+          <div class="me-art">
+            <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="96" height="96" rx="24" fill="#eff4ff"/>
+              <rect x="20" y="28" width="56" height="40" rx="10" fill="white" stroke="#c7d7fb" stroke-width="1.5"/>
+              <path d="M48 40v16M40 48h16" stroke="#1a56db" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="me-title">No modules yet</div>
+          <div class="me-sub">Add your first module from the left panel to get started.</div>
         </div>
 
+        <!-- Module list -->
         <div class="module-list" *ngIf="(st.data.modules?.length || 0) > 0">
           <article class="module-card" *ngFor="let m of st.data.modules; let mi = index">
+
+            <!-- Module header -->
             <div class="module-head">
               <button class="module-toggle" type="button" (click)="toggleModule(m.id)">
-                <span class="chev">{{ isCollapsed(m.id) ? '▸' : '▾' }}</span>
+                <div class="module-chev" [class.open]="!isCollapsed(m.id)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
+                </div>
                 <span class="module-name">{{ m.title }}</span>
               </button>
 
-              <div class="module-right">
-                <button
-                  class="btn ghost small"
-                  type="button"
-                  title="Move up"
-                  [disabled]="reordering || mi===0 || st.data.isHidden"
-                  (click)="moveModule(st.data.modules, mi, -1)"
-                >
-                  ↑
-                </button>
+              <div class="module-meta">
+                <span class="module-pill">{{ (m.lessons?.length || 0) }} lessons</span>
 
-                <button
-                  class="btn ghost small"
-                  type="button"
-                  title="Move down"
-                  [disabled]="reordering || mi===(st.data.modules.length-1) || st.data.isHidden"
-                  (click)="moveModule(st.data.modules, mi, 1)"
-                >
-                  ↓
-                </button>
+                <div class="module-order-btns">
+                  <button class="order-btn" type="button" title="Move up"
+                          [disabled]="reordering || mi === 0 || st.data.isHidden"
+                          (click)="moveModule(st.data.modules, mi, -1)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="12" height="12">
+                      <path d="M12 19V5M5 12l7-7 7 7"/>
+                    </svg>
+                  </button>
+                  <button class="order-btn" type="button" title="Move down"
+                          [disabled]="reordering || mi === (st.data.modules.length - 1) || st.data.isHidden"
+                          (click)="moveModule(st.data.modules, mi, 1)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="12" height="12">
+                      <path d="M12 5v14M5 12l7 7 7-7"/>
+                    </svg>
+                  </button>
+                </div>
 
-                <span class="badge">{{ (m.lessons?.length || 0) }} lessons</span>
-
-                <button
-                  class="btn ghost small"
-                  type="button"
-                  [disabled]="(m.lessons?.length || 0) > 0 || st.data.isHidden"
-                  (click)="deleteModule(m.id, (m.lessons?.length || 0))"
-                  title="Delete lessons first"
-                >
-                  Delete module
+                <button class="btn btn-danger-sm" type="button"
+                        [disabled]="(m.lessons?.length || 0) > 0 || st.data.isHidden"
+                        (click)="deleteModule(m.id, (m.lessons?.length || 0))"
+                        title="Delete lessons first">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12">
+                    <path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                  </svg>
+                  Delete
                 </button>
               </div>
             </div>
 
+            <!-- Module body -->
             <div class="module-body" *ngIf="!isCollapsed(m.id)">
-              <!-- lessons list -->
-              <div class="lessons" *ngIf="(m.lessons?.length || 0) > 0; else noLessons">
-                <div class="lesson" *ngFor="let l of m.lessons; let li = index">
-                  <div class="lesson-left">
-                    <span class="lesson-dot"></span>
 
-                    <div class="lesson-text">
-                      <div class="lesson-title">{{ l.title }}</div>
+              <!-- Lesson list -->
+              <div class="lesson-list" *ngIf="(m.lessons?.length || 0) > 0; else noLessons">
+                <div class="lesson-row" *ngFor="let l of m.lessons; let li = index">
 
-                      <div class="lesson-sub">
-                        <span
-                          class="badge type"
-                          [class.video]="n(l.type)===0"
-                          [class.doc]="n(l.type)===1"
-                          [class.text]="n(l.type)===2"
-                          [class.quiz]="n(l.type)===3"
-                        >
+                  <div class="lr-left">
+                    <!-- Type icon box -->
+                    <div class="lesson-type-icon"
+                         [class.type-video]="n(l.type) === 0"
+                         [class.type-doc]="n(l.type) === 1"
+                         [class.type-text]="n(l.type) === 2"
+                         [class.type-quiz]="n(l.type) === 3">
+                      <svg *ngIf="n(l.type) === 0" viewBox="0 0 24 24" fill="currentColor" stroke="none" width="12" height="12">
+                        <path d="M8 5v14l11-7-11-7Z"/>
+                      </svg>
+                      <svg *ngIf="n(l.type) === 1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>
+                      </svg>
+                      <svg *ngIf="n(l.type) === 2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z"/>
+                      </svg>
+                      <svg *ngIf="n(l.type) === 3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12">
+                        <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/>
+                      </svg>
+                    </div>
+
+                    <div class="lesson-info">
+                      <div class="lesson-name">{{ l.title }}</div>
+                      <div class="lesson-tags">
+                        <span class="ltag ltag-type"
+                              [class.ltag-video]="n(l.type) === 0"
+                              [class.ltag-doc]="n(l.type) === 1"
+                              [class.ltag-text]="n(l.type) === 2"
+                              [class.ltag-quiz]="n(l.type) === 3">
                           {{ lessonTypeLabel(l.type) }}
                         </span>
 
                         <ng-container *ngIf="isUploadType(l.type)">
-                          <span class="badge uploaded" *ngIf="l.contentUrl">Uploaded</span>
-                          <span class="badge uploaded" *ngIf="!l.contentUrl">No file</span>
+                          <span class="ltag" [class.ltag-ok]="!!l.contentUrl" [class.ltag-warn]="!l.contentUrl">
+                            <svg *ngIf="l.contentUrl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" width="9" height="9">
+                              <path d="M20 6L9 17l-5-5"/>
+                            </svg>
+                            {{ l.contentUrl ? 'Uploaded' : 'No file' }}
+                          </span>
                         </ng-container>
 
-                        <span class="badge" *ngIf="l.isPreviewFree">Preview</span>
-                        <span class="badge" *ngIf="l.isDownloadable">Downloadable</span>
+                        <span class="ltag ltag-preview" *ngIf="l.isPreviewFree">Preview free</span>
+                        <span class="ltag" *ngIf="l.isDownloadable">Downloadable</span>
                       </div>
                     </div>
                   </div>
 
-                  <div class="lesson-actions">
-                    <button
-                      class="btn ghost small"
-                      type="button"
-                      title="Move up"
-                      [disabled]="reordering || li===0 || st.data.isHidden"
-                      (click)="moveLesson(m.id, m.lessons, li, -1)"
-                    >
-                      ↑
+                  <div class="lr-actions">
+                    <!-- Order -->
+                    <button class="order-btn" type="button" title="Move up"
+                            [disabled]="reordering || li === 0 || st.data.isHidden"
+                            (click)="moveLesson(m.id, m.lessons, li, -1)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="11" height="11">
+                        <path d="M12 19V5M5 12l7-7 7 7"/>
+                      </svg>
+                    </button>
+                    <button class="order-btn" type="button" title="Move down"
+                            [disabled]="reordering || li === (m.lessons.length - 1) || st.data.isHidden"
+                            (click)="moveLesson(m.id, m.lessons, li, 1)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="11" height="11">
+                        <path d="M12 5v14M5 12l7 7 7-7"/>
+                      </svg>
                     </button>
 
-                    <button
-                      class="btn ghost small"
-                      type="button"
-                      title="Move down"
-                      [disabled]="reordering || li===(m.lessons.length-1) || st.data.isHidden"
-                      (click)="moveLesson(m.id, m.lessons, li, 1)"
-                    >
-                      ↓
-                    </button>
-
-                    <label class="btn ghost small" *ngIf="n(l.type) === 0">
-                      <input
-                        type="file"
-                        accept="video/mp4,video/webm,video/quicktime"
-                        hidden
-                        [disabled]="st.data.isHidden"
-                        (change)="uploadVideo(l.id, $event)"
-                      />
-                      {{ st.data.isHidden ? 'Uploads disabled' : (isUploading(l.id) ? 'Uploading…' : 'Upload video') }}
+                    <!-- Upload video -->
+                    <label class="btn btn-ghost btn-sm upload-label" *ngIf="n(l.type) === 0">
+                      <input type="file" accept="video/mp4,video/webm,video/quicktime" hidden
+                             [disabled]="st.data.isHidden" (change)="uploadVideo(l.id, $event)" />
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                      </svg>
+                      {{ st.data.isHidden ? 'Disabled' : (isUploading(l.id) ? 'Uploading…' : 'Upload video') }}
                     </label>
 
-                    <label class="btn ghost small" *ngIf="n(l.type) === 1">
-                      <input
-                        type="file"
-                        accept="application/pdf,.pdf"
-                        hidden
-                        [disabled]="st.data.isHidden"
-                        (change)="uploadFile(l.id, $event)"
-                      />
-                      {{ st.data.isHidden ? 'Uploads disabled' : (isUploading(l.id) ? 'Uploading…' : 'Upload PDF') }}
+                    <!-- Upload PDF -->
+                    <label class="btn btn-ghost btn-sm upload-label" *ngIf="n(l.type) === 1">
+                      <input type="file" accept="application/pdf,.pdf" hidden
+                             [disabled]="st.data.isHidden" (change)="uploadFile(l.id, $event)" />
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                      </svg>
+                      {{ st.data.isHidden ? 'Disabled' : (isUploading(l.id) ? 'Uploading…' : 'Upload PDF') }}
                     </label>
 
-                    <button
-                      class="btn ghost small"
-                      type="button"
-                      *ngIf="n(l.type) === 3"
-                      [disabled]="st.data.isHidden"
-                      (click)="openQuizEditor(l.id)"
-                      [title]="st.data.isHidden ? 'Hidden by admin' : 'Edit quiz questions'"
-                    >
+                    <!-- Edit quiz -->
+                    <button class="btn btn-ghost btn-sm" type="button" *ngIf="n(l.type) === 3"
+                            [disabled]="st.data.isHidden" (click)="openQuizEditor(l.id)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                        <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z"/>
+                      </svg>
                       Edit quiz
                     </button>
 
-                    <a
-                      class="btn ghost small"
-                      *ngIf="l.contentUrl && isUploadType(l.type)"
-                      [href]="apiBase + l.contentUrl"
-                      target="_blank"
-                      rel="noopener"
-                    >
+                    <!-- Open file -->
+                    <a class="btn btn-ghost btn-sm" *ngIf="l.contentUrl && isUploadType(l.type)"
+                       [href]="apiBase + l.contentUrl" target="_blank" rel="noopener">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                      </svg>
                       Open
                     </a>
 
-                    <button
-                      class="btn danger small"
-                      type="button"
-                      [disabled]="st.data.isHidden || deletingLessonIds.has(l.id) || reordering"
-                      (click)="deleteLesson(l.id, l.title)"
-                    >
+                    <!-- Delete lesson -->
+                    <button class="btn btn-danger-sm" type="button"
+                            [disabled]="st.data.isHidden || deletingLessonIds.has(l.id) || reordering"
+                            (click)="deleteLesson(l.id, l.title)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12">
+                        <path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                      </svg>
                       {{ deletingLessonIds.has(l.id) ? 'Deleting…' : 'Delete' }}
                     </button>
                   </div>
+
                 </div>
               </div>
 
               <ng-template #noLessons>
-                <div class="empty-lessons">
-                  <div class="muted">No lessons yet.</div>
-                  <div class="muted small">Add your first lesson below.</div>
+                <div class="no-lessons">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" width="20" height="20">
+                    <path d="M12 5v14M5 12h14"/>
+                  </svg>
+                  No lessons yet — add one below.
                 </div>
               </ng-template>
 
-              <!-- add lesson -->
-              <div class="add-lesson">
-                <div class="add-head">
-                  <div>
-                    <div class="add-title">Add lesson</div>
-                    <div class="muted small">Create a lesson then upload video/PDF if needed (quiz has its own editor).</div>
-                  </div>
+              <!-- ── Add lesson form ── -->
+              <div class="add-lesson-section">
+                <div class="als-header">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14">
+                    <path d="M12 5v14M5 12h14"/>
+                  </svg>
+                  Add lesson to <em>{{ m.title }}</em>
                 </div>
 
                 <form class="lesson-form" [formGroup]="ensureLessonForm(m.id)" (ngSubmit)="addLesson(m.id)">
-                  <div class="row">
+                  <div class="lf-row">
                     <div class="field">
-                      <label>Lesson title</label>
-                      <input
-                        class="input"
-                        formControlName="title"
-                        [disabled]="st.data.isHidden"
-                        placeholder="e.g. Lesson 1 - Welcome"
-                      />
+                      <label class="field-label">Lesson title</label>
+                      <input class="input" formControlName="title"
+                             [disabled]="st.data.isHidden"
+                             placeholder="e.g. Welcome to the course" />
                     </div>
-
-                    <div class="field">
-                      <label>Type</label>
-                      <select class="input" formControlName="type" [disabled]="st.data.isHidden">
+                    <div class="field field-narrow">
+                      <label class="field-label">Type</label>
+                      <select class="input select-input" formControlName="type" [disabled]="st.data.isHidden">
                         <option [value]="2">Text</option>
                         <option [value]="0">Video</option>
-                        <option [value]="1">Document (PDF)</option>
+                        <option [value]="1">PDF</option>
                         <option [value]="3">Quiz</option>
                       </select>
                     </div>
                   </div>
 
                   <div class="field" *ngIf="ensureLessonForm(m.id).value.type == 2">
-                    <label>Text content (HTML)</label>
-                    <textarea
-                      class="input"
-                      formControlName="htmlContent"
-                      rows="4"
-                      [disabled]="st.data.isHidden"
-                      placeholder="<p>Lesson content...</p>"
-                    ></textarea>
-                    <small class="muted">Rich text editor can be added later.</small>
+                    <label class="field-label">Content (HTML)</label>
+                    <textarea class="input textarea" formControlName="htmlContent" rows="4"
+                              [disabled]="st.data.isHidden"
+                              placeholder="<p>Your lesson content here…</p>"></textarea>
+                    <small class="field-hint">Rich text editor can be added later.</small>
                   </div>
 
-                  <div class="checks">
-                    <label class="check">
+                  <div class="lf-checks">
+                    <label class="check-label">
                       <input type="checkbox" formControlName="isPreviewFree" [disabled]="st.data.isHidden" />
-                      <span>Preview free</span>
+                      <span class="check-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" width="10" height="10">
+                          <path d="M20 6L9 17l-5-5"/>
+                        </svg>
+                      </span>
+                      Preview free
                     </label>
-                    <label class="check">
+                    <label class="check-label">
                       <input type="checkbox" formControlName="isDownloadable" [disabled]="st.data.isHidden" />
-                      <span>Downloadable</span>
+                      <span class="check-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" width="10" height="10">
+                          <path d="M20 6L9 17l-5-5"/>
+                        </svg>
+                      </span>
+                      Downloadable
                     </label>
                   </div>
 
-                  <div class="form-actions">
-                    <button
-                      class="btn primary"
-                      type="submit"
-                      [disabled]="st.data.isHidden || ensureLessonForm(m.id).invalid"
-                    >
+                  <div class="lf-footer">
+                    <button class="btn btn-primary btn-sm" type="submit"
+                            [disabled]="st.data.isHidden || ensureLessonForm(m.id).invalid">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="13" height="13">
+                        <path d="M12 5v14M5 12h14"/>
+                      </svg>
                       Add lesson
                     </button>
-                  </div>
-
-                  <div class="muted small" *ngIf="st.data.isHidden">
-                    This course is hidden by admin. Editing is disabled.
+                    <p class="disabled-note" *ngIf="st.data.isHidden">Hidden by admin — editing disabled.</p>
                   </div>
                 </form>
               </div>
+
             </div>
           </article>
         </div>
+
       </section>
-    </section>
+
+    </div>
   </ng-container>
+
 </main>

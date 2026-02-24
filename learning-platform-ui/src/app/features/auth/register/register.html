@@ -1,75 +1,122 @@
-<div class="auth">
-  <main class="auth-main">
-    <!-- subtle background -->
-    <div class="bg">
-      <span class="blob b1"></span>
-      <span class="blob b2"></span>
-      <span class="grid"></span>
+<div class="register">
+
+  <!-- Background -->
+  <div class="home-bg"></div>
+
+  <!-- ── TOPBAR ── -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" routerLink="/home">
+        <div class="logo-mark"><span>الف</span></div>
+        <div class="brand-text">
+          <span class="brand-name">Alef</span>
+          <span class="brand-sub">Learning Commerce</span>
+        </div>
+      </a>
+
+      <nav class="nav">
+        <a class="nav-link" routerLink="/academies">Explore</a>
+        <div class="nav-sep"></div>
+        <a class="nav-link" routerLink="/login">Sign in</a>
+        <a class="btn btn-ghost btn-sm" routerLink="/home">← Home</a>
+      </nav>
     </div>
+  </header>
 
-    <div class="auth-wrap">
-      <!-- Left -->
-      <section class="left card">
-        <div class="brand">
-          <div class="logo-badge">الف</div>
-          <div class="brand-text">
-            <h1 class="auth-title">Alef</h1>
-            <p class="muted">Create your account in minutes.</p>
+  <!-- ── MAIN ── -->
+  <main class="wrap">
+    <div class="layout">
+
+      <!-- ── LEFT: Copy panel ── -->
+      <div class="copy-panel">
+
+        <div class="eyebrow">
+          <div class="eyebrow-dot"></div>
+          <span class="eyebrow-text">Join Alef today</span>
+        </div>
+
+        <h1 class="copy-title">
+          Create your<br><em>academy.</em><br>Start teaching.
+        </h1>
+
+        <p class="copy-desc">
+          Set up your account in minutes. Choose your role, verify your phone, and start building or learning right away.
+        </p>
+
+        <ul class="feature-list">
+          <li>
+            <div class="fl-icon">📱</div>
+            <div class="fl-text">
+              <div class="fl-title">OTP phone verification</div>
+              <div class="fl-desc">We'll send a 6-digit code to secure your account. Example: +353851234567</div>
+            </div>
+          </li>
+          <li>
+            <div class="fl-icon">🎓</div>
+            <div class="fl-text">
+              <div class="fl-title">Student or Instructor</div>
+              <div class="fl-desc">Pick your role — students learn and track progress, instructors create and publish courses.</div>
+            </div>
+          </li>
+          <li>
+            <div class="fl-icon">🔐</div>
+            <div class="fl-text">
+              <div class="fl-title">Secure by default</div>
+              <div class="fl-desc">Identity + JWT + OTP — enterprise-grade auth protecting your account from day one.</div>
+            </div>
+          </li>
+        </ul>
+
+        <div class="tip-card">
+          <div class="tip-icon">💡</div>
+          <div class="tip-text">
+            <div class="tip-title">Already have an account?</div>
+            <div class="tip-desc">
+              <a routerLink="/login" class="tip-link">Sign in to your existing account →</a>
+            </div>
           </div>
         </div>
 
-        <div class="pill-group">
-          <span class="pill-chip">
-            <span class="dot"></span>
-            OTP verification
-          </span>
-          <span class="pill-chip soft">Secure access</span>
-        </div>
+      </div>
 
-        <div class="mini">
-          <div class="mini-title">Phone verification</div>
-          <div class="mini-text">
-            We’ll send a 6-digit code to your phone.
-            <span class="ex">Example: +353851234567</span>
-          </div>
-        </div>
-      </section>
+      <!-- ── RIGHT: Register card ── -->
+      <div class="form-panel">
+        <div class="register-card">
 
-      <!-- Right -->
-      <section class="right">
-        <div class="auth-card card">
+          <!-- Card header -->
           <div class="card-head">
-            <div class="head-row">
-              <div>
-                <h2 class="card-title">{{ step === 'start' ? 'Create account' : 'Verify phone' }}</h2>
-                <p class="muted">
-                  {{ step === 'start' ? 'Enter your details.' : 'Enter the code we sent.' }}
-                </p>
-              </div>
+            <div class="logo-mark sm"><span>الف</span></div>
+            <h2 class="card-title">
+              {{ step === 'start' ? 'Create your account' : 'Verify your phone' }}
+            </h2>
+            <p class="card-sub">
+              {{ step === 'start' ? 'Fill in your details to get started.' : 'Enter the 6-digit code we sent you.' }}
+            </p>
+          </div>
 
-              <a class="back-home" routerLink="/home" aria-label="Back to home">← Home</a>
+          <!-- Stepper -->
+          <div class="stepper">
+            <div class="step-item" [class.active]="step === 'start'" [class.done]="step === 'verify'">
+              <div class="step-num">
+                <span *ngIf="step !== 'verify'">1</span>
+                <span *ngIf="step === 'verify'" class="step-check">✓</span>
+              </div>
+              <span class="step-label">Details</span>
             </div>
-
-            <!-- Stepper -->
-            <div class="stepper">
-              <div class="step" [class.on]="step === 'start'">
-                <span class="n">1</span>
-                <span>Details</span>
-              </div>
-              <div class="line"></div>
-              <div class="step" [class.on]="step === 'verify'">
-                <span class="n">2</span>
-                <span>Verify</span>
-              </div>
+            <div class="step-line"></div>
+            <div class="step-item" [class.active]="step === 'verify'">
+              <div class="step-num">2</div>
+              <span class="step-label">Verify</span>
             </div>
           </div>
 
-          <!-- Step 1 -->
+          <!-- ── STEP 1: Details ── -->
           <form class="form" *ngIf="step === 'start'" [formGroup]="startForm" (ngSubmit)="submitStart()">
-            <!-- Email -->
+
             <div class="field">
-              <label>Email</label>
+              <label class="label" for="email">Email address</label>
               <input
+                id="email"
                 type="email"
                 formControlName="email"
                 placeholder="you@example.com"
@@ -77,28 +124,29 @@
                 autocomplete="email"
                 inputmode="email"
               />
-              <small class="hint error" *ngIf="emailCtrl?.touched && emailCtrl?.invalid">
-                Enter a valid email.
+              <small class="field-error" *ngIf="emailCtrl?.touched && emailCtrl?.invalid">
+                Please enter a valid email address.
               </small>
             </div>
 
-            <!-- Role Tiles (minimal text) -->
+            <!-- Role picker -->
             <div class="field">
-              <label>Role</label>
-
+              <label class="label">I want to</label>
               <div class="role-grid" role="radiogroup" aria-label="Role">
+
                 <button
                   type="button"
                   class="role-tile"
                   [class.active]="startForm.value.role === 'Student'"
                   (click)="startForm.patchValue({ role: 'Student' })"
-                  aria-pressed="{{ startForm.value.role === 'Student' }}"
+                  [attr.aria-pressed]="startForm.value.role === 'Student'"
                 >
-                  <div class="rt-top">
-                    <div class="rt-ico">🎓</div>
-                    <div class="rt-title">Student</div>
+                  <div class="rt-header">
+                    <div class="rt-icon">🎓</div>
+                    <div class="rt-check" *ngIf="startForm.value.role === 'Student'">✓</div>
                   </div>
-                  <div class="rt-sub muted">Learn & track progress</div>
+                  <div class="rt-title">Student</div>
+                  <div class="rt-desc">Learn &amp; track my progress</div>
                 </button>
 
                 <button
@@ -106,21 +154,23 @@
                   class="role-tile"
                   [class.active]="startForm.value.role === 'Instructor'"
                   (click)="startForm.patchValue({ role: 'Instructor' })"
-                  aria-pressed="{{ startForm.value.role === 'Instructor' }}"
+                  [attr.aria-pressed]="startForm.value.role === 'Instructor'"
                 >
-                  <div class="rt-top">
-                    <div class="rt-ico">🧑‍🏫</div>
-                    <div class="rt-title">Instructor</div>
+                  <div class="rt-header">
+                    <div class="rt-icon">🧑‍🏫</div>
+                    <div class="rt-check" *ngIf="startForm.value.role === 'Instructor'">✓</div>
                   </div>
-                  <div class="rt-sub muted">Create & publish courses</div>
+                  <div class="rt-title">Instructor</div>
+                  <div class="rt-desc">Create &amp; publish courses</div>
                 </button>
+
               </div>
             </div>
 
-            <!-- Phone -->
             <div class="field">
-              <label>Phone</label>
+              <label class="label" for="phone">Phone number</label>
               <input
+                id="phone"
                 type="tel"
                 formControlName="phone"
                 placeholder="+353 85 123 4567"
@@ -128,118 +178,144 @@
                 autocomplete="tel"
                 inputmode="tel"
               />
-              <small class="hint error" *ngIf="phoneCtrl?.touched && phoneCtrl?.invalid">
-                Enter a valid phone number.
+              <small class="field-error" *ngIf="phoneCtrl?.touched && phoneCtrl?.invalid">
+                Please enter a valid phone number.
               </small>
             </div>
 
-            <!-- Passwords -->
-            <div class="grid2">
+            <div class="pw-grid">
               <div class="field">
-                <label>Password</label>
-                <div class="pw">
+                <label class="label" for="password">Password</label>
+                <div class="pw-wrap">
                   <input
+                    id="password"
                     class="input"
                     [type]="showPassword ? 'text' : 'password'"
                     formControlName="password"
                     placeholder="At least 6 characters"
                     autocomplete="new-password"
                   />
-                  <button class="pw-btn" type="button" (click)="togglePassword()">
+                  <button class="pw-toggle" type="button" (click)="togglePassword()">
                     {{ showPassword ? 'Hide' : 'Show' }}
                   </button>
                 </div>
-                <small class="hint error" *ngIf="passCtrl?.touched && passCtrl?.invalid">
-                  Min 6 characters.
+                <small class="field-error" *ngIf="passCtrl?.touched && passCtrl?.invalid">
+                  Minimum 6 characters.
                 </small>
               </div>
 
               <div class="field">
-                <label>Confirm</label>
-                <div class="pw">
+                <label class="label" for="confirm">Confirm password</label>
+                <div class="pw-wrap">
                   <input
+                    id="confirm"
                     class="input"
                     [type]="showConfirmPassword ? 'text' : 'password'"
                     formControlName="confirmPassword"
                     placeholder="Repeat password"
                     autocomplete="new-password"
                   />
-                  <button class="pw-btn" type="button" (click)="toggleConfirmPassword()">
+                  <button class="pw-toggle" type="button" (click)="toggleConfirmPassword()">
                     {{ showConfirmPassword ? 'Hide' : 'Show' }}
                   </button>
                 </div>
-
-                <small class="hint error" *ngIf="confirmPassCtrl?.touched && confirmPassCtrl?.invalid">
-                  Required.
+                <small class="field-error" *ngIf="confirmPassCtrl?.touched && confirmPassCtrl?.invalid">
+                  This field is required.
                 </small>
-
-                <small
-                  class="hint error"
-                  *ngIf="passwordsMismatch && !(confirmPassCtrl?.touched && confirmPassCtrl?.invalid)"
-                >
-                  Passwords don’t match.
+                <small class="field-error" *ngIf="passwordsMismatch && !(confirmPassCtrl?.touched && confirmPassCtrl?.invalid)">
+                  Passwords don't match.
                 </small>
               </div>
             </div>
 
-            <button class="btn primary wide" type="submit" [disabled]="loading || startForm.invalid">
-              {{ loading ? 'Sending…' : 'Send code' }}
+            <button class="btn btn-primary btn-submit" type="submit" [disabled]="loading || startForm.invalid">
+              <span *ngIf="!loading">Send verification code</span>
+              <span *ngIf="loading" class="loading-row">
+                <span class="spinner"></span>
+                Sending…
+              </span>
             </button>
 
-            <div class="inline error" *ngIf="error">{{ error }}</div>
-
-            <div class="terms muted tiny">
-              By continuing, you agree to our <span class="fake-link">Terms</span> & <span class="fake-link">Privacy</span>.
+            <div class="alert-error" *ngIf="error">
+              <span class="alert-icon">⚠</span>
+              {{ error }}
             </div>
+
+            <div class="terms-note">
+              By continuing you agree to our
+              <a routerLink="/terms" class="terms-link">Terms of Service</a> and
+              <a routerLink="/privacy" class="terms-link">Privacy Policy</a>.
+            </div>
+
           </form>
 
-          <!-- Step 2 -->
+          <!-- ── STEP 2: Verify OTP ── -->
           <form class="form" *ngIf="step === 'verify'" [formGroup]="verifyForm" (ngSubmit)="submitVerify()">
-            <div class="field">
-              <label>Verification code</label>
 
-              <div class="code" (paste)="onCodePaste($event)">
-                <input #codeInput maxlength="1" inputmode="numeric" autocomplete="one-time-code"
-                       (input)="onDigitInput(0, $event)" (keydown)="onDigitKeyDown(0, $event)" class="code-box" />
-                <input #codeInput maxlength="1" inputmode="numeric"
-                       (input)="onDigitInput(1, $event)" (keydown)="onDigitKeyDown(1, $event)" class="code-box" />
-                <input #codeInput maxlength="1" inputmode="numeric"
-                       (input)="onDigitInput(2, $event)" (keydown)="onDigitKeyDown(2, $event)" class="code-box" />
-                <input #codeInput maxlength="1" inputmode="numeric"
-                       (input)="onDigitInput(3, $event)" (keydown)="onDigitKeyDown(3, $event)" class="code-box" />
-                <input #codeInput maxlength="1" inputmode="numeric"
-                       (input)="onDigitInput(4, $event)" (keydown)="onDigitKeyDown(4, $event)" class="code-box" />
-                <input #codeInput maxlength="1" inputmode="numeric"
-                       (input)="onDigitInput(5, $event)" (keydown)="onDigitKeyDown(5, $event)" class="code-box" />
+            <div class="field">
+              <label class="label">Verification code</label>
+
+              <div class="otp-grid" (paste)="onCodePaste($event)">
+                <input #codeInput class="otp-box" maxlength="1" inputmode="numeric" autocomplete="one-time-code"
+                       (input)="onDigitInput(0, $event)" (keydown)="onDigitKeyDown(0, $event)" />
+                <input #codeInput class="otp-box" maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(1, $event)" (keydown)="onDigitKeyDown(1, $event)" />
+                <input #codeInput class="otp-box" maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(2, $event)" (keydown)="onDigitKeyDown(2, $event)" />
+                <input #codeInput class="otp-box" maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(3, $event)" (keydown)="onDigitKeyDown(3, $event)" />
+                <input #codeInput class="otp-box" maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(4, $event)" (keydown)="onDigitKeyDown(4, $event)" />
+                <input #codeInput class="otp-box" maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(5, $event)" (keydown)="onDigitKeyDown(5, $event)" />
               </div>
 
-              <div class="sent-to muted small">
-                Sent to <b>{{ startForm.value.phone }}</b>
-                <button class="link" type="button" (click)="changeEmail()">Change</button>
+              <div class="sent-info">
+                Code sent to <strong>{{ startForm.value.phone }}</strong>
+                <button class="inline-link" type="button" (click)="changeEmail()">Change</button>
               </div>
             </div>
 
-            <button class="btn primary wide" type="submit" [disabled]="loading || verifyForm.invalid">
-              {{ loading ? 'Verifying…' : 'Create account' }}
+            <button class="btn btn-primary btn-submit" type="submit" [disabled]="loading || verifyForm.invalid">
+              <span *ngIf="!loading">Create account</span>
+              <span *ngIf="loading" class="loading-row">
+                <span class="spinner"></span>
+                Verifying…
+              </span>
             </button>
 
-            <div class="row-actions">
-              <button class="btn ghost small" type="button" (click)="backToStart()">Back</button>
-
-              <button class="btn ghost small" type="button" (click)="resendCode()" [disabled]="resendIn > 0 || loading">
-                Resend {{ resendIn > 0 ? '(' + resendIn + 's)' : '' }}
+            <div class="verify-actions">
+              <button class="btn btn-ghost btn-sm" type="button" (click)="backToStart()">← Back</button>
+              <button class="btn btn-ghost btn-sm" type="button" (click)="resendCode()" [disabled]="resendIn > 0 || loading">
+                Resend code{{ resendIn > 0 ? ' (' + resendIn + 's)' : '' }}
               </button>
             </div>
 
-            <div class="inline error" *ngIf="error">{{ error }}</div>
+            <div class="alert-error" *ngIf="error">
+              <span class="alert-icon">⚠</span>
+              {{ error }}
+            </div>
+
           </form>
 
+          <!-- Card footer -->
           <div class="card-foot">
-            <span class="muted">Already have an account?</span>
-            <a routerLink="/login">Log in</a>
+            <span class="card-foot-muted">Already have an account?</span>
+            <a routerLink="/login" class="card-foot-link">Log in →</a>
           </div>
+
         </div>
-      </section>
+      </div>
+
     </div>
+
+    <footer class="page-footer">
+      <div class="footer-copy">© {{ year }} Alef Learning Commerce. All rights reserved.</div>
+      <div class="footer-links">
+        <a routerLink="/privacy">Privacy</a>
+        <a routerLink="/terms">Terms</a>
+      </div>
+    </footer>
   </main>
+
 </div>

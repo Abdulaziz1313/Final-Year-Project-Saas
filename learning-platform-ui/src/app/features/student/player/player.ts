@@ -45,7 +45,7 @@ export class PlayerComponent {
   completed = new Set<string>();
   apiBase = environment.apiBaseUrl;
 
-  // ✅ UI state
+  // UI state
   lessonQuery = '';
   sidebarOpen = true;
   isMobile = false;
@@ -70,7 +70,6 @@ export class PlayerComponent {
             const ids = (res as any)?.completedLessonIds as string[] | undefined;
             this.completed = new Set(ids ?? []);
 
-            // open all modules by default once
             for (const m of res.modules ?? []) {
               if (!this.moduleOpen.has(m.id)) this.moduleOpen.set(m.id, true);
             }
@@ -83,7 +82,6 @@ export class PlayerComponent {
               }
             }
 
-            // On mobile, default sidebar closed
             if (this.isMobile) this.sidebarOpen = false;
           }),
           map((res) => ({ loading: false, data: res, error: null } as LoadState<PlayerCourse>)),
@@ -133,8 +131,8 @@ export class PlayerComponent {
   }
 
   isVideo(type: any) { return this.n(type) === 0; }
-  isDoc(type: any) { return this.n(type) === 1; }
-  isText(type: any) { return this.n(type) === 2; }
+  isDoc(type: any)   { return this.n(type) === 1; }
+  isText(type: any)  { return this.n(type) === 2; }
   isQuiz(t: any): boolean { return Number(t) === 3; }
 
   flat(course: PlayerCourse | null): FlatLesson[] {
@@ -230,11 +228,22 @@ export class PlayerComponent {
     return `${done}/${total}`;
   }
 
+  /**
+   * Returns a stroke-dasharray string for SVG circular progress rings.
+   * Circumference = 2π × r
+   *   r = 16 (default) → ~100.53  (my-learning card rings)
+   *   r = 13            → ~81.68   (player topbar ring)
+   */
+  ringDash(percent: number, radius = 16): string {
+    const circ = 2 * Math.PI * radius;
+    const fill = (Math.min(100, Math.max(0, percent)) / 100) * circ;
+    return `${fill.toFixed(2)} ${circ.toFixed(2)}`;
+  }
+
   pickLesson(courseId: string, lessonId: string) {
     this.selectedLessonId = lessonId;
     this.bestEffortSetLastLesson(courseId, lessonId);
 
-    // close drawer after selecting on mobile
     if (this.isMobile) this.sidebarOpen = false;
   }
 
@@ -242,16 +251,14 @@ export class PlayerComponent {
     const all = this.flat(course);
     const i = this.currentIndex(course);
     if (i <= 0) return;
-    const lessonId = all[i - 1].id;
-    this.pickLesson(course.id, lessonId);
+    this.pickLesson(course.id, all[i - 1].id);
   }
 
   next(course: PlayerCourse) {
     const all = this.flat(course);
     const i = this.currentIndex(course);
     if (i >= all.length - 1) return;
-    const lessonId = all[i + 1].id;
-    this.pickLesson(course.id, lessonId);
+    this.pickLesson(course.id, all[i + 1].id);
   }
 
   private bestEffortSetLastLesson(courseId: string, lessonId: string) {

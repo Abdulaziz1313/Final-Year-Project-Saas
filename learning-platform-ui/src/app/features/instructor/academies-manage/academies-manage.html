@@ -1,178 +1,167 @@
-<!-- academies-manage.html (FULL UPDATED) -->
+<!-- academies-manage.html (ADMIN-STYLE) -->
+<main class="am-page">
 
-<main class="page">
-  <!-- Background blobs -->
-  <div class="bg" aria-hidden="true">
-    <span class="blob b1"></span>
-    <span class="blob b2"></span>
-    <span class="blob b3"></span>
-    <span class="grid"></span>
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">Instructor panel</span>
+      </div>
+
+      <h1 class="page-title">Manage &amp; <em>Academies</em></h1>
+      <p class="page-desc">Publish, edit, and delete your academies.</p>
+    </div>
+
+    <div class="hero-right">
+      <div class="action-group">
+        <button class="btn btn-ghost" type="button" (click)="reload()">Refresh</button>
+        <a class="btn btn-primary" routerLink="/instructor/academy/create">Create academy</a>
+      </div>
+    </div>
   </div>
 
-  <div class="container">
-    <header class="head">
-      <div class="head-left">
-        <div class="kicker">Instructor • Academies</div>
-        <h1 class="page-title">Manage academies</h1>
-        <p class="page-sub">Publish, edit, and delete your academies.</p>
-      </div>
+  <ng-container *ngIf="state$ | async as st">
+    <div class="state-loading" *ngIf="st.loading">Loading…</div>
+    <div class="alert-error" *ngIf="st.error"><span>⚠</span> {{ st.error }}</div>
 
-      <div class="head-actions">
-        <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
-        <a class="btn primary" routerLink="/instructor/academy/create">+ Create Academy</a>
-      </div>
-    </header>
+    <ng-container *ngIf="!st.loading && !st.error && st.data as vm">
 
-    <ng-container *ngIf="state$ | async as st">
-      <div class="state" *ngIf="st.loading">Loading…</div>
-      <div class="alert error" *ngIf="st.error">{{ st.error }}</div>
-
-      <ng-container *ngIf="!st.loading && !st.error && st.data as vm">
-        <!-- KPIs -->
-        <section class="kpis">
-          <div class="kpi card">
-            <div class="kpi-top">
-              <div class="kpi-label">Total</div>
-              <div class="kpi-ic">🏛️</div>
-            </div>
-            <div class="kpi-value">{{ vm.total }}</div>
-            <div class="kpi-sub muted">All academies</div>
+      <!-- ── KPI STRIP ── -->
+      <div class="kpi-strip">
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Total</span>
+            <span class="kpi-icon">🏛️</span>
           </div>
-
-          <div class="kpi card">
-            <div class="kpi-top">
-              <div class="kpi-label">Published</div>
-              <div class="kpi-ic">✅</div>
-            </div>
-            <div class="kpi-value">{{ vm.published }}</div>
-            <div class="kpi-sub muted">Visible to students</div>
-          </div>
-
-          <div class="kpi card">
-            <div class="kpi-top">
-              <div class="kpi-label">Drafts</div>
-              <div class="kpi-ic">📝</div>
-            </div>
-            <div class="kpi-value">{{ vm.drafts }}</div>
-            <div class="kpi-sub muted">Not published yet</div>
-          </div>
-
-          <div class="kpi card danger-kpi" *ngIf="vm.hidden > 0">
-            <div class="kpi-top">
-              <div class="kpi-label">Hidden</div>
-              <div class="kpi-ic">⛔</div>
-            </div>
-            <div class="kpi-value">{{ vm.hidden }}</div>
-            <div class="kpi-sub muted">Requires review</div>
-          </div>
-        </section>
-
-        <!-- Empty -->
-        <div class="empty card" *ngIf="vm.total === 0">
-          <div class="empty-ic">🏛️</div>
-          <div class="empty-title">No academies yet</div>
-          <div class="empty-sub">Create your first academy to start building courses.</div>
-          <a class="btn primary" routerLink="/instructor/academy/create">Create Academy</a>
+          <div class="kpi-value">{{ vm.total }}</div>
+          <div class="kpi-sub">All academies</div>
         </div>
 
-        <!-- List -->
-        <section class="list" *ngIf="vm.total > 0">
-          <a
-            class="item"
-            *ngFor="let a of vm.academies"
-            [routerLink]="['/instructor/courses', a.id]"
-          >
-            <div class="left">
-              <div class="badge" [attr.aria-label]="a.name">
-                {{ badgeLetter(a.name) }}
-              </div>
+        <div class="kpi-card kpi-success">
+          <div class="kpi-header">
+            <span class="kpi-label">Published</span>
+            <span class="kpi-icon">✅</span>
+          </div>
+          <div class="kpi-value">{{ vm.published }}</div>
+          <div class="kpi-sub">Visible to students</div>
+        </div>
 
-              <div class="text">
-                <div class="name-row">
-                  <div class="name" [title]="a.name">{{ a.name }}</div>
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Draft</span>
+            <span class="kpi-icon">📝</span>
+          </div>
+          <div class="kpi-value">{{ vm.drafts }}</div>
+          <div class="kpi-sub">Not published</div>
+        </div>
 
-                  <span class="pill hidden" *ngIf="a.isHidden" title="Hidden by admin">
-                    <span class="dot"></span>
-                    Hidden
-                  </span>
+        <div class="kpi-card kpi-danger" *ngIf="vm.hidden > 0">
+          <div class="kpi-header">
+            <span class="kpi-label">Hidden</span>
+            <span class="kpi-icon">⛔</span>
+          </div>
+          <div class="kpi-value">{{ vm.hidden }}</div>
+          <div class="kpi-sub">Requires review</div>
+        </div>
+      </div>
 
-                  <span class="pill" *ngIf="!a.isHidden" [class.on]="a.isPublished">
-                    <span class="dot"></span>
-                    {{ a.isPublished ? 'Published' : 'Draft' }}
-                  </span>
+      <!-- ── EMPTY ── -->
+      <div class="empty" *ngIf="vm.total === 0">
+        <div class="empty-ic">🏛️</div>
+        <div class="empty-title">No academies yet</div>
+        <div class="empty-sub">Create your first academy to start building courses.</div>
+        <a class="btn btn-primary" routerLink="/instructor/academy/create">Create academy</a>
+      </div>
 
-                  <span class="pill ghost">
-                    {{ a.courseCount }} course{{ a.courseCount === 1 ? '' : 's' }}
-                  </span>
-                </div>
+      <!-- ── ITEMS GRID ── -->
+      <div class="items-grid" *ngIf="vm.total > 0">
 
-                <div class="sub muted">{{ subtitle(a) }}</div>
-
-                <!-- Hidden message -->
-                <div class="hidden-box" *ngIf="a.isHidden">
-                  <div class="hidden-title">Admin notice</div>
-                  <div class="hidden-msg">{{ hiddenMessage(a) }}</div>
-
-                  <div class="hidden-actions">
-                    <button
-                      class="btn ghost small"
-                      type="button"
-                      (click)="requestReview($event, a)"
-                    >
-                      Request review
-                    </button>
-                  </div>
-                </div>
-
-                <div class="meta">
-                  <span class="mono">ID: {{ a.id }}</span>
-                </div>
-              </div>
+        <article
+          class="item-card academy-card"
+          *ngFor="let a of vm.academies"
+          [routerLink]="['/instructor/courses', a.id]"
+        >
+          <div class="item-header">
+            <div class="title-wrap">
+              <div class="badge" [attr.aria-label]="a.name">{{ badgeLetter(a.name) }}</div>
+              <div class="item-title" [title]="a.name">{{ a.name }}</div>
             </div>
 
-            <div class="right">
-              <div class="right-top">
-                <!-- Publish toggle -->
-                <button
-                  class="toggle"
-                  type="button"
-                  [class.on]="a.isPublished && !a.isHidden"
-                  [disabled]="!canTogglePublish(a)"
-                  (click)="togglePublish($event, a)"
-                  [attr.aria-label]="a.isPublished ? 'Unpublish academy' : 'Publish academy'"
-                  title="Publish / Unpublish"
-                >
-                  <span class="knob"></span>
-                </button>
+            <span
+              class="status-badge"
+              [class.status-hidden]="a.isHidden"
+              [class.status-good]="!a.isHidden && a.isPublished"
+            >
+              {{ a.isHidden ? 'Hidden' : (a.isPublished ? 'Published' : 'Draft') }}
+            </span>
+          </div>
 
-                <span class="muted tiny" *ngIf="isPublishing(a.id)">Saving…</span>
-              </div>
+          <div class="meta-text">{{ subtitle(a) }}</div>
 
-              <!-- Actions -->
-              <div class="actions">
-                <a
-                  class="btn ghost small"
-                  [routerLink]="editLink(a)"
-                  (click)="$event.stopPropagation()"
-                >
-                  Edit
-                </a>
+          <div class="meta-row">
+            <span class="meta-text">Courses: <code>{{ a.courseCount }}</code></span>
+            <span class="meta-text">ID: <code>{{ a.id }}</code></span>
+          </div>
 
-                <button
-                  class="btn danger small"
-                  type="button"
-                  [disabled]="isDeleting(a.id)"
-                  (click)="deleteAcademy($event, a)"
-                >
-                  {{ isDeleting(a.id) ? 'Deleting…' : 'Delete' }}
-                </button>
-              </div>
+          <!-- Hidden info -->
+          <div class="hidden-info" *ngIf="a.isHidden">
+            <div class="meta-text"><strong>Admin notice:</strong> {{ hiddenMessage(a) }}</div>
 
-              <div class="open muted small">Open →</div>
+            <div class="item-actions">
+              <button
+                class="btn btn-ghost btn-sm"
+                type="button"
+                (click)="requestReview($event, a)"
+              >
+                Request review
+              </button>
             </div>
-          </a>
-        </section>
-      </ng-container>
+          </div>
+
+          <!-- Actions -->
+          <div class="item-actions">
+
+            <!-- Publish / Draft toggle (admin style switch) -->
+            <button
+              class="switch"
+              type="button"
+              [class.on]="a.isPublished && !a.isHidden"
+              [disabled]="!canTogglePublish(a)"
+              (click)="togglePublish($event, a)"
+              [attr.aria-label]="a.isPublished ? 'Unpublish academy' : 'Publish academy'"
+              title="Publish / Unpublish"
+            >
+              <span class="knob"></span>
+            </button>
+
+            <span class="meta-text" *ngIf="isPublishing(a.id)">Saving…</span>
+
+            <span class="spacer"></span>
+
+            <a
+              class="btn btn-ghost btn-sm"
+              [routerLink]="editLink(a)"
+              (click)="$event.stopPropagation()"
+            >
+              Edit
+            </a>
+
+            <button
+              class="btn btn-danger-outline btn-sm"
+              type="button"
+              [disabled]="isDeleting(a.id)"
+              (click)="deleteAcademy($event, a)"
+            >
+              {{ isDeleting(a.id) ? 'Deleting…' : 'Delete…' }}
+            </button>
+          </div>
+
+          <div class="open-hint">Open →</div>
+        </article>
+
+      </div>
     </ng-container>
-  </div>
+  </ng-container>
+
 </main>

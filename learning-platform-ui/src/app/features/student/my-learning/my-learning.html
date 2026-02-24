@@ -1,199 +1,316 @@
 <div class="my-learning">
-  <!-- background (same as home) -->
-  <div class="bg" aria-hidden="true">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
-    <div class="blob b3"></div>
-    <div class="grid"></div>
-  </div>
 
-  <div class="wrap container">
-    <!-- Header -->
-    <div class="head">
-      <div class="head-left">
-        <div class="title-wrap">
-          <h1 class="page-title">My Learning</h1>
-          <p class="page-sub">Your enrolled courses and progress.</p>
+  <!-- Background matching home -->
+  <div class="home-bg" aria-hidden="true"></div>
+
+  <div class="wrap">
+
+    <!-- ── PAGE HERO ── -->
+    <div class="page-hero">
+      <div class="hero-left">
+        <div class="eyebrow">
+          <div class="eyebrow-dot"></div>
+          <span>Student · Dashboard</span>
         </div>
+        <h1 class="page-title">My <em>Learning</em></h1>
+        <p class="page-desc">Your enrolled courses, progress, and certificates — all in one place.</p>
       </div>
 
-      <div class="head-actions">
-        <!-- Filters Card -->
-        <div class="filters">
-          <div class="search">
-            <span class="ico" aria-hidden="true">🔎</span>
+      <!-- Unified filter bar (same pattern as academies) -->
+      <div class="hero-right">
+        <div class="fbar">
+          <!-- Search -->
+          <div class="fbar-seg fbar-grow">
+            <svg class="fbar-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <circle cx="10.5" cy="10.5" r="7.5"/><path d="M21 21l-4.3-4.3"/>
+            </svg>
             <input
-              class="search-input"
+              class="fbar-input"
               type="text"
-              placeholder="Search courses…"
+              placeholder="Search your courses…"
               [value]="query"
               (input)="query = $any($event.target).value"
             />
-            <button class="clear" type="button" *ngIf="query" (click)="query=''">✕</button>
+            <button class="fbar-x" type="button" *ngIf="query" (click)="query=''">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="11" height="11">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
 
-          <label class="toggle" title="Hide courses that are unavailable">
-            <input
-              class="toggle-input"
-              type="checkbox"
-              [checked]="hideUnavailable"
-              (change)="hideUnavailable = $any($event.target).checked"
-            />
-            <span class="toggle-text">Hide unavailable</span>
+          <div class="fbar-sep"></div>
+
+          <!-- Sort -->
+          <div class="fbar-seg fbar-static">
+            <svg class="fbar-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="9" y2="18"/>
+            </svg>
+            <select class="fbar-select" [value]="sort" (change)="sort = $any($event.target).value">
+              <option value="recent">Recent</option>
+              <option value="progress">Progress</option>
+              <option value="title">Title</option>
+            </select>
+          </div>
+
+          <div class="fbar-sep"></div>
+
+          <!-- Hide unavailable toggle -->
+          <label class="fbar-toggle" [class.active]="hideUnavailable">
+            <input class="fbar-toggle-input" type="checkbox"
+                   [checked]="hideUnavailable"
+                   (change)="hideUnavailable = $any($event.target).checked" />
+            <span class="ft-check">
+              <svg *ngIf="hideUnavailable" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" width="10" height="10">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+            </span>
+            Hide unavailable
           </label>
 
-          <select class="input sort" [value]="sort" (change)="sort = $any($event.target).value">
-            <option value="recent">Most recent</option>
-            <option value="progress">Highest progress</option>
-            <option value="title">Title</option>
-          </select>
+          <div class="fbar-sep"></div>
 
-          <button class="btn ghost" type="button" (click)="reload()">Refresh</button>
+          <button class="fbar-btn-refresh" type="button" (click)="reload()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>
+            </svg>
+            Refresh
+          </button>
         </div>
       </div>
     </div>
 
+    <!-- ── ASYNC CONTENT ── -->
     <ng-container *ngIf="state$ | async as st">
-      <!-- Loading -->
-      <div *ngIf="st.loading" class="state card">
-        <div class="state-ic" aria-hidden="true">⏳</div>
-        <div class="state-title">Loading your learning…</div>
-        <div class="state-sub muted">Fetching enrolled courses and progress.</div>
-      </div>
 
-      <!-- Error (premium, no alert) -->
-      <div *ngIf="st.error && !st.loading" class="state card danger">
-        <div class="state-ic" aria-hidden="true">⚠️</div>
-        <div class="state-title">Couldn’t load My Learning</div>
-        <div class="state-sub muted">{{ st.error }}</div>
-        <div class="state-actions">
-          <button class="btn primary" type="button" (click)="reload()">Try again</button>
+      <!-- Loading skeleton -->
+      <div class="skeleton-page" *ngIf="st.loading">
+        <!-- Stat chips skeleton -->
+        <div class="stat-chips">
+          <div class="stat-chip sk-chip" *ngFor="let _ of [1,2,3,4]"></div>
         </div>
-      </div>
-
-      <!-- Summary chips -->
-      <div class="summary" *ngIf="!st.loading && !st.error">
-        <div class="chip">
-          <div class="chip-k">Enrolled</div>
-          <div class="chip-v">{{ st.data.length }}</div>
-        </div>
-        <div class="chip">
-          <div class="chip-k">Active</div>
-          <div class="chip-v">{{ activeCount(st.data) }}</div>
-        </div>
-        <div class="chip">
-          <div class="chip-k">Unavailable</div>
-          <div class="chip-v">{{ hiddenCount(st.data) }}</div>
-        </div>
-        <div class="chip">
-          <div class="chip-k">Avg progress</div>
-          <div class="chip-v">{{ avgProgress(st.data) }}%</div>
-        </div>
-      </div>
-
-      <!-- Grid -->
-      <div class="grid-cards" *ngIf="!st.loading && !st.error && visible(st.data).length > 0; else empty">
-        <div
-          class="course-card"
-          *ngFor="let x of sorted(visible(st.data))"
-          (click)="continue(x)"
-          [class.is-hidden]="x.course.isHidden"
-          [attr.aria-disabled]="x.course.isHidden ? 'true' : 'false'"
-        >
-          <div class="thumb">
-            <img *ngIf="img(x.course.thumbnailUrl)" [src]="img(x.course.thumbnailUrl)!" alt="thumb" />
-
-            <div class="thumb-fallback" *ngIf="!img(x.course.thumbnailUrl)">
-              <div class="tf-badge">Course</div>
-              <div class="tf-title">{{ (x.course.title || 'Course').slice(0, 1).toUpperCase() }}</div>
-              <div class="tf-sub">{{ x.course.category || 'Learning' }}</div>
+        <!-- Cards skeleton -->
+        <div class="courses-grid">
+          <div class="sk-card" *ngFor="let _ of [1,2,3]">
+            <div class="sk-thumb skel"></div>
+            <div class="sk-info">
+              <div class="sk-line w70 skel"></div>
+              <div class="sk-line w45 skel"></div>
+              <div class="sk-bar skel"></div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            <!-- overlay progress -->
-            <div class="thumb-overlay" *ngIf="!x.course.isHidden">
-              <div class="ring" [attr.aria-label]="x.progress.percent + '% progress'">
-                <svg viewBox="0 0 36 36">
-                  <defs>
-                    <linearGradient [attr.id]="'ringGrad-' + x.course.id" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stop-color="var(--brand, #7c3aed)"></stop>
-                      <stop offset="100%" stop-color="color-mix(in srgb, var(--brand, #7c3aed) 40%, #0ea5e9)"></stop>
-                    </linearGradient>
-                  </defs>
+      <!-- Error -->
+      <div class="error-panel" *ngIf="st.error && !st.loading">
+        <div class="error-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="error-title">Couldn't load your learning</div>
+        <div class="error-desc">{{ st.error }}</div>
+        <button class="btn btn-primary btn-sm" type="button" (click)="reload()">Try again</button>
+      </div>
 
-                  <path class="bg" d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32" />
-                  <path
-                    class="fg"
-                    [attr.stroke]="'url(#ringGrad-' + x.course.id + ')'"
-                    [attr.stroke-dasharray]="ringDash(x.progress.percent)"
-                    d="M18 2 a 16 16 0 0 1 0 32 a 16 16 0 0 1 0 -32"
-                  />
+      <!-- Content -->
+      <ng-container *ngIf="!st.loading && !st.error">
+
+        <!-- ── STAT CHIPS ── -->
+        <div class="stat-chips">
+          <div class="stat-chip">
+            <div class="sc-icon sc-icon-blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16">
+                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>
+              </svg>
+            </div>
+            <div class="sc-info">
+              <div class="sc-value">{{ st.data.length }}</div>
+              <div class="sc-label">Enrolled</div>
+            </div>
+          </div>
+
+          <div class="stat-chip">
+            <div class="sc-icon sc-icon-green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16">
+                <circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8Z" fill="currentColor" stroke="none"/>
+              </svg>
+            </div>
+            <div class="sc-info">
+              <div class="sc-value">{{ activeCount(st.data) }}</div>
+              <div class="sc-label">Active</div>
+            </div>
+          </div>
+
+          <div class="stat-chip">
+            <div class="sc-icon sc-icon-gold">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16">
+                <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+              </svg>
+            </div>
+            <div class="sc-info">
+              <div class="sc-value">{{ avgProgress(st.data) }}%</div>
+              <div class="sc-label">Avg progress</div>
+            </div>
+          </div>
+
+          <div class="stat-chip">
+            <div class="sc-icon sc-icon-purple">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16">
+                <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+              </svg>
+            </div>
+            <div class="sc-info">
+              <div class="sc-value">{{ hiddenCount(st.data) }}</div>
+              <div class="sc-label">Unavailable</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── COURSES GRID ── -->
+        <div class="courses-grid"
+             *ngIf="visible(st.data).length > 0; else emptyState">
+
+          <div
+            class="course-card"
+            *ngFor="let x of sorted(visible(st.data))"
+            [class.card-unavailable]="x.course.isHidden"
+            (click)="continue(x)"
+            [attr.aria-disabled]="x.course.isHidden ? 'true' : null"
+          >
+            <!-- Thumbnail -->
+            <div class="cc-thumb">
+              <img *ngIf="img(x.course.thumbnailUrl)" [src]="img(x.course.thumbnailUrl)!" alt="" />
+
+              <div class="cc-thumb-fallback" *ngIf="!img(x.course.thumbnailUrl)">
+                <div class="ctf-letter">{{ (x.course.title || 'C').slice(0,1).toUpperCase() }}</div>
+              </div>
+
+              <!-- Unavailable overlay -->
+              <div class="cc-unavail-overlay" *ngIf="x.course.isHidden">
+                <div class="cc-unavail-label">Unavailable</div>
+              </div>
+
+              <!-- Progress ring (top right) -->
+              <div class="cc-ring-wrap" *ngIf="!x.course.isHidden">
+                <div class="cc-ring" [attr.aria-label]="x.progress.percent + '% complete'">
+                  <svg viewBox="0 0 40 40">
+                    <defs>
+                      <linearGradient [attr.id]="'rg-' + x.course.id" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#1a56db"/>
+                        <stop offset="100%" stop-color="#3b82f6"/>
+                      </linearGradient>
+                    </defs>
+                    <circle class="ring-track" cx="20" cy="20" r="16"/>
+                    <circle class="ring-fill"
+                            cx="20" cy="20" r="16"
+                            [attr.stroke]="'url(#rg-' + x.course.id + ')'"
+                            [attr.stroke-dasharray]="ringDash(x.progress.percent)"
+                    />
+                  </svg>
+                  <span class="ring-pct">{{ x.progress.percent }}<small>%</small></span>
+                </div>
+              </div>
+
+              <!-- Completed ribbon -->
+              <div class="cc-complete-badge" *ngIf="x.progress.percent >= 100 && !x.course.isHidden">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="11" height="11">
+                  <path d="M20 6L9 17l-5-5"/>
                 </svg>
-
-                <div class="ring-text">{{ x.progress.percent }}%</div>
+                Done
               </div>
             </div>
 
-            <!-- Unavailable label -->
-            <div class="hidden-pill" *ngIf="x.course.isHidden">Unavailable</div>
-          </div>
+            <!-- Card body -->
+            <div class="cc-body">
+              <!-- Top: title + category -->
+              <div class="cc-top">
+                <div class="cc-category" *ngIf="x.course.category">{{ x.course.category }}</div>
+                <h3 class="cc-title">{{ x.course.title }}</h3>
+                <p class="cc-desc">{{ x.course.shortDescription || 'No description available.' }}</p>
+              </div>
 
-          <div class="info">
-            <div class="toprow">
-              <div class="title" title="{{ x.course.title }}">{{ x.course.title }}</div>
+              <!-- Unavailable notice -->
+              <div class="cc-hidden-note" *ngIf="x.course.isHidden">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/>
+                </svg>
+                Hidden by admin<span *ngIf="x.course.hiddenReason"> · {{ x.course.hiddenReason }}</span>
+              </div>
 
-              <div class="badges">
-                <span class="badge" *ngIf="x.course.category">{{ x.course.category }}</span>
-                <span class="badge ghost" *ngIf="!x.course.isHidden">{{ progressText(x) }}</span>
-                <span class="badge danger" *ngIf="x.course.isHidden">Hidden</span>
+              <!-- Progress bar -->
+              <div class="cc-progress" *ngIf="!x.course.isHidden">
+                <div class="cc-progress-meta">
+                  <span class="cc-progress-label">{{ progressText(x) }}</span>
+                  <span class="cc-enrolled-date">Enrolled {{ x.enrollment.enrolledAt | date:'mediumDate' }}</span>
+                </div>
+                <div class="cc-bar">
+                  <div class="cc-bar-fill" [style.width.%]="x.progress.percent"></div>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="cc-actions">
+                <button
+                  class="btn btn-primary btn-sm cc-cta"
+                  type="button"
+                  [disabled]="x.course.isHidden"
+                  (click)="$event.stopPropagation(); continue(x)"
+                >
+                  {{ ctaLabel(x) }}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </button>
+
+                <button
+                  class="btn btn-ghost btn-sm"
+                  type="button"
+                  *ngIf="!x.course.isHidden && x.progress.percent >= 100"
+                  [disabled]="downloading.has(x.course.id)"
+                  (click)="downloadCert(x, $event)"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13">
+                    <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/>
+                  </svg>
+                  {{ downloading.has(x.course.id) ? 'Generating…' : 'Certificate' }}
+                </button>
+
+                <a class="btn btn-ghost btn-sm" [routerLink]="['/course', x.course.id]" (click)="$event.stopPropagation()">
+                  Details
+                </a>
               </div>
             </div>
-
-            <div class="sub">
-              {{ x.course.shortDescription || '—' }}
-            </div>
-
-            <div class="hidden-note" *ngIf="x.course.isHidden">
-              This course is unavailable. Hidden by admin.
-              <div class="muted small">Reason: {{ x.course.hiddenReason || '—' }}</div>
-            </div>
-
-            <div class="meta">
-              <span class="muted small">Enrolled: {{ x.enrollment.enrolledAt | date:'mediumDate' }}</span>
-            </div>
-
-            <div class="bar" *ngIf="!x.course.isHidden">
-              <div class="fill" [style.width.%]="x.progress.percent"></div>
-            </div>
-
-            <div class="actions">
-              <button
-                class="btn primary"
-                type="button"
-                [disabled]="x.course.isHidden"
-                (click)="$event.preventDefault(); $event.stopPropagation(); continue(x)"
-              >
-                {{ ctaLabel(x) }}
-              </button>
-
-              <a class="btn ghost" [routerLink]="['/course', x.course.id]" (click)="$event.stopPropagation()">
-                View details
-              </a>
-            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Empty -->
-      <ng-template #empty>
-        <div class="empty card">
-          <div class="empty-ic">🎓</div>
-          <div class="empty-title">No enrollments yet</div>
-          <p class="page-sub">Browse academies and enroll in a course to start learning.</p>
-          <div class="empty-actions">
-            <a class="btn primary" routerLink="/academies">Explore academies</a>
+        <!-- Empty state -->
+        <ng-template #emptyState>
+          <div class="empty-state">
+            <div class="empty-art">
+              <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="120" height="120" rx="32" fill="#eff4ff"/>
+                <rect x="24" y="32" width="72" height="56" rx="12" fill="white" stroke="#c7d7fb" stroke-width="1.5"/>
+                <path d="M40 54h40M40 64h28" stroke="#1a56db" stroke-width="2" stroke-linecap="round"/>
+                <rect x="40" y="40" width="40" height="10" rx="5" fill="#dbeafe"/>
+                <circle cx="88" cy="88" r="18" fill="#0a0f1e"/>
+                <path d="M82 88l4 4 6-6" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h3 class="empty-title">No courses yet</h3>
+            <p class="empty-desc">
+              {{ query ? 'No courses match your search. Try different keywords.' : 'Browse academies and enroll in a course to start learning.' }}
+            </p>
+            <div class="empty-actions">
+              <a class="btn btn-primary btn-lg" routerLink="/academies">Explore academies</a>
+              <button class="btn btn-ghost btn-lg" type="button" *ngIf="query" (click)="query=''">Clear search</button>
+            </div>
           </div>
-        </div>
-      </ng-template>
+        </ng-template>
+
+      </ng-container>
     </ng-container>
+
   </div>
 </div>

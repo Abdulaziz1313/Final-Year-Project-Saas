@@ -1,12 +1,19 @@
-<div class="shell" [class.collapsed]="collapsed">
-  <!-- Sidebar -->
-  <aside class="side" [class.is-collapsed]="collapsed">
-    <div class="brand">
-      <div class="logo" aria-hidden="true">الف</div>
+<!-- app-shell.html — Alef design system v2 -->
 
-      <div class="brand-text" *ngIf="!collapsed">
-        <div class="name">Alef</div>
-        <div class="tagline">Learning Platform</div>
+<div class="shell" [class.collapsed]="collapsed">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="side" [class.is-collapsed]="collapsed">
+
+    <!-- Brand / Logo -->
+    <div class="sidebar-brand">
+      <div class="logo-mark">
+        <span>الف</span>
+      </div>
+
+      <div class="sidebar-brand-text" *ngIf="!collapsed">
+        <div class="sidebar-name">Alef</div>
+        <div class="sidebar-tagline">Learning Commerce</div>
       </div>
 
       <button
@@ -15,242 +22,190 @@
         (click)="toggleSidebar()"
         [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
       >
-        <svg viewBox="0 0 24 24" class="ico" aria-hidden="true">
-          <path
-            d="M14.5 6.5 9 12l5.5 5.5"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          ></path>
+        <svg viewBox="0 0 24 24" class="ico" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.5 6.5 9 12l5.5 5.5"/>
         </svg>
       </button>
     </div>
 
-    <ng-container *ngIf="profileState$ | async as ps">
-      <!-- Admin -->
-      <div class="section" *ngIf="ps.data?.roles?.includes('Admin')">
-        <div class="section-title" *ngIf="!collapsed">Admin</div>
+    <!-- Nav sections -->
+    <div class="sidebar-nav" *ngIf="profileState$ | async as ps">
 
-        <nav class="nav">
+      <!-- Admin -->
+      <div class="nav-group" *ngIf="ps.data?.roles?.includes('Admin')">
+        <div class="nav-group-label" *ngIf="!collapsed">Admin</div>
+        <nav>
           <a
+            class="nav-item"
             routerLink="/admin"
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: true }"
             [attr.data-tip]="collapsed ? 'Admin Panel' : null"
           >
-            <svg viewBox="0 0 24 24" class="nav-ico" aria-hidden="true">
-              <path
-                d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4Z"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linejoin="round"
-              ></path>
-              <path
-                d="M9 12l2 2 4-5"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              ></path>
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
+              <path d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4Z"/>
+              <path d="M9 12l2 2 4-5" stroke-linecap="round"/>
             </svg>
-            <span class="nav-text" *ngIf="!collapsed">Admin Panel</span>
+            <span class="nav-label" *ngIf="!collapsed">Admin Panel</span>
           </a>
         </nav>
       </div>
 
       <!-- Instructor -->
-      <div class="section" *ngIf="isInstructor(ps.data) && !ps.data?.roles?.includes('Admin')">
-        <div class="section-title" *ngIf="!collapsed">Instructor</div>
-
-        <nav class="nav">
-          <!-- ✅ exact=true fixes duplicate active when you are on /instructor/... -->
+      <div class="nav-group" *ngIf="isInstructor(ps.data) && !ps.data?.roles?.includes('Admin')">
+        <div class="nav-group-label" *ngIf="!collapsed">Instructor</div>
+        <nav>
           <a
+            class="nav-item"
             routerLink="/instructor"
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: true }"
             [attr.data-tip]="collapsed ? 'Dashboard' : null"
           >
-            <svg viewBox="0 0 24 24" class="nav-ico" aria-hidden="true">
-              <path
-                d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linejoin="round"
-              ></path>
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
+              <path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z"/>
             </svg>
-            <span class="nav-text" *ngIf="!collapsed">Dashboard</span>
+            <span class="nav-label" *ngIf="!collapsed">Dashboard</span>
           </a>
 
           <a
+            class="nav-item"
             routerLink="/instructor/academy/create"
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: true }"
             [attr.data-tip]="collapsed ? 'Create Academy' : null"
           >
-            <svg viewBox="0 0 24 24" class="nav-ico" aria-hidden="true">
-              <path
-                d="M12 5v14M5 12h14"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              ></path>
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+              <path d="M12 5v14M5 12h14"/>
             </svg>
-            <span class="nav-text" *ngIf="!collapsed">Create Academy</span>
+            <span class="nav-label" *ngIf="!collapsed">Create Academy</span>
           </a>
         </nav>
       </div>
 
       <!-- Student -->
-      <div class="section" *ngIf="isStudent(ps.data)">
-        <div class="section-title" *ngIf="!collapsed">Student</div>
-
-        <nav class="nav">
+      <div class="nav-group" *ngIf="isStudent(ps.data)">
+        <div class="nav-group-label" *ngIf="!collapsed">Student</div>
+        <nav>
           <a
+            class="nav-item"
             routerLink="/my-learning"
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: true }"
             [attr.data-tip]="collapsed ? 'My Learning' : null"
           >
-            <svg viewBox="0 0 24 24" class="nav-ico" aria-hidden="true">
-              <path
-                d="M4 19V6a2 2 0 0 1 2-2h12v15"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linejoin="round"
-              ></path>
-              <path
-                d="M8 8h8M8 12h8"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              ></path>
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
+              <path d="M4 19V6a2 2 0 0 1 2-2h12v15"/>
+              <path d="M8 8h8M8 12h8" stroke-linecap="round"/>
             </svg>
-            <span class="nav-text" *ngIf="!collapsed">My Learning</span>
+            <span class="nav-label" *ngIf="!collapsed">My Learning</span>
           </a>
 
           <a
+            class="nav-item"
             routerLink="/academies"
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: true }"
             [attr.data-tip]="collapsed ? 'Explore' : null"
           >
-            <svg viewBox="0 0 24 24" class="nav-ico" aria-hidden="true">
-              <path
-                d="M4 6h16M4 12h16M4 18h16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              ></path>
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+              <path d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
-            <span class="nav-text" *ngIf="!collapsed">Explore</span>
+            <span class="nav-label" *ngIf="!collapsed">Explore</span>
           </a>
         </nav>
       </div>
 
       <!-- Account -->
-      <div class="section">
-        <div class="section-title" *ngIf="!collapsed">Account</div>
-
-        <nav class="nav">
+      <div class="nav-group">
+        <div class="nav-group-label" *ngIf="!collapsed">Account</div>
+        <nav>
           <a
+            class="nav-item"
             routerLink="/me"
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: true }"
             [attr.data-tip]="collapsed ? 'My Account' : null"
           >
-            <svg viewBox="0 0 24 24" class="nav-ico" aria-hidden="true">
-              <path
-                d="M20 21a8 8 0 0 0-16 0"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-              ></path>
-              <path
-                d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linejoin="round"
-              ></path>
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <path d="M20 21a8 8 0 0 0-16 0" stroke-linecap="round"/>
+              <circle cx="12" cy="8" r="4" stroke-linejoin="round"/>
             </svg>
-            <span class="nav-text" *ngIf="!collapsed">My Account</span>
+            <span class="nav-label" *ngIf="!collapsed">My Account</span>
           </a>
         </nav>
       </div>
-    </ng-container>
+
+    </div>
+
+    <!-- Profile footer (expanded only) -->
+    <div class="sidebar-profile" *ngIf="!collapsed && (profileState$ | async) as ps">
+      <div class="sp-avatar">
+        <img *ngIf="avatarUrl(ps.data)" [src]="avatarUrl(ps.data)!" alt="avatar" />
+        <span *ngIf="!avatarUrl(ps.data)">{{ initial(ps.data) }}</span>
+      </div>
+      <div class="sp-text">
+        <div class="sp-name">{{ ps.data?.email || 'Loading…' }}</div>
+        <div class="sp-role">{{ ps.data?.roles?.[0] || 'User' }}</div>
+      </div>
+    </div>
+
   </aside>
 
-  <!-- Main -->
+  <!-- ── MAIN ── -->
   <div class="main">
+
     <!-- Topbar -->
-    <header class="top">
-      <div class="top-left">
+    <header class="topbar">
+      <div class="topbar-left">
+        <!-- Hamburger -->
         <button
           class="icon-btn"
           type="button"
           (click)="toggleSidebar()"
           [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
         >
-          <svg viewBox="0 0 24 24" class="ico" aria-hidden="true">
-            <path
-              d="M4 7h16M4 12h16M4 17h16"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            ></path>
+          <svg viewBox="0 0 24 24" class="ico" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M4 7h16M4 12h16M4 17h16"/>
           </svg>
         </button>
 
-        <div class="top-title-wrap">
-          <div class="top-title">Alef</div>
-          <ng-container *ngIf="profileState$ | async as ps">
-            <div class="top-sub" *ngIf="ps.data?.roles?.includes('Admin')">Admin</div>
-            <div class="top-sub" *ngIf="!ps.data?.roles?.includes('Admin') && isInstructor(ps.data)">Instructor</div>
-            <div class="top-sub" *ngIf="!ps.data?.roles?.includes('Admin') && isStudent(ps.data)">Student</div>
-            <div class="top-sub" *ngIf="!ps.data?.roles?.includes('Admin') && !isInstructor(ps.data) && !isStudent(ps.data)">
-              Account
-            </div>
-          </ng-container>
+        <!-- Page context -->
+        <div class="topbar-context">
+          <div class="topbar-title">
+            <span class="topbar-alef">Alef</span>
+            <ng-container *ngIf="profileState$ | async as ps">
+              <span class="topbar-sep">·</span>
+              <span class="topbar-role" *ngIf="ps.data?.roles?.includes('Admin')">Admin</span>
+              <span class="topbar-role" *ngIf="!ps.data?.roles?.includes('Admin') && isInstructor(ps.data)">Instructor</span>
+              <span class="topbar-role" *ngIf="!ps.data?.roles?.includes('Admin') && isStudent(ps.data)">Student</span>
+              <span class="topbar-role" *ngIf="!ps.data?.roles?.includes('Admin') && !isInstructor(ps.data) && !isStudent(ps.data)">Account</span>
+            </ng-container>
+          </div>
         </div>
       </div>
 
-      <div class="top-right">
+      <div class="topbar-right">
         <ng-container *ngIf="profileState$ | async as ps">
-          <a class="btn ghost small" routerLink="/academies">Explore</a>
-          <a class="btn ghost small" *ngIf="ps.data?.roles?.includes('Admin')" routerLink="/admin">Admin</a>
-          <a class="btn ghost small" *ngIf="isStudent(ps.data)" routerLink="/my-learning">My Learning</a>
+
+          <!-- Quick nav pills -->
+          <a class="top-pill" routerLink="/academies">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" width="14" height="14">
+              <path d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+            Explore
+          </a>
+
+          <a class="top-pill" *ngIf="ps.data?.roles?.includes('Admin')" routerLink="/admin">Admin</a>
+          <a class="top-pill" *ngIf="isStudent(ps.data)" routerLink="/my-learning">My Learning</a>
 
           <!-- Notifications -->
           <div class="notif-wrap" *ngIf="isInstructor(ps.data)">
             <button class="icon-btn" type="button" (click)="toggleNotif(!notifOpen)" aria-label="Notifications">
-              <svg viewBox="0 0 24 24" class="ico" aria-hidden="true">
-                <path
-                  d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linejoin="round"
-                ></path>
-                <path
-                  d="M13.73 21a2 2 0 0 1-3.46 0"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                ></path>
+              <svg viewBox="0 0 24 24" class="ico" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke-linecap="round"/>
               </svg>
-
               <ng-container *ngIf="unreadCount$ | async as uc">
                 <span class="badge-dot" *ngIf="(uc.data || 0) > 0">{{ uc.data }}</span>
               </ng-container>
@@ -259,22 +214,23 @@
             <div class="notif-panel" *ngIf="notifOpen">
               <div class="notif-head">
                 <div class="notif-title">Notifications</div>
-                <div class="notif-actions">
-                  <button class="btn ghost small" type="button" (click)="markAllRead()">Mark all read</button>
-                  <button class="btn ghost small" type="button" (click)="toggleNotif(false)">Close</button>
+                <div class="notif-head-actions">
+                  <button class="top-pill" type="button" (click)="markAllRead()">Mark all read</button>
+                  <button class="icon-btn sm" type="button" (click)="toggleNotif(false)" aria-label="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14">
+                      <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                  </button>
                 </div>
               </div>
 
               <ng-container *ngIf="notifList$ | async as nl">
-                <div class="notif-loading" *ngIf="nl.loading">Loading…</div>
-                <div class="notif-empty" *ngIf="!nl.loading && (nl.data?.length || 0) === 0">
-                  No notifications yet.
-                </div>
+                <div class="notif-empty" *ngIf="nl.loading">Loading…</div>
+                <div class="notif-empty" *ngIf="!nl.loading && (nl.data?.length || 0) === 0">No notifications yet.</div>
 
                 <div class="notif-list" *ngIf="!nl.loading && (nl.data?.length || 0) > 0">
                   <button class="notif-item" type="button" *ngFor="let n of nl.data" (click)="openNotification(n)">
-                    <span class="dot" [class.unread]="!n.isRead"></span>
-
+                    <span class="notif-dot" [class.unread]="!n.isRead"></span>
                     <div class="notif-body">
                       <div class="notif-row">
                         <div class="notif-item-title">{{ n.title }}</div>
@@ -286,30 +242,32 @@
                 </div>
 
                 <div class="notif-foot">
-                  <button class="btn ghost small" type="button" (click)="refreshNotifs()">Refresh</button>
+                  <button class="top-pill" type="button" (click)="refreshNotifs()">Refresh</button>
                 </div>
               </ng-container>
             </div>
           </div>
 
           <!-- Profile chip -->
-          <div class="profile-chip" *ngIf="!collapsed">
+          <div class="profile-chip">
             <div class="chip-avatar">
               <img *ngIf="avatarUrl(ps.data)" [src]="avatarUrl(ps.data)!" alt="avatar" />
               <span *ngIf="!avatarUrl(ps.data)">{{ initial(ps.data) }}</span>
             </div>
-
-            <div class="chip-text">
+            <div class="chip-text" *ngIf="!collapsed">
               <div class="chip-name">{{ ps.data?.email || 'Loading…' }}</div>
-              <div class="chip-sub">{{ (ps.data?.roles?.[0] || 'User') }}</div>
+              <div class="chip-role">{{ ps.data?.roles?.[0] || 'User' }}</div>
             </div>
           </div>
+
         </ng-container>
       </div>
     </header>
 
+    <!-- Page content -->
     <div class="content">
       <router-outlet></router-outlet>
     </div>
+
   </div>
 </div>

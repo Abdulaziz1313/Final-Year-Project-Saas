@@ -1,365 +1,338 @@
-<!-- me.html (FULL UPDATED) -->
-<div class="me">
-  <!-- Background (same as Home / My Learning) -->
-  <div class="bg" aria-hidden="true">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
-    <div class="blob b3"></div>
-    <div class="bg-grid"></div>
-  </div>
+<div class="me-page">
+  <ng-container *ngIf="state$ | async as st">
 
-  <div class="wrap">
-    <div class="container">
-      <!-- Page header -->
-      <header class="page-head">
-        <div class="head-left">
-          <div class="kicker">Account</div>
-          <h1 class="page-title">My Account</h1>
-          <p class="page-sub">Profile, security, and preferences.</p>
+    <div class="state-loading" *ngIf="st.loading">Loading…</div>
+    <div class="alert-error" *ngIf="st.error"><span>⚠</span> {{ st.error }}</div>
+
+    <div class="me-layout" *ngIf="st.data && !st.loading && !st.error">
+
+      <!-- ── LEFT SIDEBAR ── -->
+      <aside class="me-aside">
+
+        <!-- Avatar + identity -->
+        <div class="aside-user">
+          <div class="aside-avatar">
+            <img *ngIf="avatarLiveSrc" [src]="avatarLiveSrc" alt="Avatar" />
+            <span *ngIf="!avatarLiveSrc" class="aside-avatar-letter">{{ firstLetter(st.data.email) }}</span>
+          </div>
+          <div class="aside-identity">
+            <div class="aside-email">{{ st.data.email }}</div>
+            <div class="aside-phone">{{ displayPhone(st.data.phoneNumber) }}</div>
+            <div class="aside-roles">
+              <span class="role-chip" *ngFor="let r of st.data.roles">{{ r }}</span>
+            </div>
+          </div>
         </div>
 
-        <div class="head-actions">
-          <button class="btn ghost small" type="button" (click)="reload()">Refresh</button>
-          <button class="btn ghost small" type="button" (click)="logout()">Logout</button>
+        <!-- Quick stats -->
+        <div class="aside-stats">
+          <div class="stat-cell">
+            <div class="stat-label">Language</div>
+            <div class="stat-value">{{ (lang || 'en').toUpperCase() }}</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Status</div>
+            <div class="stat-value">
+              <span class="active-pill"><span class="active-dot"></span>Active</span>
+            </div>
+          </div>
         </div>
-      </header>
 
-      <ng-container *ngIf="state$ | async as st">
-        <div class="state" *ngIf="st.loading">Loading…</div>
-        <div class="alert error" *ngIf="st.error">{{ st.error }}</div>
+        <div class="aside-divider"></div>
 
-        <div class="layout" *ngIf="st.data && !st.loading && !st.error">
-          <!-- Left settings nav -->
-          <aside class="nav-card">
-            <div class="nav-user">
-              <div class="nav-avatar">
-                <img *ngIf="avatarLiveSrc" [src]="avatarLiveSrc" alt="Avatar" />
-                <div class="nav-avatar-fallback" *ngIf="!avatarLiveSrc">
-                  {{ firstLetter(st.data.email) }}
-                </div>
-              </div>
+        <!-- Nav -->
+        <div class="aside-nav-label">Settings</div>
+        <nav class="aside-nav">
+          <button class="aside-nav-item" type="button" [class.active]="activeSection==='profile'" (click)="goTo('profile')">
+            <svg class="aside-nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0" stroke-linecap="round"/>
+            </svg>
+            <span>Profile</span>
+          </button>
+          <button class="aside-nav-item" type="button" [class.active]="activeSection==='security'" (click)="goTo('security')">
+            <svg class="aside-nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
+              <rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+            </svg>
+            <span>Security</span>
+          </button>
+          <button class="aside-nav-item" type="button" [class.active]="activeSection==='prefs'" (click)="goTo('prefs')">
+            <svg class="aside-nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+            </svg>
+            <span>Preferences</span>
+          </button>
+          <button class="aside-nav-item danger" type="button" [class.active]="activeSection==='danger'" (click)="goTo('danger')">
+            <svg class="aside-nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span>Danger zone</span>
+          </button>
+        </nav>
 
-              <div class="nav-user-meta">
-                <div class="nav-titleline">
-                  <div class="nav-email">{{ st.data.email }}</div>
-                  <span class="chip tiny">Account</span>
-                </div>
+        <!-- User ID footer -->
+        <div class="aside-footer">
+          <div class="aside-footer-label">User ID</div>
+          <div class="aside-footer-id">{{ st.data.userId }}</div>
+        </div>
 
-                <div class="nav-phone">{{ displayPhone(st.data.phoneNumber) }}</div>
+      </aside>
 
-                <div class="nav-roles">
-                  <span class="badge" *ngFor="let r of st.data.roles">{{ r }}</span>
-                </div>
-              </div>
+      <!-- ── RIGHT CONTENT ── -->
+      <div class="me-content">
+
+        <!-- Content topbar -->
+        <div class="content-bar">
+          <div class="seg-tabs" role="tablist">
+            <button class="seg-tab" type="button" [class.active]="activeSection==='profile'"  (click)="goTo('profile')">Profile</button>
+            <button class="seg-tab" type="button" [class.active]="activeSection==='security'" (click)="goTo('security')">Security</button>
+            <button class="seg-tab" type="button" [class.active]="activeSection==='prefs'"    (click)="goTo('prefs')">Preferences</button>
+            <button class="seg-tab danger" type="button" [class.active]="activeSection==='danger'"   (click)="goTo('danger')">Danger</button>
+          </div>
+          <div class="content-bar-actions">
+            <button class="btn btn-ghost btn-sm" type="button" (click)="reload()">Refresh</button>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="logout()">Logout</button>
+          </div>
+        </div>
+
+        <!-- ── PROFILE SECTION ── -->
+        <section class="section-card" id="sec-profile">
+          <div class="section-header">
+            <div class="section-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <div class="section-title">Profile</div>
+              <div class="section-sub">Account details and photo</div>
+            </div>
+          </div>
+
+          <!-- Avatar + info -->
+          <div class="profile-block">
+            <div class="profile-avatar">
+              <img *ngIf="avatarLiveSrc" [src]="avatarLiveSrc" alt="Avatar" />
+              <span *ngIf="!avatarLiveSrc" class="avatar-letter">{{ firstLetter(st.data.email) }}</span>
             </div>
 
-            <div class="nav-quick">
-              <div class="q">
-                <div class="qt muted tiny">Language</div>
-                <div class="qv">{{ (lang || 'en').toUpperCase() }}</div>
-              </div>
-              <div class="q">
-                <div class="qt muted tiny">Status</div>
-                <div class="qv">
-                  <span class="status-pill ok"><span class="dot"></span>Active</span>
+            <div class="profile-info">
+              <div class="info-grid">
+                <div class="info-cell">
+                  <div class="info-label">Email</div>
+                  <div class="info-value">{{ st.data.email }}</div>
                 </div>
+                <div class="info-cell">
+                  <div class="info-label">Phone</div>
+                  <div class="info-value mono">{{ displayPhone(st.data.phoneNumber) }}</div>
+                </div>
+                <div class="info-cell span-2">
+                  <div class="info-label">Roles</div>
+                  <div class="info-value roles-row">
+                    <span class="role-chip" *ngFor="let r of st.data.roles">{{ r }}</span>
+                  </div>
+                </div>
+                <div class="info-cell span-2">
+                  <div class="info-label">User ID</div>
+                  <div class="info-value mono small">{{ st.data.userId }}</div>
+                </div>
+              </div>
+
+              <div class="upload-row">
+                <label class="btn btn-primary btn-sm upload-btn">
+                  <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onPhotoSelected($event)" hidden />
+                  Change photo
+                </label>
+                <span class="hint-text">JPG / PNG / WEBP · up to 5 MB</span>
+              </div>
+
+              <div class="upload-progress" *ngIf="photoUploading">
+                <div class="progress-track">
+                  <div class="progress-fill" [style.width.%]="uploadPct"></div>
+                </div>
+                <span class="hint-text">Uploading… {{ uploadPct }}%</span>
               </div>
             </div>
+          </div>
 
-            <div class="divider"></div>
-
-            <div class="nav-section-title">Settings</div>
-
-            <button class="nav-item" type="button" [class.active]="activeSection==='profile'" (click)="goTo('profile')">
-              <span class="ico" aria-hidden="true">👤</span>
-              <span class="txt">Profile</span>
-              <span class="rail" aria-hidden="true"></span>
-            </button>
-
-            <button class="nav-item" type="button" [class.active]="activeSection==='security'" (click)="goTo('security')">
-              <span class="ico" aria-hidden="true">🔒</span>
-              <span class="txt">Security</span>
-              <span class="rail" aria-hidden="true"></span>
-            </button>
-
-            <button class="nav-item" type="button" [class.active]="activeSection==='prefs'" (click)="goTo('prefs')">
-              <span class="ico" aria-hidden="true">⚙️</span>
-              <span class="txt">Preferences</span>
-              <span class="rail" aria-hidden="true"></span>
-            </button>
-
-            <button class="nav-item danger" type="button" [class.active]="activeSection==='danger'" (click)="goTo('danger')">
-              <span class="ico" aria-hidden="true">⚠️</span>
-              <span class="txt">Danger zone</span>
-              <span class="rail" aria-hidden="true"></span>
-            </button>
-
-            <div class="nav-foot">
-              <div class="muted tiny">User ID</div>
-              <div class="mono">{{ st.data.userId }}</div>
+          <!-- Crop panel -->
+          <div class="crop-panel" *ngIf="cropOpen && previewDataUrl">
+            <div class="crop-head">
+              <div>
+                <div class="crop-title">Crop photo</div>
+                <div class="hint-text">Drag to reposition · adjust zoom</div>
+              </div>
+              <button class="btn btn-ghost btn-sm" type="button" (click)="cancelCrop()">Close</button>
             </div>
-          </aside>
-
-          <!-- Right content -->
-          <section class="content">
-            <!-- ========================= -->
-            <!-- Profile -->
-            <!-- ========================= -->
-            <section class="card" id="sec-profile">
-              <div class="card-top">
-                <div>
-                  <div class="card-title">Profile</div>
-                  <div class="card-sub">Account details and photo</div>
-                </div>
+            <div class="crop-body">
+              <div class="crop-canvas-wrap"
+                   (pointerdown)="onCropPointerDown($event)"
+                   (pointermove)="onCropPointerMove($event)"
+                   (pointerup)="onCropPointerUp()"
+                   (pointerleave)="onCropPointerUp()">
+                <canvas #cropCanvas></canvas>
               </div>
-
-              <div class="profile-top">
-                <div class="avatar">
-                  <img *ngIf="avatarLiveSrc" [src]="avatarLiveSrc" alt="Avatar" />
-                  <div class="avatar-fallback" *ngIf="!avatarLiveSrc">
-                    {{ firstLetter(st.data.email) }}
-                  </div>
-                </div>
-
-                <div class="profile-info">
-                  <div class="info-grid">
-                    <div class="info">
-                      <div class="label muted">Email</div>
-                      <div class="value">{{ st.data.email }}</div>
-                    </div>
-
-                    <div class="info">
-                      <div class="label muted">Phone</div>
-                      <div class="value mono">{{ displayPhone(st.data.phoneNumber) }}</div>
-                    </div>
-
-                    <div class="info full">
-                      <div class="label muted">Roles</div>
-                      <div class="value roles">
-                        <span class="badge" *ngFor="let r of st.data.roles">{{ r }}</span>
-                      </div>
-                    </div>
-
-                    <div class="info full">
-                      <div class="label muted">User ID</div>
-                      <div class="value mono">{{ st.data.userId }}</div>
-                    </div>
-                  </div>
-
-                  <div class="upload-row">
-                    <label class="btn primary small upload-btn">
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        (change)="onPhotoSelected($event)"
-                        hidden
-                      />
-                      Change photo
-                    </label>
-
-                    <span class="muted tiny">JPG/PNG/WEBP • up to 5MB</span>
-                  </div>
-
-                  <!-- Upload progress -->
-                  <div class="progress" *ngIf="photoUploading">
-                    <div class="progress-bar" [style.width.%]="uploadPct"></div>
-                  </div>
-                  <div class="muted tiny" *ngIf="photoUploading">Uploading… {{ uploadPct }}%</div>
-                </div>
-              </div>
-
-              <!-- Crop panel -->
-              <div class="crop-panel" *ngIf="cropOpen && previewDataUrl">
-                <div class="crop-head">
-                  <div>
-                    <div class="crop-title">Crop photo</div>
-                    <div class="muted tiny">Drag to reposition • adjust zoom</div>
-                  </div>
-                  <button class="btn ghost small" type="button" (click)="cancelCrop()">Close</button>
-                </div>
-
-                <div class="crop-body">
-                  <div
-                    class="crop-canvas-wrap"
-                    (pointerdown)="onCropPointerDown($event)"
-                    (pointermove)="onCropPointerMove($event)"
-                    (pointerup)="onCropPointerUp()"
-                    (pointerleave)="onCropPointerUp()"
-                  >
-                    <canvas #cropCanvas></canvas>
-                  </div>
-
-                  <div class="crop-controls">
-                    <div class="field">
-                      <label>Zoom</label>
-                      <input
-                        class="input"
-                        type="range"
-                        [min]="minZoom"
-                        [max]="maxZoom"
-                        step="0.01"
-                        [value]="zoom"
-                        (input)="onZoomInput($any($event.target).value)"
-                      />
-                      <div class="muted tiny">Zoom: {{ zoom | number:'1.0-2' }}</div>
-                    </div>
-
-                    <div class="crop-actions">
-                      <button class="btn primary" type="button" [disabled]="photoUploading" (click)="confirmCropAndUpload()">
-                        {{ photoUploading ? 'Uploading…' : 'Save photo' }}
-                      </button>
-                      <button class="btn ghost" type="button" [disabled]="photoUploading" (click)="cancelCrop()">
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="divider"></div>
-
-              <!-- Display name -->
-              <div class="form">
+              <div class="crop-controls">
                 <div class="field">
-                  <label>Display name</label>
-
-                  <div class="inline-field">
-                    <input
-                      class="input"
-                      [value]="displayName"
-                      (input)="displayName = $any($event.target).value"
-                      placeholder="Optional"
-                    />
-                    <button class="btn primary" type="button" [disabled]="nameWorking" (click)="saveName()">
-                      {{ nameWorking ? 'Saving…' : 'Save' }}
-                    </button>
-                  </div>
-
-                  <small class="hint error" *ngIf="nameError">{{ nameError }}</small>
+                  <label class="field-label">Zoom</label>
+                  <input class="input range-input" type="range"
+                         [min]="minZoom" [max]="maxZoom" step="0.01"
+                         [value]="zoom" (input)="onZoomInput($any($event.target).value)" />
+                  <span class="hint-text">{{ zoom | number:'1.0-2' }}×</span>
                 </div>
-              </div>
-            </section>
-
-            <!-- ========================= -->
-            <!-- Security -->
-            <!-- ========================= -->
-            <section class="card" id="sec-security">
-              <div class="card-top">
-                <div>
-                  <div class="card-title">Security</div>
-                  <div class="card-sub">Change your password</div>
-                </div>
-              </div>
-
-              <form [formGroup]="pwForm" (ngSubmit)="changePassword()" class="form">
-                <div class="field">
-                  <label>Current password</label>
-                  <div class="pw-wrap">
-                    <input class="input" [type]="showCurrent ? 'text' : 'password'" formControlName="currentPassword" />
-                    <button class="pw-btn" type="button" (click)="toggleCurrent()">
-                      {{ showCurrent ? 'Hide' : 'Show' }}
-                    </button>
-                  </div>
-                </div>
-
-                <div class="field">
-                  <label>New password</label>
-                  <div class="pw-wrap">
-                    <input class="input" [type]="showNew ? 'text' : 'password'" formControlName="newPassword" />
-                    <button class="pw-btn" type="button" (click)="toggleNew()">
-                      {{ showNew ? 'Hide' : 'Show' }}
-                    </button>
-                  </div>
-                  <small class="muted tiny">Minimum 6 characters.</small>
-                </div>
-
-                <div class="actions-row">
-                  <button class="btn primary" type="submit" [disabled]="pwWorking">
-                    {{ pwWorking ? 'Updating…' : 'Update password' }}
+                <div class="crop-actions">
+                  <button class="btn btn-primary" type="button" [disabled]="photoUploading" (click)="confirmCropAndUpload()">
+                    {{ photoUploading ? 'Uploading…' : 'Save photo' }}
                   </button>
-                  <span class="muted tiny">You’ll sign in again after changing.</span>
-                </div>
-
-                <div class="inline success" *ngIf="pwSuccess">{{ pwSuccess }}</div>
-                <div class="inline error" *ngIf="pwError">{{ pwError }}</div>
-              </form>
-            </section>
-
-            <!-- ========================= -->
-            <!-- Preferences -->
-            <!-- ========================= -->
-            <section class="card" id="sec-prefs">
-              <div class="card-top">
-                <div>
-                  <div class="card-title">Preferences</div>
-                  <div class="card-sub">Personal settings</div>
+                  <button class="btn btn-ghost" type="button" [disabled]="photoUploading" (click)="cancelCrop()">Cancel</button>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <div class="form">
-                <div class="field">
-                  <label>Language</label>
-                  <select class="input" [value]="lang" (change)="setLang($any($event.target).value)">
-                    <option value="en">English</option>
-                    <option value="ar">Arabic (LTR for now)</option>
-                  </select>
-                  <small class="muted tiny">We’ll add RTL layout later.</small>
-                </div>
+          <div class="section-divider"></div>
 
-                <div class="prefs">
-                  <label class="pref">
-                    <input class="cb" type="checkbox" disabled />
-                    <span>Email notifications</span>
-                    <span class="pill-mini">Soon</span>
-                  </label>
-
-                  <label class="pref">
-                    <input class="cb" type="checkbox" disabled />
-                    <span>Weekly summary</span>
-                    <span class="pill-mini">Soon</span>
-                  </label>
-
-                  <div class="muted tiny">More options coming soon.</div>
-                </div>
-              </div>
-            </section>
-
-            <!-- ========================= -->
-            <!-- Danger -->
-            <!-- ========================= -->
-            <section class="card danger-card" id="sec-danger">
-              <div class="card-top">
-                <div>
-                  <div class="card-title">Danger zone</div>
-                  <div class="card-sub">Permanent actions</div>
-                </div>
-              </div>
-
-              <div class="danger-note">
-                <div class="dn-ico" aria-hidden="true">⚠️</div>
-                <div class="dn-txt">
-                  <div class="dn-title">Delete account</div>
-                  <div class="muted tiny">This permanently deletes your account and content. This cannot be undone.</div>
-                </div>
-              </div>
-
-              <form [formGroup]="deleteForm" (ngSubmit)="deleteAccount()" class="form">
-                <div class="field">
-                  <label>Confirm password</label>
-                  <input class="input" type="password" formControlName="password" />
-                  <small class="muted tiny">Required to delete your account.</small>
-                </div>
-
-                <button class="btn danger" type="submit" [disabled]="deleteWorking">
-                  {{ deleteWorking ? 'Deleting…' : 'Delete account' }}
+          <!-- Display name -->
+          <div class="form">
+            <div class="field">
+              <label class="field-label">Display name</label>
+              <div class="inline-field">
+                <input class="input" [value]="displayName" (input)="displayName = $any($event.target).value" placeholder="Optional" />
+                <button class="btn btn-primary" type="button" [disabled]="nameWorking" (click)="saveName()">
+                  {{ nameWorking ? 'Saving…' : 'Save' }}
                 </button>
+              </div>
+              <span class="hint-text error-text" *ngIf="nameError">{{ nameError }}</span>
+            </div>
+          </div>
+        </section>
 
-                <div class="inline error" *ngIf="deleteError">{{ deleteError }}</div>
-              </form>
-            </section>
-          </section>
-        </div>
-      </ng-container>
+        <!-- ── SECURITY SECTION ── -->
+        <section class="section-card" id="sec-security">
+          <div class="section-header">
+            <div class="section-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
+                <rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+              </svg>
+            </div>
+            <div>
+              <div class="section-title">Security</div>
+              <div class="section-sub">Change your password</div>
+            </div>
+          </div>
+
+          <form [formGroup]="pwForm" (ngSubmit)="changePassword()" class="form">
+            <div class="field">
+              <label class="field-label">Current password</label>
+              <div class="pw-wrap">
+                <input class="input" [type]="showCurrent ? 'text' : 'password'" formControlName="currentPassword" />
+                <button class="pw-toggle" type="button" (click)="toggleCurrent()">
+                  {{ showCurrent ? 'Hide' : 'Show' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label">New password</label>
+              <div class="pw-wrap">
+                <input class="input" [type]="showNew ? 'text' : 'password'" formControlName="newPassword" />
+                <button class="pw-toggle" type="button" (click)="toggleNew()">
+                  {{ showNew ? 'Hide' : 'Show' }}
+                </button>
+              </div>
+              <span class="hint-text">Minimum 6 characters.</span>
+            </div>
+
+            <div class="actions-row">
+              <button class="btn btn-primary" type="submit" [disabled]="pwWorking">
+                {{ pwWorking ? 'Updating…' : 'Update password' }}
+              </button>
+              <span class="hint-text">You'll sign in again after changing.</span>
+            </div>
+
+            <div class="inline-msg success-msg" *ngIf="pwSuccess">{{ pwSuccess }}</div>
+            <div class="inline-msg error-msg" *ngIf="pwError">{{ pwError }}</div>
+          </form>
+        </section>
+
+        <!-- ── PREFERENCES SECTION ── -->
+        <section class="section-card" id="sec-prefs">
+          <div class="section-header">
+            <div class="section-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="section-title">Preferences</div>
+              <div class="section-sub">Personal settings</div>
+            </div>
+          </div>
+
+          <div class="form">
+            <div class="field">
+              <label class="field-label">Language</label>
+              <select class="input select-input" [value]="lang" (change)="setLang($any($event.target).value)">
+                <option value="en">English</option>
+                <option value="ar">Arabic (LTR for now)</option>
+              </select>
+              <span class="hint-text">We'll add RTL layout later.</span>
+            </div>
+
+            <div class="pref-list">
+              <label class="pref-row">
+                <input class="pref-cb" type="checkbox" disabled />
+                <span class="pref-label">Email notifications</span>
+                <span class="soon-pill">Soon</span>
+              </label>
+              <label class="pref-row">
+                <input class="pref-cb" type="checkbox" disabled />
+                <span class="pref-label">Weekly summary</span>
+                <span class="soon-pill">Soon</span>
+              </label>
+              <span class="hint-text">More options coming soon.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── DANGER SECTION ── -->
+        <section class="section-card danger-section" id="sec-danger">
+          <div class="section-header">
+            <div class="section-icon danger-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div>
+              <div class="section-title">Danger zone</div>
+              <div class="section-sub">Permanent actions</div>
+            </div>
+          </div>
+
+          <div class="danger-notice">
+            <strong>Delete account</strong>
+            <p>This permanently deletes your account and all content. This cannot be undone.</p>
+          </div>
+
+          <form [formGroup]="deleteForm" (ngSubmit)="deleteAccount()" class="form">
+            <div class="field">
+              <label class="field-label">Confirm password</label>
+              <input class="input" type="password" formControlName="password" />
+              <span class="hint-text">Required to confirm account deletion.</span>
+            </div>
+
+            <button class="btn btn-danger" type="submit" [disabled]="deleteWorking">
+              {{ deleteWorking ? 'Deleting…' : 'Delete account' }}
+            </button>
+
+            <div class="inline-msg error-msg" *ngIf="deleteError">{{ deleteError }}</div>
+          </form>
+        </section>
+
+      </div>
     </div>
-  </div>
+  </ng-container>
 </div>

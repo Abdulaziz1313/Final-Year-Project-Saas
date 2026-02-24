@@ -159,21 +159,21 @@ export type ReviewItem = {
   targetKind: ReviewTargetKind;
   targetId: string;
 
-  rating: number;          // 1..5
+  rating: number; // 1..5
   comment?: string | null;
 
   createdAt: string;
   updatedAt?: string | null;
 
   userId?: string | null;
-  userDisplayName?: string | null; // backend can return display name
-  userEmailMasked?: string | null; // or masked email (optional)
+  userDisplayName?: string | null;
+  userEmailMasked?: string | null;
 };
 
 export type ReviewSummary = {
   avgRating: number;
   count: number;
-  distribution?: { [k: string]: number } | null; // optional, if backend supports
+  distribution?: { [k: string]: number } | null;
 };
 
 export type ReviewListResponse = {
@@ -182,12 +182,20 @@ export type ReviewListResponse = {
   page: number;
   pageSize: number;
   items: ReviewItem[];
-  myReview?: ReviewItem | null; // optional, if backend includes it
+  myReview?: ReviewItem | null;
 };
 
 export type UpsertReviewPayload = {
   rating: number; // 1..5
   comment?: string | null;
+};
+
+/* =========================
+   ✅ Certificates (NEW)
+========================= */
+export type CertificateIssueResponse = {
+  id: string;
+  certificateNumber: string;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -219,9 +227,7 @@ export class StudentApi {
     if (q) params.set('q', q);
     if (sort) params.set('sort', sort);
 
-    return this.http.get<PublicAcademy[]>(
-      `${this.api}/api/catalog/academies?${params.toString()}`
-    );
+    return this.http.get<PublicAcademy[]>(`${this.api}/api/catalog/academies?${params.toString()}`);
   }
 
   // Student (auth)
@@ -245,6 +251,29 @@ export class StudentApi {
     return this.http.post(`${this.api}/api/learning/me/courses/${courseId}/last-lesson/${lessonId}`, {});
   }
 
+  /* =========================
+     ✅ Certificates API (NEW)
+  ========================= */
+
+  issueCertificate(courseId: string) {
+    return this.http.post<CertificateIssueResponse>(
+      `${this.api}/api/learning/me/courses/${courseId}/certificate/issue`,
+      {}
+    );
+  }
+
+  downloadCertificatePdf(certificateId: string) {
+    return this.http.get(`${this.api}/api/learning/me/certificates/${certificateId}/pdf`, {
+      responseType: 'blob',
+    });
+  }
+
+  getMyCertificate(courseId: string) {
+    return this.http.get<{ id: string; certificateNumber: string; issuedAt: string }>(
+      `${this.api}/api/learning/me/courses/${courseId}/certificate`
+    );
+  }
+
   // Quiz
   getLessonQuiz(lessonId: string) {
     return this.http.get<any>(`${this.api}/api/quizzes/student/lesson/${lessonId}`);
@@ -263,7 +292,6 @@ export class StudentApi {
      NOTE: adjust these routes if your backend differs.
   ========================= */
 
-  // --- Courses reviews (public read, auth write) ---
   listCourseReviews(courseId: string, page = 1, pageSize = 10) {
     const params = new URLSearchParams();
     params.set('page', String(page));
@@ -279,7 +307,6 @@ export class StudentApi {
     return this.http.post<ReviewItem>(`${this.api}/api/reviews/courses/${courseId}`, payload);
   }
 
-  // --- Academies reviews (ready for Academy page) ---
   listAcademyReviews(academyId: string, page = 1, pageSize = 10) {
     const params = new URLSearchParams();
     params.set('page', String(page));
@@ -296,7 +323,6 @@ export class StudentApi {
   }
 
   retakeQuizAttempt(quizId: string) {
-  return this.http.post<any>(`${this.api}/api/quizzes/${quizId}/attempts/retake`, {});
-}
-
+    return this.http.post<any>(`${this.api}/api/quizzes/${quizId}/attempts/retake`, {});
+  }
 }

@@ -1,257 +1,231 @@
-<!-- academies.html -->
 <div class="academies">
-  <!-- Background (same as Home / My Learning) -->
-  <div class="bg" aria-hidden="true">
-    <div class="blob b1"></div>
-    <div class="blob b2"></div>
-    <div class="blob b3"></div>
-    <div class="bg-grid"></div>
-  </div>
 
-  <div class="wrap container">
-    <!-- Hero / Filters -->
-    <div class="hero card">
-      <div class="hero-left">
-        <h1 class="page-title">Explore Academies</h1>
-        <p class="page-sub">Browse published academies in Alef (الف).</p>
+  <main class="wrap">
+
+    <!-- ── PAGE HERO ── -->
+    <div class="page-hero">
+      <div class="page-hero-left">
+        <div class="eyebrow">
+          <div class="eyebrow-dot"></div>
+          <span class="eyebrow-text">Browse all academies</span>
+        </div>
+        <h1 class="page-title">Explore <em>Academies</em></h1>
+        <p class="page-desc">Discover published academies on Alef — browse, filter, and find your next learning experience.</p>
       </div>
 
-      <div class="hero-right">
-        <div class="search">
-          <svg viewBox="0 0 24 24" class="search-ico" aria-hidden="true">
-            <path
-              d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            ></path>
+      <!-- ── FILTERS ── -->
+      <div class="filters">
+        <div class="search-wrap">
+          <svg class="search-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="10.5" cy="10.5" r="7.5"/>
+            <path d="M21 21l-4.3-4.3"/>
           </svg>
-
           <input
-            class="input"
+            class="input search-input"
             [value]="q"
             (input)="onSearchInput($any($event.target).value)"
             (keydown)="onEnter($event)"
             placeholder="Search academies…"
           />
-
-          <button
-            class="clear"
-            type="button"
-            *ngIf="q"
-            (click)="clearQuery()"
-            aria-label="Clear search"
-            title="Clear"
-          >
-            ×
-          </button>
+          <button class="search-clear" type="button" *ngIf="q" (click)="clearQuery()" aria-label="Clear search">✕</button>
         </div>
 
-        <select class="input sort" [value]="sort" (change)="onSortChange($any($event.target).value)">
-          <option value="newest">Newest</option>
-          <option value="name">Name</option>
+        <select class="input select-sort" [value]="sort" (change)="onSortChange($any($event.target).value)">
+          <option value="newest">Newest first</option>
+          <option value="name">Name A–Z</option>
         </select>
 
         <button
-          class="only-new"
+          class="toggle-btn"
           type="button"
           [class.on]="onlyNew"
           (click)="toggleOnlyNew()"
           [attr.aria-pressed]="onlyNew"
         >
-          <span class="ico" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path
-                d="M20 6L9 17l-5-5"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
+          <span class="toggle-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 6L9 17l-5-5"/>
             </svg>
           </span>
-
-          <span class="txt">Only New</span>
-          <span class="pill-badge" *ngIf="onlyNew">On</span>
+          <span>New only</span>
+          <span class="toggle-badge" *ngIf="onlyNew">On</span>
         </button>
 
-        <div class="btns">
-          <button class="btn primary" type="button" (click)="search()">Search</button>
-          <button class="btn ghost" type="button" (click)="reset()">Reset</button>
+        <div class="filter-actions">
+          <button class="btn btn-primary btn-sm" type="button" (click)="search()">Search</button>
+          <button class="btn btn-ghost btn-sm" type="button" (click)="reset()">Reset</button>
         </div>
       </div>
     </div>
 
+    <!-- ── CONTENT ── -->
     <ng-container *ngIf="state$ | async as st">
+
       <!-- Loading skeleton -->
-      <div *ngIf="st.loading" class="grid">
-        <div class="academy sk" *ngFor="let _ of skeleton">
-          <div class="banner"></div>
-          <div class="row">
-            <div class="logo"></div>
-            <div class="body">
-              <div class="line w60"></div>
-              <div class="line w90"></div>
-              <div class="chips">
-                <div class="chip"></div>
-                <div class="chip"></div>
+      <div *ngIf="st.loading" class="academy-grid">
+        <div class="academy-card sk" *ngFor="let _ of skeleton">
+          <div class="ac-banner"></div>
+          <div class="ac-body">
+            <div class="ac-logo-wrap">
+              <div class="ac-logo"></div>
+            </div>
+            <div class="sk-lines">
+              <div class="sk-line w70"></div>
+              <div class="sk-line w50"></div>
+              <div class="sk-chips">
+                <div class="sk-chip"></div>
+                <div class="sk-chip"></div>
               </div>
             </div>
-            <div class="go">›</div>
           </div>
         </div>
       </div>
 
-      <div *ngIf="st.error" class="alert">{{ st.error }}</div>
+      <!-- Error -->
+      <div *ngIf="st.error" class="alert-error">
+        <span>⚠</span> {{ st.error }}
+      </div>
 
       <ng-container *ngIf="!st.loading && !st.error && st.data as vm">
-        <!-- Featured sections (only show if not searching) -->
+
+        <!-- ── FEATURED SECTIONS (no search active) ── -->
         <ng-container *ngIf="!q">
-          <!-- New -->
-          <section class="section" *ngIf="vm.newItems.length > 0">
-            <div class="section-head">
+
+          <section class="featured-section" *ngIf="vm.newItems.length > 0">
+            <div class="section-header">
               <div>
-                <div class="section-title">New this week</div>
-                <div class="muted small">Recently published academies</div>
+                <h2 class="section-title">New this week</h2>
+                <p class="section-sub">Recently published academies</p>
               </div>
-              <button class="btn ghost small" type="button" (click)="toggleOnlyNew()">View only new</button>
+              <button class="btn btn-ghost btn-sm" type="button" (click)="toggleOnlyNew()">View all new →</button>
             </div>
 
             <div class="rail">
               <a
-                class="mini"
+                class="mini-card"
                 *ngFor="let a of vm.newItems"
                 [routerLink]="['/academy', a.slug]"
                 [style.--brand]="brand(a)"
               >
                 <div
-                  class="mini-banner"
+                  class="mc-banner"
                   [class.has-img]="!!img(a.bannerUrl)"
                   [style.backgroundImage]="img(a.bannerUrl) ? 'url(' + img(a.bannerUrl) + ')' : null"
-                ></div>
-
-                <div class="mini-body">
-                  <div class="mini-top">
-                    <div class="mini-logo">
-                      <img *ngIf="img(a.logoUrl) as l" [src]="l" alt="logo" />
-                      <div class="mini-fallback" *ngIf="!img(a.logoUrl)">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
+                >
+                  <div class="mc-banner-overlay"></div>
+                </div>
+                <div class="mc-body">
+                  <div class="mc-top">
+                    <div class="mc-logo">
+                      <img *ngIf="img(a.logoUrl) as l" [src]="l" alt="" />
+                      <div class="mc-fallback" *ngIf="!img(a.logoUrl)">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
                     </div>
-
-                    <span class="pill new">New</span>
+                    <span class="pill pill-new">New</span>
                   </div>
-
-                  <div class="mini-title">{{ a.name }}</div>
-                  <div class="mini-sub muted">{{ subtitle(a) }}</div>
+                  <div class="mc-name">{{ a.name }}</div>
+                  <div class="mc-sub">{{ subtitle(a) }}</div>
                 </div>
               </a>
             </div>
           </section>
 
-          <!-- Recent -->
-          <section class="section" *ngIf="vm.recentItems.length > 0">
-            <div class="section-head">
+          <section class="featured-section" *ngIf="vm.recentItems.length > 0">
+            <div class="section-header">
               <div>
-                <div class="section-title">Recently updated</div>
-                <div class="muted small">Latest published updates</div>
+                <h2 class="section-title">Recently updated</h2>
+                <p class="section-sub">Latest published updates</p>
               </div>
             </div>
 
             <div class="rail">
               <a
-                class="mini"
+                class="mini-card"
                 *ngFor="let a of vm.recentItems"
                 [routerLink]="['/academy', a.slug]"
                 [style.--brand]="brand(a)"
               >
                 <div
-                  class="mini-banner"
+                  class="mc-banner"
                   [class.has-img]="!!img(a.bannerUrl)"
                   [style.backgroundImage]="img(a.bannerUrl) ? 'url(' + img(a.bannerUrl) + ')' : null"
-                ></div>
-
-                <div class="mini-body">
-                  <div class="mini-top">
-                    <div class="mini-logo">
-                      <img *ngIf="img(a.logoUrl) as l" [src]="l" alt="logo" />
-                      <div class="mini-fallback" *ngIf="!img(a.logoUrl)">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
+                >
+                  <div class="mc-banner-overlay"></div>
+                </div>
+                <div class="mc-body">
+                  <div class="mc-top">
+                    <div class="mc-logo">
+                      <img *ngIf="img(a.logoUrl) as l" [src]="l" alt="" />
+                      <div class="mc-fallback" *ngIf="!img(a.logoUrl)">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
                     </div>
-
-                    <span class="pill">Published</span>
+                    <span class="pill pill-pub">Published</span>
                   </div>
-
-                  <div class="mini-title">{{ a.name }}</div>
-                  <div class="mini-sub muted">{{ subtitle(a) }}</div>
+                  <div class="mc-name">{{ a.name }}</div>
+                  <div class="mc-sub">{{ subtitle(a) }}</div>
                 </div>
               </a>
             </div>
           </section>
+
         </ng-container>
 
-        <!-- All results -->
-        <div class="results muted" *ngIf="vm.total > 0">
-          Showing <b>{{ vm.showing }}</b> of {{ vm.total }} academies
+        <!-- ── RESULTS COUNT ── -->
+        <div class="results-meta" *ngIf="vm.total > 0">
+          <span>Showing <strong>{{ vm.showing }}</strong> of {{ vm.total }} academies</span>
         </div>
 
-        <div class="grid" *ngIf="vm.filtered.length > 0; else empty">
+        <!-- ── MAIN GRID ── -->
+        <div class="academy-grid" *ngIf="vm.filtered.length > 0; else emptyState">
           <a
-            class="academy"
+            class="academy-card"
             *ngFor="let a of vm.filtered"
             [routerLink]="['/academy', a.slug]"
             [style.--brand]="brand(a)"
           >
             <div
-              class="banner"
+              class="ac-banner"
               [class.has-img]="!!img(a.bannerUrl)"
               [style.backgroundImage]="img(a.bannerUrl) ? 'url(' + img(a.bannerUrl) + ')' : null"
             >
-              <div class="banner-overlay"></div>
-
-              <div class="top-badges">
-                <span class="pill new" *ngIf="isNew(a)">New</span>
-                <span class="pill">Published</span>
+              <div class="ac-banner-overlay"></div>
+              <div class="ac-badges">
+                <span class="pill pill-new" *ngIf="isNew(a)">New</span>
+                <span class="pill pill-pub">Published</span>
               </div>
             </div>
 
-            <div class="row">
-              <div class="logo">
-                <img *ngIf="img(a.logoUrl) as l" [src]="l" alt="logo" />
-                <div class="fallback" *ngIf="!img(a.logoUrl)">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
-              </div>
-
-              <div class="body">
-                <div class="title">{{ a.name }}</div>
-                <div class="sub">{{ subtitle(a) }}</div>
-
-                <div class="meta">
-                  <span
-                    class="badge"
-                    [style.borderColor]="'color-mix(in oklch, ' + brand(a) + ' 35%, var(--border))'"
-                  >
-                    Explore
-                  </span>
-
-                  <span class="badge ghost" *ngIf="updatedLabel(a)">Updated</span>
+            <div class="ac-body">
+              <div class="ac-logo-wrap">
+                <div class="ac-logo">
+                  <img *ngIf="img(a.logoUrl) as l" [src]="l" alt="" />
+                  <div class="ac-fallback" *ngIf="!img(a.logoUrl)">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
                 </div>
               </div>
 
-              <div class="go">›</div>
+              <div class="ac-info">
+                <div class="ac-name">{{ a.name }}</div>
+                <div class="ac-sub">{{ subtitle(a) }}</div>
+                <div class="ac-meta">
+                  <span class="ac-badge">Explore →</span>
+                  <span class="ac-badge ghost" *ngIf="updatedLabel(a)">Updated</span>
+                </div>
+              </div>
             </div>
           </a>
         </div>
 
-        <ng-template #empty>
-          <div class="empty card">
-            <div class="empty-ic">🏫</div>
-            <div class="page-title" style="font-size:18px;">No academies found</div>
-            <p class="page-sub">Try a different search or reset filters.</p>
-            <div class="empty-actions">
-              <button class="btn ghost" type="button" (click)="reset()">Reset</button>
-            </div>
+        <!-- ── EMPTY STATE ── -->
+        <ng-template #emptyState>
+          <div class="empty-state">
+            <div class="empty-icon">🏫</div>
+            <h3 class="empty-title">No academies found</h3>
+            <p class="empty-desc">Try a different search term or reset your filters.</p>
+            <button class="btn btn-ghost" type="button" (click)="reset()">Reset filters</button>
           </div>
         </ng-template>
+
       </ng-container>
     </ng-container>
-  </div>
+
+  </main>
+
 </div>

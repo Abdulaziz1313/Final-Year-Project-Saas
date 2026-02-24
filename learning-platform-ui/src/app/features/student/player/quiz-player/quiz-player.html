@@ -41,18 +41,12 @@
         </div>
 
         <div class="confirm-actions">
-          <button
-            class="btn ghost small"
-            type="button"
-            (click)="cancelRetake()"
-            [disabled]="retaking"
-          >
+          <button class="btn btn-ghost btn-sm" type="button" (click)="cancelRetake()" [disabled]="retaking">
             Cancel
           </button>
 
-          <!-- ✅ fixed sizing + no wrap + premium look -->
           <button
-            class="btn danger small confirm-primary"
+            class="btn btn-danger btn-sm confirm-primary"
             type="button"
             (click)="confirmRetake()"
             [disabled]="retaking"
@@ -64,17 +58,12 @@
     </div>
 
     <div class="head-actions">
-      <button
-        class="btn ghost small"
-        type="button"
-        (click)="load()"
-        [disabled]="loading || submitting || retaking"
-      >
+      <button class="btn btn-ghost btn-sm" type="button" (click)="load()" [disabled]="loading || submitting || retaking">
         Reload
       </button>
 
       <button
-        class="btn ghost small"
+        class="btn btn-ghost btn-sm"
         type="button"
         (click)="saveDraft({ showToastOnSuccess: true }).subscribe()"
         [disabled]="loading || submitting || reviewMode || retaking"
@@ -85,7 +74,7 @@
 
       <!-- ✅ Premium redo icon button -->
       <button
-        class="btn ghost small redo-btn"
+        class="btn btn-ghost btn-sm redo-btn"
         type="button"
         *ngIf="reviewMode"
         (click)="openRetakeConfirm()"
@@ -173,12 +162,12 @@
 
     <!-- actions -->
     <div class="actions" *ngIf="!reviewMode">
-      <button class="btn primary" type="submit" [disabled]="submitting">
+      <button class="btn btn-primary" type="submit" [disabled]="submitting">
         {{ submitting ? 'Submitting…' : 'Submit quiz' }}
       </button>
 
       <button
-        class="btn ghost"
+        class="btn btn-ghost"
         type="button"
         (click)="saveDraft({ showToastOnSuccess: true }).subscribe()"
         [disabled]="submitting"

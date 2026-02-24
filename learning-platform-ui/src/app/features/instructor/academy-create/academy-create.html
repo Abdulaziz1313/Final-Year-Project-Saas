@@ -1,496 +1,468 @@
-<main class="page">
-  <div class="editor">
-    <!-- LEFT: Settings (Stepper) -->
-    <section class="settings">
-      <header class="settings-head">
-        <div class="head-left">
-          <div class="kicker">Academy setup</div>
-          <h1>Create your academy</h1>
-          <p>Fill details, choose branding, then review & publish.</p>
+<!-- academy-create.html — Elevated to match Home page aesthetics -->
+<main class="academy-create">
 
-          <div class="statusbar" role="group" aria-label="Academy status and actions">
-            <div class="seg" role="tablist" aria-label="Publish status">
-              <button
-                type="button"
-                class="seg-btn"
-                [class.active]="!published"
-                (click)="setPublished(false)"
-                role="tab"
-                [attr.aria-selected]="!published"
-              >
-                Draft
-              </button>
-              <button
-                type="button"
-                class="seg-btn"
-                [class.active]="published"
-                (click)="setPublished(true)"
-                role="tab"
-                [attr.aria-selected]="published"
-              >
-                Publish
-              </button>
-            </div>
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">Instructor panel</span>
+      </div>
 
-            <div class="status-chip" [class.on]="published">
-              <span class="dot"></span>
-              {{ published ? 'Published' : 'Draft' }}
-            </div>
+      <h1 class="page-title">Create <em>Academy</em></h1>
+      <p class="page-desc">Fill details, choose branding, then review &amp; publish.</p>
 
-            <button
-              type="button"
-              class="btn ghost small"
-              (click)="resetBranding()"
-              [disabled]="loading"
-              title="Reset branding settings"
-            >
-              Reset
-            </button>
-          </div>
+      <div class="hero-tools" role="group" aria-label="Academy status and actions">
+        <div class="seg" role="tablist" aria-label="Publish status">
+          <button type="button" class="seg-btn" [class.on]="!published"
+            (click)="setPublished(false)" role="tab" [attr.aria-selected]="!published">
+            Draft
+          </button>
+          <button type="button" class="seg-btn" [class.on]="published"
+            (click)="setPublished(true)" role="tab" [attr.aria-selected]="published">
+            Publish
+          </button>
         </div>
 
-        <a class="btn ghost small" routerLink="/instructor">Back</a>
-      </header>
+        <span class="status-badge" [class.status-good]="published">
+          {{ published ? 'Published' : 'Draft' }}
+        </span>
 
-      <div class="body">
-        <!-- Stepper rail -->
-        <aside class="stepper" aria-label="Academy creation steps">
-          <button
-            type="button"
-            class="step"
-            [class.active]="step==='details'"
-            [class.done]="isStepDone('details')"
-            (click)="goStep('details')"
-          >
-            <div class="dot">
-              <span *ngIf="!isStepDone('details')">1</span>
-              <span *ngIf="isStepDone('details')">✓</span>
-            </div>
-            <div class="meta">
-              <div class="t">Details</div>
-              <div class="s">Name, URL, description</div>
-            </div>
-          </button>
+        <button type="button" class="btn btn-ghost btn-sm"
+          (click)="resetBranding()" [disabled]="loading">
+          Reset branding
+        </button>
+      </div>
+    </div>
 
-          <button
-            type="button"
-            class="step"
-            [class.active]="step==='branding'"
-            [class.done]="isStepDone('branding')"
-            (click)="goStep('branding')"
-          >
-            <div class="dot">
-              <span *ngIf="!isStepDone('branding')">2</span>
-              <span *ngIf="isStepDone('branding')">✓</span>
-            </div>
-            <div class="meta">
-              <div class="t">Branding</div>
-              <div class="s">Logo, banner, color</div>
-            </div>
-          </button>
+    <div class="hero-right">
+      <div class="action-group">
+        <a class="btn btn-ghost" routerLink="/instructor">← Back</a>
+      </div>
+    </div>
+  </div>
 
-          <button
-            type="button"
-            class="step"
-            [class.active]="step==='font'"
-            [class.done]="isStepDone('font')"
-            (click)="goStep('font')"
-          >
-            <div class="dot">
-              <span *ngIf="!isStepDone('font')">3</span>
-              <span *ngIf="isStepDone('font')">✓</span>
-            </div>
-            <div class="meta">
-              <div class="t">Font</div>
-              <div class="s">Preset or custom upload</div>
-            </div>
-          </button>
+  <!-- ── 3-COLUMN EDITOR ── -->
+  <section class="editor">
 
-          <button
-            type="button"
-            class="step"
-            [class.active]="step==='review'"
-            (click)="goStep('review')"
-          >
-            <div class="dot"><span>4</span></div>
-            <div class="meta">
-              <div class="t">Review</div>
-              <div class="s">Check and create</div>
+    <!-- ── LEFT: Stepper ── -->
+    <aside class="stepper" aria-label="Academy creation steps">
+
+      <div class="stepper-head">
+        <div class="stepper-eyebrow">Progress</div>
+        <div class="stepper-title">Setup steps</div>
+      </div>
+
+      <div class="steps-list">
+        <button type="button" class="step"
+          [class.active]="step==='details'"
+          [class.done]="isStepDone('details')"
+          (click)="goStep('details')">
+          <div class="step-dot">
+            <span *ngIf="!isStepDone('details')">1</span>
+            <span *ngIf="isStepDone('details')">✓</span>
+          </div>
+          <div class="step-meta">
+            <div class="step-title">Details</div>
+            <div class="step-sub">Name, URL, description</div>
+          </div>
+        </button>
+
+        <button type="button" class="step"
+          [class.active]="step==='branding'"
+          [class.done]="isStepDone('branding')"
+          (click)="goStep('branding')">
+          <div class="step-dot">
+            <span *ngIf="!isStepDone('branding')">2</span>
+            <span *ngIf="isStepDone('branding')">✓</span>
+          </div>
+          <div class="step-meta">
+            <div class="step-title">Branding</div>
+            <div class="step-sub">Logo, banner, color</div>
+          </div>
+        </button>
+
+        <button type="button" class="step"
+          [class.active]="step==='font'"
+          [class.done]="isStepDone('font')"
+          (click)="goStep('font')">
+          <div class="step-dot">
+            <span *ngIf="!isStepDone('font')">3</span>
+            <span *ngIf="isStepDone('font')">✓</span>
+          </div>
+          <div class="step-meta">
+            <div class="step-title">Font</div>
+            <div class="step-sub">Preset or custom upload</div>
+          </div>
+        </button>
+
+        <button type="button" class="step"
+          [class.active]="step==='review'"
+          (click)="goStep('review')">
+          <div class="step-dot"><span>4</span></div>
+          <div class="step-meta">
+            <div class="step-title">Review</div>
+            <div class="step-sub">Check and create</div>
+          </div>
+        </button>
+      </div>
+
+      <div class="stepper-foot">
+        <div class="foot-label">Public URL</div>
+        <div class="foot-url">{{ academyUrlPreview }}</div>
+        <button class="btn btn-ghost btn-sm" type="button"
+          (click)="copyPreviewUrl()" [disabled]="loading">
+          {{ copied ? 'Copied ✓' : 'Copy URL' }}
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── MIDDLE: Form panel ── -->
+    <section class="panel">
+      <form class="form" [formGroup]="form">
+
+        <!-- DETAILS -->
+        <section class="card" *ngIf="step==='details'">
+          <div class="card-top">
+            <div>
+              <div class="card-eyebrow">Step 1 of 4</div>
+              <div class="card-title">Details</div>
+              <div class="card-sub">Set your academy name and public URL.</div>
             </div>
-          </button>
+            <div class="card-actions">
+              <button class="btn btn-ghost btn-sm" type="button"
+                (click)="autoFillSlug()" [disabled]="loading">
+                Auto slug
+              </button>
+            </div>
+          </div>
 
-          <div class="rail-foot">
-            <div class="muted small">Public URL</div>
-            <div class="mono urlline">{{ academyUrlPreview }}</div>
+          <div class="grid">
+            <div class="field">
+              <label>Name <span class="req">*</span></label>
+              <input class="input" formControlName="name"
+                placeholder="e.g. Alef Academy" autocomplete="organization" />
+              <div class="help error" *ngIf="nameCtrl?.touched && nameCtrl?.invalid">
+                Required (min 3 characters).
+              </div>
+            </div>
 
-            <button class="copy" type="button" (click)="copyPreviewUrl()" [disabled]="loading">
-              {{ copied ? 'Copied' : 'Copy' }}
+            <div class="field">
+              <label class="row-label">
+                <span>Slug <span class="req">*</span></span>
+                <button class="link" type="button"
+                  (click)="resetSlugToAuto()" [disabled]="loading">Reset</button>
+              </label>
+              <div class="slug">
+                <span class="slug-prefix">/academy/</span>
+                <input class="input" formControlName="slug"
+                  placeholder="e.g. alef-academy" spellcheck="false"
+                  autocomplete="off" (input)="onSlugInput()" (blur)="onSlugBlur()" />
+              </div>
+              <div class="help error" *ngIf="slugCtrl?.touched && slugCtrl?.invalid">
+                Required (min 3 characters).
+              </div>
+            </div>
+
+            <div class="field full">
+              <label>Description</label>
+              <textarea class="input" formControlName="description"
+                rows="4" placeholder="What do you teach? Who is it for?"></textarea>
+              <div class="meta-row">
+                <div class="help muted">Keep it short and clear.</div>
+                <div class="counter" [class.over]="descriptionCount > descMax">
+                  {{ descriptionCount }}/{{ descMax }}
+                </div>
+              </div>
+              <div class="help error"
+                *ngIf="descCtrl?.touched && descCtrl?.hasError('maxlength')">
+                Keep it under {{ descMax }} characters.
+              </div>
+            </div>
+
+            <div class="field full">
+              <label>Website</label>
+              <input class="input" formControlName="website"
+                placeholder="https://example.com" inputmode="url" autocomplete="url"
+                (blur)="normalizeWebsiteOnBlur()" />
+              <div class="help error"
+                *ngIf="websiteCtrl?.touched && !isWebsiteValid">
+                Use a valid URL (example: https://example.com)
+              </div>
+              <div class="help muted"
+                *ngIf="!(websiteCtrl?.touched && !isWebsiteValid)">
+                Optional.
+              </div>
+            </div>
+          </div>
+
+          <div class="navrow">
+            <div class="hint muted">Next: upload logo/banner and choose a color.</div>
+            <button class="btn btn-primary" type="button" (click)="nextStep()">
+              Continue →
             </button>
           </div>
-        </aside>
+        </section>
 
-        <!-- Step content -->
-        <section class="panel">
-          <form class="form" [formGroup]="form">
-            <!-- DETAILS -->
-            <section class="card" *ngIf="step==='details'">
-              <div class="card-top">
-                <div>
-                  <div class="card-title">Details</div>
-                  <div class="card-sub">Set your academy name and URL.</div>
+        <!-- BRANDING -->
+        <section class="card" *ngIf="step==='branding'">
+          <div class="card-top">
+            <div>
+              <div class="card-eyebrow">Step 2 of 4</div>
+              <div class="card-title">Branding</div>
+              <div class="card-sub">Add visuals and choose the primary color.</div>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="field full">
+              <label>Logo</label>
+              <div class="drop"
+                (drop)="onDropLogo($event)" (dragover)="onDragOver($event)"
+                (dragenter)="dragLogo = true" (dragleave)="dragLogo = false"
+                [class.has]="!!logoPreview" [class.drag]="dragLogo">
+                <div class="drop-left">
+                  <div class="logo-avatar" [style.background]="primaryColor">
+                    <img *ngIf="logoPreview" [src]="logoPreview" alt="Logo preview" />
+                    <span *ngIf="!logoPreview">{{ (form.value.name || 'A').slice(0,1).toUpperCase() }}</span>
+                  </div>
+                  <div class="drop-text">
+                    <div class="drop-title">
+                      <span *ngIf="!logoPreview">Drop or choose a logo</span>
+                      <span *ngIf="logoPreview">Logo ready</span>
+                    </div>
+                    <div class="drop-sub">
+                      PNG / JPG / WEBP · up to 5 MB
+                      <span class="file-name" *ngIf="logoFile">· {{ logoFile.name }}</span>
+                    </div>
+                  </div>
                 </div>
-
-                <div class="card-actions">
-                  <button class="btn ghost small" type="button" (click)="autoFillSlug()" [disabled]="loading">
-                    Auto slug
+                <div class="drop-actions">
+                  <label class="btn btn-primary btn-sm">
+                    <input type="file" accept="image/png,image/jpeg,image/webp"
+                      (change)="onLogoSelected($event)" hidden />
+                    {{ logoPreview ? 'Replace' : 'Choose' }}
+                  </label>
+                  <button class="btn btn-ghost btn-sm" type="button"
+                    (click)="removeLogo()" [disabled]="!logoPreview || loading">
+                    Remove
                   </button>
                 </div>
               </div>
+              <div class="help muted">Recommended: 512×512 px.</div>
+            </div>
 
-              <div class="grid">
-                <div class="field">
-                  <label>Name <span class="req">*</span></label>
-                  <input
-                    class="input"
-                    formControlName="name"
-                    placeholder="e.g. Alef Academy"
-                    autocomplete="organization"
-                  />
-                  <div class="help error" *ngIf="nameCtrl?.touched && nameCtrl?.invalid">
-                    Required (min 3 characters).
-                  </div>
+            <div class="field full">
+              <label>Banner</label>
+              <div class="bannerbox" [class.has]="!!bannerPreview" [class.drag]="dragBanner"
+                (drop)="onDropBanner($event)" (dragover)="onDragOver($event)"
+                (dragenter)="dragBanner = true" (dragleave)="dragBanner = false">
+                <div class="banner-prev" *ngIf="bannerPreview"
+                  [style.backgroundImage]="'url(' + bannerPreview + ')'"></div>
+                <div class="banner-empty" *ngIf="!bannerPreview">
+                  <div class="banner-empty-icon">🖼️</div>
+                  <div>Recommended: 1600×400 px</div>
+                  <div class="banner-empty-sub">Drop here or choose a file</div>
                 </div>
-
-                <div class="field">
-                  <label class="row-label">
-                    <span>Slug <span class="req">*</span></span>
-                    <button class="link" type="button" (click)="resetSlugToAuto()" [disabled]="loading">
-                      Reset
-                    </button>
+                <div class="banner-actions">
+                  <label class="btn btn-primary btn-sm">
+                    <input type="file" accept="image/png,image/jpeg,image/webp"
+                      (change)="onBannerSelected($event)" hidden />
+                    {{ bannerPreview ? 'Replace' : 'Choose' }}
                   </label>
+                  <button class="btn btn-ghost btn-sm" type="button"
+                    (click)="removeBanner()" [disabled]="!bannerPreview || loading">
+                    Remove
+                  </button>
+                </div>
+              </div>
+              <div class="help muted">Shows on your public academy page.</div>
+            </div>
 
-                  <div class="slug">
-                    <span class="slug-prefix">/academy/</span>
-                    <input
-                      class="input"
-                      formControlName="slug"
-                      placeholder="e.g. alef-academy"
-                      spellcheck="false"
-                      autocomplete="off"
-                      (input)="onSlugInput()"
-                      (blur)="onSlugBlur()"
-                    />
-                  </div>
+            <div class="field">
+              <label>Primary color</label>
+              <div class="colorline">
+                <input class="color-input" type="color" formControlName="primaryColor" />
+                <div class="color-hex">{{ form.value.primaryColor }}</div>
+              </div>
+              <div class="palette" aria-label="Color presets">
+                <button type="button" class="swatch" title="Purple" style="background:#7c3aed"
+                  (click)="form.get('primaryColor')?.setValue('#7c3aed')"></button>
+                <button type="button" class="swatch" title="Blue" style="background:#2563eb"
+                  (click)="form.get('primaryColor')?.setValue('#2563eb')"></button>
+                <button type="button" class="swatch" title="Sky" style="background:#0ea5e9"
+                  (click)="form.get('primaryColor')?.setValue('#0ea5e9')"></button>
+                <button type="button" class="swatch" title="Emerald" style="background:#10b981"
+                  (click)="form.get('primaryColor')?.setValue('#10b981')"></button>
+                <button type="button" class="swatch" title="Amber" style="background:#f59e0b"
+                  (click)="form.get('primaryColor')?.setValue('#f59e0b')"></button>
+                <button type="button" class="swatch" title="Red" style="background:#ef4444"
+                  (click)="form.get('primaryColor')?.setValue('#ef4444')"></button>
+                <button type="button" class="swatch" title="Dark" style="background:#111827"
+                  (click)="form.get('primaryColor')?.setValue('#111827')"></button>
+              </div>
+              <div class="help muted">Used for buttons and accents across your academy.</div>
+            </div>
 
-                  <div class="help error" *ngIf="slugCtrl?.touched && slugCtrl?.invalid">
-                    Required (min 3 characters).
+            <div class="field">
+              <label>Quick preview</label>
+              <div class="preview-mini">
+                <div class="pm-top">
+                  <div class="pm-badge" [style.borderColor]="primaryColor">
+                    <span class="pm-dot" [style.background]="primaryColor"></span>
+                    Accent color
                   </div>
                 </div>
+                <button class="pm-btn" type="button"
+                  [style.background]="primaryColor" disabled>
+                  Primary button
+                </button>
+              </div>
+            </div>
+          </div>
 
-                <div class="field full">
-                  <label>Description</label>
-                  <textarea
-                    class="input"
-                    formControlName="description"
-                    rows="4"
-                    placeholder="What do you teach? Who is it for?"
-                  ></textarea>
+          <div class="navrow">
+            <button class="btn btn-ghost" type="button" (click)="prevStep()">← Back</button>
+            <button class="btn btn-primary" type="button" (click)="nextStep()">Continue →</button>
+          </div>
+        </section>
 
-                  <div class="meta-row">
-                    <div class="help muted">Keep it short and clear.</div>
-                    <div class="counter" [class.over]="descriptionCount > descMax">
-                      {{ descriptionCount }}/{{ descMax }}
-                    </div>
-                  </div>
+        <!-- FONT -->
+        <section class="card" *ngIf="step==='font'">
+          <div class="card-top">
+            <div>
+              <div class="card-eyebrow">Step 3 of 4</div>
+              <div class="card-title">Font</div>
+              <div class="card-sub">Choose typography for your academy pages.</div>
+            </div>
+          </div>
 
-                  <div class="help error" *ngIf="descCtrl?.touched && descCtrl?.hasError('maxlength')">
-                    Keep it under {{ descMax }} characters.
-                  </div>
+          <div class="grid">
+            <div class="field full">
+              <label>Font preset</label>
+              <select class="input select-input" formControlName="fontKey">
+                <option *ngFor="let f of fontPresets" [value]="f.key">
+                  {{ f.label }}{{ f.note ? ' — ' + f.note : '' }}
+                </option>
+              </select>
+              <div class="help muted">Optional: upload a custom font for a unique look.</div>
+            </div>
+
+            <div class="field full">
+              <label>Custom font</label>
+              <div class="fontbox" [style.fontFamily]="previewFontFamily">
+                <div class="font-sample">
+                  <div class="fs-heading">Alef Academy</div>
+                  <div class="fs-arabic">أكاديمية ألف</div>
+                  <div class="fs-meta">Headings · Buttons · Body</div>
                 </div>
+                <div class="font-actions">
+                  <label class="btn btn-primary btn-sm">
+                    <input type="file" accept=".woff2,.woff,.ttf,.otf"
+                      (change)="onFontSelected($event)" hidden />
+                    Upload font
+                  </label>
+                  <button class="btn btn-ghost btn-sm" type="button"
+                    (click)="removeCustomFont()" [disabled]="!customFontFile">
+                    Remove
+                  </button>
+                </div>
+              </div>
+              <div class="help muted" *ngIf="customFontFile">
+                Selected: <span class="mono-inline">{{ customFontFile.name }}</span>
+              </div>
+              <div class="help muted" *ngIf="!customFontFile">
+                Supported: .woff2, .woff, .ttf, .otf
+              </div>
+            </div>
+          </div>
 
-                <div class="field full">
-                  <label>Website</label>
-                  <input
-                    class="input"
-                    formControlName="website"
-                    placeholder="https://example.com"
-                    inputmode="url"
-                    autocomplete="url"
-                    (blur)="normalizeWebsiteOnBlur()"
-                  />
-                  <div class="help error" *ngIf="websiteCtrl?.touched && !isWebsiteValid">
-                    Use a valid URL (example: https://example.com)
-                  </div>
-                  <div class="help muted" *ngIf="!(websiteCtrl?.touched && !isWebsiteValid)">
-                    Optional.
-                  </div>
+          <div class="navrow">
+            <button class="btn btn-ghost" type="button" (click)="prevStep()">← Back</button>
+            <button class="btn btn-primary" type="button" (click)="nextStep()">Continue →</button>
+          </div>
+        </section>
+
+        <!-- REVIEW -->
+        <section class="card" *ngIf="step==='review'">
+          <div class="card-top">
+            <div>
+              <div class="card-eyebrow">Step 4 of 4</div>
+              <div class="card-title">Review</div>
+              <div class="card-sub">Confirm everything before creating.</div>
+            </div>
+          </div>
+
+          <div class="review">
+            <div class="rrow"><div class="rt">Name</div><div class="rv">{{ (form.value.name || '').trim() || '—' }}</div></div>
+            <div class="rrow"><div class="rt">Slug</div><div class="rv mono-inline">{{ (form.value.slug || '').trim() || '—' }}</div></div>
+            <div class="rrow"><div class="rt">Website</div><div class="rv mono-inline">{{ (form.value.website || '').trim() || '—' }}</div></div>
+            <div class="rrow">
+              <div class="rt">Primary color</div>
+              <div class="rv">
+                <span class="color-chip">
+                  <span class="color-dot" [style.background]="primaryColor"></span>
+                  <span class="mono-inline">{{ primaryColor }}</span>
+                </span>
+              </div>
+            </div>
+            <div class="rrow"><div class="rt">Font</div><div class="rv">{{ reviewFontLabel }}</div></div>
+            <div class="rrow"><div class="rt">Logo</div><div class="rv">{{ logoFile?.name || (logoPreview ? 'Selected' : 'None') }}</div></div>
+            <div class="rrow"><div class="rt">Banner</div><div class="rv">{{ bannerFile?.name || (bannerPreview ? 'Selected' : 'None') }}</div></div>
+            <div class="rrow">
+              <div class="rt">Status</div>
+              <div class="rv">
+                <span class="status-badge" [class.status-good]="published">
+                  {{ published ? 'Published' : 'Draft' }}
+                </span>
+              </div>
+            </div>
+
+            <div class="valsum" *ngIf="!loading">
+              <div class="valtop">
+                <div class="state" [class.ok]="isReadyToCreate" [class.bad]="!isReadyToCreate">
+                  <span class="state-dot"></span>
+                  <span *ngIf="isReadyToCreate">Ready to create</span>
+                  <span *ngIf="!isReadyToCreate">
+                    Fix {{ validationIssues.length }} item{{ validationIssues.length === 1 ? '' : 's' }}
+                  </span>
+                </div>
+                <div class="val-mode">
+                  Creating as <strong>{{ published ? 'Published' : 'Draft' }}</strong>
                 </div>
               </div>
 
-              <div class="navrow">
-                <div class="hint muted">Next: upload logo/banner and choose a color.</div>
-                <button class="btn primary" type="button" (click)="nextStep()">Continue</button>
-              </div>
-            </section>
-
-            <!-- BRANDING -->
-            <section class="card" *ngIf="step==='branding'">
-              <div class="card-top">
-                <div>
-                  <div class="card-title">Branding</div>
-                  <div class="card-sub">Add visuals and choose the primary color.</div>
-                </div>
-              </div>
-
-              <div class="grid">
-                <div class="field full">
-                  <label>Logo</label>
-
-                  <div
-                    class="drop"
-                    (drop)="onDropLogo($event)"
-                    (dragover)="onDragOver($event)"
-                    (dragenter)="dragLogo = true"
-                    (dragleave)="dragLogo = false"
-                    [class.has]="!!logoPreview"
-                    [class.drag]="dragLogo"
-                  >
-                    <div class="drop-left">
-                      <div class="logo" [style.background]="primaryColor">
-                        <img *ngIf="logoPreview" [src]="logoPreview" alt="Logo preview" />
-                        <span *ngIf="!logoPreview">{{ (form.value.name || 'A').slice(0,1).toUpperCase() }}</span>
-                      </div>
-
-                      <div class="drop-text">
-                        <div class="drop-title">
-                          <span *ngIf="!logoPreview">Drop or choose a logo</span>
-                          <span *ngIf="logoPreview">Logo ready</span>
-                        </div>
-                        <div class="drop-sub muted">
-                          PNG/JPG/WEBP • up to 5MB
-                          <span class="file" *ngIf="logoFile">• {{ logoFile.name }}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="drop-actions">
-                      <label class="btn primary small">
-                        <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onLogoSelected($event)" hidden />
-                        {{ logoPreview ? 'Replace' : 'Choose' }}
-                      </label>
-
-                      <button class="btn ghost small" type="button" (click)="removeLogo()" [disabled]="!logoPreview || loading">
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="help muted">Recommended: 512×512.</div>
-                </div>
-
-                <div class="field full">
-                  <label>Banner</label>
-
-                  <div
-                    class="bannerbox"
-                    [class.has]="!!bannerPreview"
-                    [class.drag]="dragBanner"
-                    (drop)="onDropBanner($event)"
-                    (dragover)="onDragOver($event)"
-                    (dragenter)="dragBanner = true"
-                    (dragleave)="dragBanner = false"
-                  >
-                    <div class="bannerprev" *ngIf="bannerPreview" [style.backgroundImage]="'url(' + bannerPreview + ')'"></div>
-
-                    <div class="bannerempty muted" *ngIf="!bannerPreview">
-                      Recommended: 1600×400
-                      <div class="muted small">Drop here or choose a file.</div>
-                    </div>
-
-                    <div class="banner-actions">
-                      <label class="btn primary small">
-                        <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onBannerSelected($event)" hidden />
-                        {{ bannerPreview ? 'Replace' : 'Choose' }}
-                      </label>
-
-                      <button class="btn ghost small" type="button" (click)="removeBanner()" [disabled]="!bannerPreview || loading">
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="help muted">Shows on your public academy page.</div>
-                </div>
-
-                <div class="field">
-                  <label>Primary color</label>
-                  <div class="colorline">
-                    <input class="color" type="color" formControlName="primaryColor" />
-                    <div class="mono muted">{{ form.value.primaryColor }}</div>
-                  </div>
-
-                  <div class="palette" aria-label="Color presets">
-                    <button type="button" class="sw" style="background:#7c3aed" (click)="form.get('primaryColor')?.setValue('#7c3aed')"></button>
-                    <button type="button" class="sw" style="background:#2563eb" (click)="form.get('primaryColor')?.setValue('#2563eb')"></button>
-                    <button type="button" class="sw" style="background:#0ea5e9" (click)="form.get('primaryColor')?.setValue('#0ea5e9')"></button>
-                    <button type="button" class="sw" style="background:#10b981" (click)="form.get('primaryColor')?.setValue('#10b981')"></button>
-                    <button type="button" class="sw" style="background:#f59e0b" (click)="form.get('primaryColor')?.setValue('#f59e0b')"></button>
-                    <button type="button" class="sw" style="background:#ef4444" (click)="form.get('primaryColor')?.setValue('#ef4444')"></button>
-                    <button type="button" class="sw" style="background:#111827" (click)="form.get('primaryColor')?.setValue('#111827')"></button>
-                  </div>
-
-                  <div class="help muted">Used for buttons and accents.</div>
-                </div>
-
-                <div class="field">
-                  <label>Quick preview</label>
-                  <div class="preview-mini">
-                    <div class="pm-top">
-                      <div class="pm-badge" [style.borderColor]="primaryColor">
-                        <span class="pm-dot" [style.background]="primaryColor"></span>
-                        Accent
-                      </div>
-                    </div>
-                    <button class="pm-btn" type="button" [style.background]="primaryColor" disabled>
-                      Primary button
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div class="navrow">
-                <button class="btn ghost" type="button" (click)="prevStep()">Back</button>
-                <button class="btn primary" type="button" (click)="nextStep()">Continue</button>
-              </div>
-            </section>
-
-            <!-- FONT -->
-            <section class="card" *ngIf="step==='font'">
-              <div class="card-top">
-                <div>
-                  <div class="card-title">Font</div>
-                  <div class="card-sub">Choose typography for your academy pages.</div>
-                </div>
-              </div>
-
-              <div class="grid">
-                <div class="field full">
-                  <label>Font preset</label>
-                  <select class="input" formControlName="fontKey">
-                    <option *ngFor="let f of fontPresets" [value]="f.key">
-                      {{ f.label }}{{ f.note ? ' — ' + f.note : '' }}
-                    </option>
-                  </select>
-                  <div class="help muted">Optional: upload a custom font for a unique look.</div>
-                </div>
-
-                <div class="field full">
-                  <label>Custom font</label>
-
-                  <div class="fontbox" [style.fontFamily]="previewFontFamily">
-                    <div class="font-sample">
-                      <div class="s1">Alef Academy</div>
-                      <div class="s2">أكاديمية ألف</div>
-                      <div class="s3">Headings • Buttons • Body</div>
-                    </div>
-
-                    <div class="font-actions">
-                      <label class="btn primary small">
-                        <input type="file" accept=".woff2,.woff,.ttf,.otf" (change)="onFontSelected($event)" hidden />
-                        Upload
-                      </label>
-
-                      <button class="btn ghost small" type="button" (click)="removeCustomFont()" [disabled]="!customFontFile">
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="help muted" *ngIf="customFontFile">
-                    Selected: <span class="mono">{{ customFontFile.name }}</span>
-                  </div>
-                  <div class="help muted" *ngIf="!customFontFile">
-                    Supported: .woff2, .woff, .ttf, .otf
-                  </div>
-                </div>
-              </div>
-
-              <div class="navrow">
-                <button class="btn ghost" type="button" (click)="prevStep()">Back</button>
-                <button class="btn primary" type="button" (click)="nextStep()">Continue</button>
-              </div>
-            </section>
-
-            <!-- REVIEW -->
-            <section class="card" *ngIf="step==='review'">
-              <div class="card-top">
-                <div>
-                  <div class="card-title">Review</div>
-                  <div class="card-sub">Confirm everything before creating.</div>
-                </div>
-              </div>
-
-              <div class="review">
-                <div class="rrow"><div class="rt">Name</div><div class="rv">{{ (form.value.name || '').trim() || '—' }}</div></div>
-                <div class="rrow"><div class="rt">Slug</div><div class="rv mono">{{ (form.value.slug || '').trim() || '—' }}</div></div>
-                <div class="rrow"><div class="rt">Website</div><div class="rv mono">{{ (form.value.website || '').trim() || '—' }}</div></div>
-                <div class="rrow">
-                  <div class="rt">Primary color</div>
-                  <div class="rv">
-                    <span class="chip"><span class="c" [style.background]="primaryColor"></span><span class="mono">{{ primaryColor }}</span></span>
-                  </div>
-                </div>
-                <div class="rrow"><div class="rt">Font</div><div class="rv">{{ reviewFontLabel }}</div></div>
-                <div class="rrow"><div class="rt">Logo</div><div class="rv">{{ logoFile?.name || (logoPreview ? 'Selected' : 'None') }}</div></div>
-                <div class="rrow"><div class="rt">Banner</div><div class="rv">{{ bannerFile?.name || (bannerPreview ? 'Selected' : 'None') }}</div></div>
-                <div class="rrow">
-                  <div class="rt">Status</div>
-                  <div class="rv"><span class="badge" [class.on]="published">{{ published ? 'Published' : 'Draft' }}</span></div>
-                </div>
-
-                <div class="valsum" *ngIf="!loading">
-                  <div class="valtop">
-                    <div class="state" [class.ok]="isReadyToCreate" [class.bad]="!isReadyToCreate">
-                      <span class="dot"></span>
-                      <span *ngIf="isReadyToCreate">Ready</span>
-                      <span *ngIf="!isReadyToCreate">
-                        Fix {{ validationIssues.length }} item{{ validationIssues.length === 1 ? '' : 's' }}
-                      </span>
-                    </div>
-
-                    <div class="muted small">
-                      You will create as <b>{{ published ? 'Published' : 'Draft' }}</b>
-                    </div>
-                  </div>
-
-                  <div class="issues" *ngIf="!isReadyToCreate">
-                    <button type="button" class="issue" *ngFor="let it of validationIssues" (click)="it.action()">
-                      <span class="bullet">•</span>
-                      <span class="text">{{ it.label }}</span>
-                      <span class="go">Go</span>
-                    </button>
-                  </div>
-
-                  <div class="okline" *ngIf="isReadyToCreate">All required fields look good.</div>
-                </div>
-              </div>
-
-              <div class="navrow">
-                <button class="btn ghost" type="button" (click)="prevStep()">Back</button>
-                <button class="btn primary" type="button" (click)="submit()" [disabled]="!canSubmit">
-                  <span class="spinner" *ngIf="loading"></span>
-                  {{ loading ? 'Saving…' : (published ? 'Create & publish' : 'Create academy') }}
+              <div class="issues" *ngIf="!isReadyToCreate">
+                <button type="button" class="issue"
+                  *ngFor="let it of validationIssues" (click)="it.action()">
+                  <span class="issue-dot">•</span>
+                  <span class="issue-text">{{ it.label }}</span>
+                  <span class="issue-go">Fix →</span>
                 </button>
               </div>
 
-              <div class="alert error" *ngIf="error">{{ error }}</div>
-            </section>
-          </form>
+              <div class="ok-line" *ngIf="isReadyToCreate">
+                ✓ All required fields look good.
+              </div>
+            </div>
+          </div>
+
+          <div class="navrow">
+            <button class="btn btn-ghost" type="button" (click)="prevStep()">← Back</button>
+            <button class="btn btn-primary" type="button"
+              (click)="submit()" [disabled]="!canSubmit">
+              <span class="spinner" *ngIf="loading"></span>
+              {{ loading ? 'Saving…' : (published ? 'Create & publish' : 'Create academy') }}
+            </button>
+          </div>
+
+          <div class="alert-error" *ngIf="error">{{ error }}</div>
         </section>
-      </div>
+
+      </form>
     </section>
 
-    <!-- RIGHT: Preview -->
+    <!-- ── RIGHT: Live Preview ── -->
     <section class="preview" [style.--brand]="primaryColor" [style.fontFamily]="previewFontFamily">
       <header class="pv-top">
         <div class="pv-inner">
@@ -499,18 +471,15 @@
               <span class="pv-logo" [style.background]="primaryColor">الف</span>
               <span class="pv-name">Alef</span>
             </div>
-
             <nav class="pv-nav">
               <span class="pv-link active">Home</span>
               <span class="pv-link">Explore</span>
             </nav>
           </div>
-
           <div class="pv-right">
-            <button class="btn ghost small" type="button" disabled>Sign in</button>
-            <button class="btn primary small pill" type="button" disabled [style.background]="primaryColor">
-              Create account
-            </button>
+            <button class="btn btn-ghost btn-sm" type="button" disabled>Sign in</button>
+            <button class="btn btn-primary btn-sm" type="button" disabled
+              [style.background]="primaryColor">Create account</button>
           </div>
         </div>
       </header>
@@ -523,42 +492,48 @@
                 <img *ngIf="logoPreview" [src]="logoPreview" alt="logo" />
                 <span *ngIf="!logoPreview">{{ (form.value.name || 'A').slice(0,1).toUpperCase() }}</span>
               </div>
-
               <div class="pbrand-text">
                 <div class="b1">{{ form.value.name || 'Academy Name' }}</div>
-                <div class="b2 mono">{{ academyUrlPreview }}</div>
+                <div class="b2">{{ academyUrlPreview }}</div>
               </div>
             </div>
-
             <div class="site-actions">
-              <button class="btn ghost" type="button" disabled>Login</button>
-              <button class="btn primary" type="button" disabled [style.background]="primaryColor">View academy</button>
+              <button class="btn btn-ghost btn-sm" type="button" disabled>Login</button>
+              <button class="btn btn-primary btn-sm" type="button" disabled
+                [style.background]="primaryColor">View academy</button>
             </div>
           </div>
 
-          <div class="site-banner" *ngIf="bannerPreview" [style.backgroundImage]="'url(' + bannerPreview + ')'"></div>
+          <div class="site-banner" *ngIf="bannerPreview"
+            [style.backgroundImage]="'url(' + bannerPreview + ')'"></div>
 
           <div class="site-hero">
-            <div class="hero-title">Latest courses</div>
-            <div class="hero-sub muted">
+            <div class="site-hero-title">Latest courses</div>
+            <div class="site-hero-sub">
               {{ form.value.description || 'Add a short description to introduce your academy.' }}
             </div>
-
             <div class="hero-cta">
-              <button class="btn primary" type="button" disabled [style.background]="primaryColor">Browse courses</button>
-              <button class="btn ghost" type="button" disabled>Contact</button>
+              <button class="btn btn-primary btn-sm" type="button" disabled
+                [style.background]="primaryColor">Browse courses</button>
+              <button class="btn btn-ghost btn-sm" type="button" disabled>Contact</button>
             </div>
           </div>
 
-          <div class="empty-card">
-            <div class="empty-ic">👜</div>
-            <div class="empty-title">No courses yet</div>
-            <div class="empty-sub muted">Create your first course to start selling and teaching.</div>
+          <div class="site-empty">
+            <div class="site-empty-icon">👜</div>
+            <div class="site-empty-title">No courses yet</div>
+            <div class="site-empty-sub">Create your first course to start selling and teaching.</div>
           </div>
 
-          <div class="footer muted">Links • Contact • Terms</div>
+          <div class="site-footer">Links · Contact · Terms</div>
         </div>
       </div>
+
+      <div class="preview-label">
+        <span class="preview-label-dot"></span>
+        Live preview
+      </div>
     </section>
-  </div>
+
+  </section>
 </main>
