@@ -1,11 +1,20 @@
 <div class="backdrop" *ngIf="open" (click)="close(false)">
   <div class="modal" (click)="$event.stopPropagation()">
-    <div class="title">{{ title }}</div>
-    <div class="msg">{{ message }}</div>
 
-    <div class="actions">
-      <button class="btn ghost" type="button" (click)="close(false)">{{ cancelText }}</button>
-      <button class="btn primary" type="button" (click)="close(true)">{{ confirmText }}</button>
+    <div class="modal-header">
+      <div class="modal-icon-wrap">
+        <div class="modal-icon">⚠️</div>
+      </div>
+      <div class="modal-header-text">
+        <div class="modal-title">{{ title }}</div>
+        <div class="modal-msg">{{ message }}</div>
+      </div>
     </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" type="button" (click)="close(false)">{{ cancelText }}</button>
+      <button class="btn btn-primary" type="button" (click)="close(true)">{{ confirmText }}</button>
+    </div>
+
   </div>
 </div>

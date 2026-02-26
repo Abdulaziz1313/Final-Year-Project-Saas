@@ -1,38 +1,171 @@
+// ─────────────────────────────────────────────
+//  confirm-modal.component.scss
+//  Alef Learning Commerce — Confirm Modal
+//  Matches home page design system
+// ─────────────────────────────────────────────
+
+// ── DESIGN TOKENS (mirrors home.scss) ──────────
+:host {
+  --text:          #0a0f1e;
+  --muted:         #6b7280;
+  --muted-2:       #9ca3af;
+  --border:        rgba(10, 15, 30, 0.10);
+  --border-strong: rgba(10, 15, 30, 0.16);
+  --surface:       #ffffff;
+  --surface-2:     #f8f9fb;
+  --surface-3:     #f1f3f7;
+  --accent:        #1a56db;
+  --accent-light:  #eff4ff;
+  --r-sm:          10px;
+  --r-md:          16px;
+  --r-lg:          20px;
+  --r-xl:          24px;
+  --r-2xl:         32px;
+  --shadow-xs:     0 1px 2px rgba(10, 15, 30, 0.06);
+  --shadow-sm:     0 2px 8px rgba(10, 15, 30, 0.07), 0 1px 2px rgba(10, 15, 30, 0.04);
+  --shadow-md:     0 8px 24px rgba(10, 15, 30, 0.10), 0 2px 4px rgba(10, 15, 30, 0.05);
+  --shadow-lg:     0 20px 48px rgba(10, 15, 30, 0.13), 0 4px 8px rgba(10, 15, 30, 0.06);
+  --shadow-xl:     0 32px 64px rgba(10, 15, 30, 0.16), 0 8px 16px rgba(10, 15, 30, 0.07);
+}
+
+// ── ANIMATION ───────────────────────────────────
+@keyframes backdropIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+// ── BACKDROP ────────────────────────────────────
 .backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(10, 15, 30, 0.40);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: grid;
   place-items: center;
   z-index: 9998;
-  padding: 18px;
+  padding: 24px;
+  animation: backdropIn 0.18s ease both;
 }
 
+// ── MODAL ────────────────────────────────────────
 .modal {
-  width: min(520px, 100%);
-  background: #fff;
+  width: min(480px, 100%);
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: var(--shadow);
-  padding: 16px;
+  border-radius: var(--r-2xl);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  animation: modalIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
-.title {
-  font-weight: 900;
-  font-size: 1.05rem;
+// ── HEADER ───────────────────────────────────────
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.modal-icon-wrap {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.modal-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: #fffbeb;
+  border: 1px solid rgba(217, 119, 6, 0.15);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+}
+
+.modal-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--text);
+  line-height: 1.3;
+  margin-bottom: 5px;
 }
 
-.msg {
-  margin-top: 10px;
+.modal-msg {
+  font-size: 14px;
   color: var(--muted);
-  line-height: 1.35rem;
+  line-height: 1.6;
 }
 
-.actions {
-  margin-top: 14px;
+// ── ACTIONS ──────────────────────────────────────
+.modal-actions {
+  padding: 16px 24px;
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  flex-wrap: wrap;
+  background: var(--surface);
+}
+
+// ── BUTTONS (mirrors home.scss .btn) ─────────────
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  padding: 9px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1;
+
+  &.btn-primary {
+    background: var(--text);
+    color: #fff;
+    border-color: var(--text);
+    box-shadow: 0 2px 8px rgba(10, 15, 30, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+    &:hover {
+      background: #1a2035;
+      box-shadow: 0 6px 20px rgba(10, 15, 30, 0.26);
+      transform: translateY(-1px);
+    }
+
+    &:active { transform: translateY(0); }
+  }
+
+  &.btn-ghost {
+    background: var(--surface);
+    color: var(--text);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-xs);
+
+    &:hover {
+      border-color: rgba(10, 15, 30, 0.24);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-1px);
+    }
+
+    &:active { transform: translateY(0); }
+  }
 }

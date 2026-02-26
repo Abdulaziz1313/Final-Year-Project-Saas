@@ -1,50 +1,51 @@
 <div class="card quiz">
-  <!-- Top head (sticky inside card) -->
+
+  <!-- ── STICKY HEAD ── -->
   <div class="head">
     <div class="head-left">
+
       <div class="title-row">
         <div class="title">{{ quiz?.title || 'Quiz' }}</div>
-
         <span class="badge" *ngIf="reviewMode">Read-only</span>
         <span class="badge warn" *ngIf="!reviewMode && needsReview">Needs review</span>
       </div>
 
-      <div class="muted small" *ngIf="!reviewMode">
+      <div class="head-sub muted small" *ngIf="!reviewMode">
         Answer all questions, then submit. You can save a draft anytime.
       </div>
-
-      <div class="muted small" *ngIf="reviewMode">
+      <div class="head-sub muted small" *ngIf="reviewMode">
         Review mode — this quiz was submitted and is locked.
       </div>
 
-      <!-- progress -->
+      <!-- Progress -->
       <div class="progress-row" *ngIf="quiz && (quiz?.questions?.length ?? 0) > 0">
-        <div class="muted small">
-          Answered:
-          <span class="mono">{{ answeredCount() }}</span>/<span class="mono">{{ totalCount() }}</span>
+        <div class="progress-meta">
+          <span class="muted small">Answered</span>
+          <span class="progress-count">
+            <span class="mono">{{ answeredCount() }}</span>
+            <span class="muted small">/</span>
+            <span class="mono">{{ totalCount() }}</span>
+          </span>
+          <span class="progress-pct muted small">{{ progressPercent() | number:'1.0-0' }}%</span>
         </div>
-
         <div class="progressbar" aria-hidden="true">
           <div class="progressbar-fill" [style.width.%]="progressPercent()"></div>
         </div>
       </div>
 
-      <!-- ✅ Premium inline confirm (no alerts) -->
+      <!-- Inline retake confirm -->
       <div class="confirm" *ngIf="showRetakeConfirm">
         <div class="confirm-ic" aria-hidden="true">↻</div>
-
         <div class="confirm-txt">
           <div class="confirm-title">Start a new attempt?</div>
           <div class="confirm-sub muted small">
             This will clear your current answers and unlock the quiz.
           </div>
         </div>
-
         <div class="confirm-actions">
           <button class="btn btn-ghost btn-sm" type="button" (click)="cancelRetake()" [disabled]="retaking">
             Cancel
           </button>
-
           <button
             class="btn btn-danger btn-sm confirm-primary"
             type="button"
@@ -55,13 +56,13 @@
           </button>
         </div>
       </div>
+
     </div>
 
     <div class="head-actions">
       <button class="btn btn-ghost btn-sm" type="button" (click)="load()" [disabled]="loading || submitting || retaking">
         Reload
       </button>
-
       <button
         class="btn btn-ghost btn-sm"
         type="button"
@@ -71,8 +72,6 @@
       >
         Save draft
       </button>
-
-      <!-- ✅ Premium redo icon button -->
       <button
         class="btn btn-ghost btn-sm redo-btn"
         type="button"
@@ -87,12 +86,13 @@
     </div>
   </div>
 
-  <div class="muted" *ngIf="loading">Loading quiz…</div>
-
-  <div class="muted" *ngIf="!loading && quiz && (quiz?.questions?.length ?? 0) === 0">
+  <!-- ── STATES ── -->
+  <div class="state-msg muted" *ngIf="loading">Loading quiz…</div>
+  <div class="state-msg muted" *ngIf="!loading && quiz && (quiz?.questions?.length ?? 0) === 0">
     This quiz has no questions yet.
   </div>
 
+  <!-- ── FORM ── -->
   <form
     *ngIf="!loading && quiz && (quiz?.questions?.length ?? 0) > 0"
     [formGroup]="form"
@@ -108,37 +108,33 @@
         [formGroupName]="i"
         [class.answered]="isAnswered(i)"
       >
+        <!-- Question header -->
         <div class="q-head">
           <div class="q-num">Q{{ i + 1 }}</div>
           <div class="q-prompt">{{ qAt(i)?.prompt }}</div>
-
           <div class="q-meta">
-            <span class="pill">
-              {{ typeLabel(qAt(i)?.type) }}
-            </span>
-
-            <span class="pill ghost">
-              {{ qAt(i)?.points }} pts
-            </span>
+            <span class="pill">{{ typeLabel(qAt(i)?.type) }}</span>
+            <span class="pill ghost">{{ qAt(i)?.points }} pts</span>
           </div>
         </div>
 
-        <!-- MCQ / TF -->
+        <!-- MCQ / True-False -->
         <div class="opts" *ngIf="qAt(i)?.type !== 2">
-          <div class="muted small" style="margin-bottom: 6px;">Select one option:</div>
-
+          <div class="opts-label muted small">Select one option:</div>
           <label
             class="opt"
             *ngFor="let c of (qAt(i)?.choices ?? [])"
             [class.selected]="answers.at(i).get('selectedChoiceId')?.value === c.id"
             [class.disabled]="reviewMode"
           >
-            <input
-              type="radio"
-              [value]="c.id"
-              formControlName="selectedChoiceId"
-              [disabled]="reviewMode"
-            />
+            <span class="opt-radio">
+              <input
+                type="radio"
+                [value]="c.id"
+                formControlName="selectedChoiceId"
+                [disabled]="reviewMode"
+              />
+            </span>
             <span class="opt-text">{{ c.text }}</span>
           </label>
         </div>
@@ -149,45 +145,36 @@
             class="input"
             rows="3"
             formControlName="answerText"
-            placeholder="Type your answer..."
+            placeholder="Type your answer…"
             [readonly]="reviewMode"
           ></textarea>
-
-          <div class="muted small" style="margin-top: 6px;">
-            Keep it concise. (Auto-trimmed on submit)
-          </div>
+          <div class="muted small" style="margin-top: 6px;">Keep it concise. (Auto-trimmed on submit)</div>
         </div>
       </div>
     </div>
 
-    <!-- actions -->
+    <!-- Submit / draft actions -->
     <div class="actions" *ngIf="!reviewMode">
+      <button class="btn btn-ghost" type="button" (click)="saveDraft({ showToastOnSuccess: true }).subscribe()" [disabled]="submitting">
+        Save draft
+      </button>
       <button class="btn btn-primary" type="submit" [disabled]="submitting">
         {{ submitting ? 'Submitting…' : 'Submit quiz' }}
       </button>
-
-      <button
-        class="btn btn-ghost"
-        type="button"
-        (click)="saveDraft({ showToastOnSuccess: true }).subscribe()"
-        [disabled]="submitting"
-      >
-        Save draft
-      </button>
     </div>
 
-    <!-- result -->
+    <!-- Result -->
     <div class="result" *ngIf="result">
       <div class="result-top">
         <div>
           <div class="result-title">Result</div>
           <div class="muted">Score: {{ result.score }}/{{ result.maxScore }}</div>
-          <div class="muted small" *ngIf="needsReview">Some answers require review.</div>
+          <div class="muted small" *ngIf="needsReview">Some answers require manual review.</div>
         </div>
-
         <span class="badge ok" *ngIf="!needsReview">Submitted</span>
         <span class="badge warn" *ngIf="needsReview">Pending review</span>
       </div>
     </div>
+
   </form>
 </div>

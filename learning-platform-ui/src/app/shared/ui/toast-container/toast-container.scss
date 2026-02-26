@@ -1,36 +1,148 @@
+// ─────────────────────────────────────────────
+//  toast-container.component.scss
+//  Alef Learning Commerce — Toast Notifications
+//  Matches home page design system
+// ─────────────────────────────────────────────
+
+// ── DESIGN TOKENS (mirrors home.scss) ──────────
+:host {
+  --text:          #0a0f1e;
+  --muted:         #6b7280;
+  --border:        rgba(10, 15, 30, 0.10);
+  --border-strong: rgba(10, 15, 30, 0.16);
+  --surface:       #ffffff;
+  --surface-2:     #f8f9fb;
+  --surface-3:     #f1f3f7;
+  --accent:        #1a56db;
+  --accent-light:  #eff4ff;
+  --r-md:          16px;
+  --r-lg:          20px;
+  --shadow-md:     0 8px 24px rgba(10, 15, 30, 0.10), 0 2px 4px rgba(10, 15, 30, 0.05);
+  --shadow-lg:     0 20px 48px rgba(10, 15, 30, 0.13), 0 4px 8px rgba(10, 15, 30, 0.06);
+}
+
+// ── ANIMATIONS ───────────────────────────────────
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0) scale(1); max-height: 120px; margin-bottom: 0; }
+  to   { opacity: 0; transform: translateX(16px) scale(0.96); max-height: 0; margin-bottom: -8px; }
+}
+
+// ── CONTAINER ────────────────────────────────────
 .toasts {
   position: fixed;
-  top: 14px;
-  right: 14px;
+  top: 18px;
+  right: 18px;
   display: grid;
-  gap: 10px;
+  gap: 8px;
   z-index: 9999;
-  width: min(360px, calc(100vw - 28px));
+  width: min(360px, calc(100vw - 36px));
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
+// ── TOAST ────────────────────────────────────────
 .toast {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
-  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 12px 14px;
   display: flex;
+  align-items: center;
   gap: 10px;
-  align-items: flex-start;
+  animation: toastIn 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  // ── Type variants ──
+  &.success {
+    border-color: rgba(21, 128, 61, 0.20);
+    background: #f0fdf4;
+
+    .toast-icon {
+      background: #dcfce7;
+      color: #15803d;
+      border-color: rgba(21, 128, 61, 0.18);
+    }
+  }
+
+  &.error {
+    border-color: rgba(220, 38, 38, 0.20);
+    background: #fff5f5;
+
+    .toast-icon {
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: rgba(220, 38, 38, 0.18);
+    }
+  }
+
+  &.info {
+    border-color: rgba(26, 86, 219, 0.18);
+    background: var(--accent-light);
+
+    .toast-icon {
+      background: #dbeafe;
+      color: var(--accent);
+      border-color: rgba(26, 86, 219, 0.18);
+      font-style: italic;
+      font-family: 'Instrument Serif', serif;
+      font-size: 15px;
+      font-weight: 400;
+    }
+  }
 }
 
-.toast.success { border-color: color-mix(in oklch, var(--primary) 25%, white); }
-.toast.error { border-color: color-mix(in oklch, #ff0000 25%, white); }
-.toast.info { border-color: color-mix(in oklch, black 12%, white); }
+// ── ICON ─────────────────────────────────────────
+.toast-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--surface-3);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
 
-.msg { color: var(--text); font-weight: 800; font-size: .92rem; line-height: 1.25rem; }
-.x {
-  margin-left: auto;
-  border: 0;
+// ── MESSAGE ──────────────────────────────────────
+.toast-msg {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+}
+
+// ── CLOSE BUTTON ─────────────────────────────────
+.toast-close {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid transparent;
   background: transparent;
-  cursor: pointer;
-  font-size: 18px;
-  line-height: 18px;
-  padding: 0 4px;
   color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  padding: 0;
+  margin-left: 2px;
+
+  &:hover {
+    background: var(--surface-3);
+    border-color: var(--border-strong);
+    color: var(--text);
+  }
+
+  svg { display: block; }
 }
