@@ -132,9 +132,9 @@ using (var scope = app.Services.CreateScope())
     var db = sp.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 
-    // Seed roles
+    // ✅ Seed roles (added OrgAdmin)
     var roleMgr = sp.GetRequiredService<RoleManager<IdentityRole>>();
-    string[] roles = ["Admin", "Instructor", "Student", "Coordinator"];
+    string[] roles = ["Admin", "OrgAdmin", "Instructor", "Student", "Coordinator"];
     foreach (var r in roles)
         if (!await roleMgr.RoleExistsAsync(r))
             await roleMgr.CreateAsync(new IdentityRole(r));

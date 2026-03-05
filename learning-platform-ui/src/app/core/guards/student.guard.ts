@@ -6,7 +6,7 @@ export const studentGuard: CanActivateFn = (route, state) => {
   const auth = inject(Auth);
   const router = inject(Router);
 
-  // not logged in -> go login and remember where user wanted to go
+  // not logged in, go login and remember where user wanted to go
   if (!auth.isLoggedIn()) {
     sessionStorage.setItem('return_url', state.url);
     sessionStorage.setItem('login_notice', 'Please login as Student to continue.');

@@ -256,6 +256,22 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\courses\5d6d8bf0-73d6-4da6-b58c-41bc138f2b57.png))</OriginalItemSpec>
     </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\courses\ff295351-59bd-4376-83d4-009846b6d2a1.png))">
+      <SourceType>Package</SourceType>
+      <SourceId>LearningPlatform.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/LearningPlatform.Api</BasePath>
+      <RelativePath>uploads/courses/ff295351-59bd-4376-83d4-009846b6d2a1.png</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\courses\ff295351-59bd-4376-83d4-009846b6d2a1.png))</OriginalItemSpec>
+    </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\060accbe53ea47e4bb138c0c439512b1\1b9293cbb9e44b3b9685bf404444b0fe.mp4))">
       <SourceType>Package</SourceType>
       <SourceId>LearningPlatform.Api</SourceId>
@@ -304,6 +320,22 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\232953c292aa4fb3bec21c4c9c7663f9\25540e3e7297438682e91e410aae76f7.mp4))</OriginalItemSpec>
     </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\2709d6cfe603423a89e65e920710a63e\5dfb0f1e1a5d4fceaa5e89c3028f0f13.pdf))">
+      <SourceType>Package</SourceType>
+      <SourceId>LearningPlatform.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/LearningPlatform.Api</BasePath>
+      <RelativePath>uploads/lessons/2709d6cfe603423a89e65e920710a63e/5dfb0f1e1a5d4fceaa5e89c3028f0f13.pdf</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\2709d6cfe603423a89e65e920710a63e\5dfb0f1e1a5d4fceaa5e89c3028f0f13.pdf))</OriginalItemSpec>
+    </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\37b6a30472eb42daac198bb189007f67\5bcbd947b0d34826a8faa6907a0930b6.mp4))">
       <SourceType>Package</SourceType>
       <SourceId>LearningPlatform.Api</SourceId>
@@ -319,6 +351,22 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\37b6a30472eb42daac198bb189007f67\5bcbd947b0d34826a8faa6907a0930b6.mp4))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\592cce8cf984437daf494bad36fbbeb5\331fd24035e748998614345e5c7d9651.pdf))">
+      <SourceType>Package</SourceType>
+      <SourceId>LearningPlatform.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/LearningPlatform.Api</BasePath>
+      <RelativePath>uploads/lessons/592cce8cf984437daf494bad36fbbeb5/331fd24035e748998614345e5c7d9651.pdf</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\592cce8cf984437daf494bad36fbbeb5\331fd24035e748998614345e5c7d9651.pdf))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\72e756348ce544c19e7ea0d77aa05a65\53685b645fa445ffa7c412235cb2171a.pdf))">
       <SourceType>Package</SourceType>
@@ -336,6 +384,22 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\72e756348ce544c19e7ea0d77aa05a65\53685b645fa445ffa7c412235cb2171a.pdf))</OriginalItemSpec>
     </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\81044727a2ab402ca2e5ff6a769f43dc\75d5fe372b4948b7bb50866326a98849.mp4))">
+      <SourceType>Package</SourceType>
+      <SourceId>LearningPlatform.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/LearningPlatform.Api</BasePath>
+      <RelativePath>uploads/lessons/81044727a2ab402ca2e5ff6a769f43dc/75d5fe372b4948b7bb50866326a98849.mp4</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\81044727a2ab402ca2e5ff6a769f43dc\75d5fe372b4948b7bb50866326a98849.mp4))</OriginalItemSpec>
+    </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\91500c2a2f034c318761d03342a7d028\8c3f3669e5b941a2bad6229b67043275.pdf))">
       <SourceType>Package</SourceType>
       <SourceId>LearningPlatform.Api</SourceId>
@@ -351,6 +415,22 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\91500c2a2f034c318761d03342a7d028\8c3f3669e5b941a2bad6229b67043275.pdf))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\a3988e00e337438a9b7c55675f748c64\9ee675c07b5747dda4e4ee0add86fb44.mp4))">
+      <SourceType>Package</SourceType>
+      <SourceId>LearningPlatform.Api</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/LearningPlatform.Api</BasePath>
+      <RelativePath>uploads/lessons/a3988e00e337438a9b7c55675f748c64/9ee675c07b5747dda4e4ee0add86fb44.mp4</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\a3988e00e337438a9b7c55675f748c64\9ee675c07b5747dda4e4ee0add86fb44.mp4))</OriginalItemSpec>
     </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath($(MSBuildThisFileDirectory)..\staticwebassets\uploads\lessons\ca10d6447ef3457d8225b54ccbbb1211\ae01fd99579344a181df1fb0852ba926.mp4))">
       <SourceType>Package</SourceType>

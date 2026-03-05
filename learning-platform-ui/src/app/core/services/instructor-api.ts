@@ -13,7 +13,6 @@ export type AcademyDto = {
   isHidden?: boolean;
   hiddenReason?: string | null;
   hiddenAt?: string | null;
-
 };
 
 export type CourseDto = {
@@ -27,14 +26,18 @@ export type CourseDto = {
   createdAt: string;
   enrollmentCount?: number;
 
-  // ✅ moderation fields (admin hide)
+  // moderation fields (admin hide)
   isHidden?: boolean;
   hiddenReason?: string | null;
   hiddenAt?: string | null;
   hiddenByUserId?: string | null;
 
-  // optional if you already return it
   thumbnailUrl?: string | null;
+
+  // (optional) some endpoints may return these
+  shortDescription?: string | null;
+  fullDescription?: string | null;
+  tagsJson?: string | null;
 };
 
 export type AcademyInfo = {
@@ -56,8 +59,14 @@ export type AcademyInfo = {
   createdAt?: string;
 };
 
-
-export type FontKey = 'system' | 'inter' | 'poppins' | 'cairo' | 'tajawal' | 'ibmplexar' | 'custom';
+export type FontKey =
+  | 'system'
+  | 'inter'
+  | 'poppins'
+  | 'cairo'
+  | 'tajawal'
+  | 'ibmplexar'
+  | 'custom';
 
 export type CreateAcademyPayload = {
   name: string;
@@ -66,7 +75,7 @@ export type CreateAcademyPayload = {
   website?: string;
   primaryColor?: string;
   fontKey?: FontKey;
-  isPublished?: boolean; // ✅ NEW
+  isPublished?: boolean;
 };
 
 export type CreateAcademyResponse = {
@@ -75,7 +84,6 @@ export type CreateAcademyResponse = {
 };
 
 export type UploadLogoResponse = { logoUrl: string };
-
 export type UploadBannerResponse = { bannerUrl: string };
 
 export type UploadFontResponse = {
@@ -89,15 +97,32 @@ export type UpdateBrandingPayload = {
   fontKey?: FontKey;
 };
 
+export type UpdateCoursePayload = {
+  title?: string;
+  shortDescription?: string | null;
+  fullDescription?: string | null;
+  isFree?: boolean;
+  price?: number | null;
+  currency?: string;
+  category?: string | null;
+  tagsJson?: string;
+};
+
 @Injectable({ providedIn: 'root' })
 export class InstructorApi {
   private api = environment.apiBaseUrl;
 
   constructor(private http: HttpClient) {}
 
+  // ─────────────────────────────────────────────
   // Academies
+  // ─────────────────────────────────────────────
   getMyAcademies() {
     return this.http.get<AcademyDto[]>(`${this.api}/api/instructor/academies/mine`);
+  }
+
+  getAcademy(academyId: string) {
+    return this.http.get<AcademyInfo>(`${this.api}/api/instructor/academies/${academyId}`);
   }
 
   createAcademy(payload: CreateAcademyPayload) {
@@ -108,7 +133,7 @@ export class InstructorApi {
     return this.http.delete(`${this.api}/api/academies/${academyId}`);
   }
 
-  // ✅ Publish/unpublish academy
+  // Publish/unpublish academy
   setAcademyPublish(academyId: string, isPublished: boolean) {
     return this.http.put(`${this.api}/api/academies/${academyId}/publish`, { isPublished });
   }
@@ -125,19 +150,21 @@ export class InstructorApi {
     return this.http.post<UploadBannerResponse>(`${this.api}/api/academies/${academyId}/banner`, fd);
   }
 
-  // ✅ upload custom font file
+  // upload custom font file
   uploadAcademyFont(academyId: string, file: File) {
     const fd = new FormData();
     fd.append('file', file);
     return this.http.post<UploadFontResponse>(`${this.api}/api/academies/${academyId}/font`, fd);
   }
 
-  // ✅ update branding (color + font selection)
+  // update branding (color + font selection)
   updateAcademyBranding(academyId: string, payload: UpdateBrandingPayload) {
     return this.http.put(`${this.api}/api/academies/${academyId}/branding`, payload);
   }
 
+  // ─────────────────────────────────────────────
   // Courses
+  // ─────────────────────────────────────────────
   listCourses(academyId: string) {
     return this.http.get<CourseDto[]>(`${this.api}/api/courses/academy/${academyId}`);
   }
@@ -160,6 +187,11 @@ export class InstructorApi {
     return this.http.get<any>(`${this.api}/api/courses/${courseId}`);
   }
 
+  // Edit course metadata (title, descriptions, pricing, tags, etc.)
+  updateCourse(courseId: string, payload: UpdateCoursePayload) {
+    return this.http.put<any>(`${this.api}/api/courses/${courseId}`, payload);
+  }
+
   deleteCourse(courseId: string) {
     return this.http.delete(`${this.api}/api/courses/${courseId}`);
   }
@@ -172,7 +204,9 @@ export class InstructorApi {
     return this.http.get<any>(`${this.api}/api/courses/${courseId}/enrollments`);
   }
 
+  // ─────────────────────────────────────────────
   // Modules & lessons
+  // ─────────────────────────────────────────────
   addModule(courseId: string, payload: { title: string }) {
     return this.http.post<{ id: string }>(`${this.api}/api/courses/${courseId}/modules`, payload);
   }
@@ -198,41 +232,41 @@ export class InstructorApi {
   uploadLessonVideo(lessonId: string, file: File) {
     const fd = new FormData();
     fd.append('file', file);
-    return this.http.post<{ contentUrl: string }>(`${this.api}/api/courses/lessons/${lessonId}/upload-video`, fd);
+    return this.http.post<{ contentUrl: string }>(
+      `${this.api}/api/courses/lessons/${lessonId}/upload-video`,
+      fd
+    );
   }
 
   uploadLessonFile(lessonId: string, file: File) {
     const fd = new FormData();
     fd.append('file', file);
-    return this.http.post<{ contentUrl: string }>(`${this.api}/api/courses/lessons/${lessonId}/upload-file`, fd);
+    return this.http.post<{ contentUrl: string }>(
+      `${this.api}/api/courses/lessons/${lessonId}/upload-file`,
+      fd
+    );
   }
 
- 
+  deleteLesson(lessonId: string) {
+    return this.http.delete(`${this.api}/api/courses/lessons/${lessonId}`);
+  }
 
-deleteLesson(lessonId: string) {
-  return this.http.delete(`${this.api}/api/courses/lessons/${lessonId}`);
-}
+  reorderModules(courseId: string, orderedIds: string[]) {
+    return this.http.put(`${this.api}/api/courses/${courseId}/modules/reorder`, { orderedIds });
+  }
 
-reorderModules(courseId: string, orderedIds: string[]) {
-  return this.http.put(`${this.api}/api/courses/${courseId}/modules/reorder`, { orderedIds });
-}
+  reorderLessons(moduleId: string, orderedIds: string[]) {
+    return this.http.put(`${this.api}/api/courses/modules/${moduleId}/lessons/reorder`, { orderedIds });
+  }
 
-reorderLessons(moduleId: string, orderedIds: string[]) {
-  return this.http.put(`${this.api}/api/courses/modules/${moduleId}/lessons/reorder`, { orderedIds });
-}
-getAcademy(academyId: string) {
-  return this.http.get<AcademyInfo>(`${this.api}/api/instructor/academies/${academyId}`);
-}
+  // ─────────────────────────────────────────────
+  // Quizzes (lesson)
+  // ─────────────────────────────────────────────
+  getLessonQuiz(lessonId: string) {
+    return this.http.get<any>(`${this.api}/api/quizzes/lesson/${lessonId}`);
+  }
 
-
-getLessonQuiz(lessonId: string) {
-  return this.http.get<any>(`${this.api}/api/quizzes/lesson/${lessonId}`);
-}
-
-upsertLessonQuiz(lessonId: string, payload: any) {
-  return this.http.put(`${this.api}/api/quizzes/lesson/${lessonId}`, payload);
-}
-
-
-
+  upsertLessonQuiz(lessonId: string, payload: any) {
+    return this.http.put(`${this.api}/api/quizzes/lesson/${lessonId}`, payload);
+  }
 }

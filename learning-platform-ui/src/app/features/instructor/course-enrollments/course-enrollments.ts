@@ -123,7 +123,6 @@ export class CourseEnrollmentsComponent {
     if (!email) return;
     try {
       await navigator.clipboard.writeText(email);
-      // keep it silent (nice UX). If you want toast, add ToastService.
     } catch {
       // ignore
     }

@@ -106,7 +106,7 @@ export class CourseBuilderComponent {
     }
   }
 
-  // ✅ NEW: lesson type helpers used by HTML
+  // lesson type helpers used by HTML
   lessonTypeLabel(t: any): string {
     const n = this.n(t);
     if (n === 0) return 'Video';
@@ -116,16 +116,14 @@ export class CourseBuilderComponent {
     return 'Other';
   }
 
-  // ✅ Only these types have file uploads
+  // Only these types have file uploads
   isUploadType(t: any): boolean {
     const n = this.n(t);
     return n === 0 || n === 1;
   }
 
-  // ✅ NEW: open quiz editor route
+  // open quiz editor route
   openQuizEditor(lessonId: string) {
-    // matches app.routes.ts:
-    // instructor/lessons/:lessonId/quiz
     this.router.navigate(['/instructor/lessons', lessonId, 'quiz']);
   }
 

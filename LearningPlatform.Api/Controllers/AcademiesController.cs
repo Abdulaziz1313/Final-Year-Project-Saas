@@ -1,3 +1,4 @@
+// AcademiesController.cs
 using System.Security.Claims;
 using LearningPlatform.Domain.Entities;
 using LearningPlatform.Infrastructure.Persistence;
@@ -5,7 +6,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LearningPlatform.Api.Services;
-using System.Linq;
 
 namespace LearningPlatform.Api.Controllers;
 
@@ -58,12 +58,51 @@ public class AcademiesController : ControllerBase
         DateTimeOffset? PublishedAt
     );
 
+    private string? UserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    private async Task<Guid?> GetMyOrganizationIdAsync(string userId)
+    {
+        return await _db.Users
+            .AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => u.OrganizationId)
+            .FirstOrDefaultAsync();
+    }
+
+    private async Task<bool> IsOrganizationActiveAsync(Guid orgId)
+    {
+        return await _db.Organizations
+            .AsNoTracking()
+            .Where(o => o.Id == orgId)
+            .Select(o => o.IsActive)
+            .FirstOrDefaultAsync();
+    }
+
+    private async Task<Academy?> LoadOwnedAcademyForInstructor(Guid academyId, string userId)
+    {
+        var orgId = await GetMyOrganizationIdAsync(userId);
+        if (orgId is null) return null;
+
+        return await _db.Academies.FirstOrDefaultAsync(a =>
+            a.Id == academyId &&
+            a.OwnerUserId == userId &&
+            a.OrganizationId == orgId.Value
+        );
+    }
+
     [HttpPost]
     [Authorize(Roles = "Instructor")]
     public async Task<IActionResult> Create(CreateAcademyRequest req)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = UserId();
         if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+
+        var orgId = await GetMyOrganizationIdAsync(userId);
+        if (orgId is null) return Forbid("Instructor is not assigned to an organization.");
+
+        // ✅ NEW: org must be active
+        var orgActive = await IsOrganizationActiveAsync(orgId.Value);
+        if (!orgActive) return BadRequest("Your organization is disabled. Contact an admin.");
 
         if (string.IsNullOrWhiteSpace(req.Name))
             return BadRequest("Name is required.");
@@ -74,6 +113,7 @@ public class AcademiesController : ControllerBase
         if (string.IsNullOrWhiteSpace(slug))
             return BadRequest("Slug is invalid.");
 
+        // Slug uniqueness (global)
         if (await _db.Academies.AnyAsync(a => a.Slug == slug))
             slug = $"{slug}-{Guid.NewGuid().ToString("N")[..6]}";
 
@@ -83,6 +123,8 @@ public class AcademiesController : ControllerBase
 
         var academy = new Academy
         {
+            OrganizationId = orgId.Value,
+
             Name = req.Name.Trim(),
             Slug = slug,
             Description = string.IsNullOrWhiteSpace(req.Description) ? null : req.Description.Trim(),
@@ -94,7 +136,6 @@ public class AcademiesController : ControllerBase
             IsPublished = publish,
             PublishedAt = publish ? DateTimeOffset.UtcNow : null,
 
-            // if you added moderation fields to Academy, keep it not hidden by default
             IsHidden = false,
             HiddenReason = null,
             HiddenAt = null,
@@ -124,8 +165,22 @@ public class AcademiesController : ControllerBase
         var a = await _db.Academies.AsNoTracking().FirstOrDefaultAsync(x => x.Slug == slug);
         if (a is null) return NotFound();
 
+        // ✅ NEW: if org disabled, academy is not publicly visible (admin can still view)
+        if (a.OrganizationId != Guid.Empty)
+        {
+            var orgActive = await _db.Organizations.AsNoTracking()
+                .Where(o => o.Id == a.OrganizationId)
+                .Select(o => o.IsActive)
+                .FirstOrDefaultAsync();
+
+            if (!orgActive)
+            {
+                var isAdmin = User.IsInRole("Admin");
+                if (!isAdmin) return NotFound();
+            }
+        }
+
         // ✅ Moderation: hidden academies should NOT be visible publicly.
-        // Only Admin can view hidden academies (even owner shouldn't).
         if (a.IsHidden)
         {
             var isAdmin = User.IsInRole("Admin");
@@ -136,7 +191,7 @@ public class AcademiesController : ControllerBase
         // Allow owner (authenticated) to preview their own draft.
         if (!a.IsPublished)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = UserId();
             var isOwner = !string.IsNullOrWhiteSpace(userId) && a.OwnerUserId == userId;
             var isAdmin = User.IsInRole("Admin");
             if (!isOwner && !isAdmin)
@@ -166,16 +221,27 @@ public class AcademiesController : ControllerBase
     [Authorize(Roles = "Instructor,Admin")]
     public async Task<IActionResult> SetPublish(Guid academyId, PublishRequest req)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = UserId();
         if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
         var academy = await _db.Academies.FirstOrDefaultAsync(a => a.Id == academyId);
         if (academy is null) return NotFound();
 
-        if (academy.OwnerUserId != userId && !User.IsInRole("Admin"))
-            return Forbid("You don't own this academy.");
+        if (!User.IsInRole("Admin"))
+        {
+            // Instructor must own + match org
+            var orgId = await GetMyOrganizationIdAsync(userId);
+            if (orgId is null) return Forbid("Instructor is not assigned to an organization.");
 
-        // ✅ Prevent publishing hidden academies
+            if (academy.OwnerUserId != userId || academy.OrganizationId != orgId.Value)
+                return Forbid("You don't own this academy.");
+
+            // ✅ NEW: org must be active to publish
+            var orgActive = await IsOrganizationActiveAsync(orgId.Value);
+            if (!orgActive && req.IsPublished)
+                return BadRequest("Your organization is disabled. Contact an admin.");
+        }
+
         if (academy.IsHidden && req.IsPublished)
             return BadRequest("This academy is hidden by an admin and cannot be published.");
 
@@ -191,14 +257,17 @@ public class AcademiesController : ControllerBase
     [Authorize(Roles = "Instructor")]
     public async Task<IActionResult> UpdateBranding(Guid academyId, UpdateBrandingRequest req)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = UserId();
         if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
-        var academy = await _db.Academies.FirstOrDefaultAsync(a => a.Id == academyId);
-        if (academy is null) return NotFound();
+        var academy = await LoadOwnedAcademyForInstructor(academyId, userId);
+        if (academy is null) return Forbid("You don't own this academy (or you're not assigned to an organization).");
 
-        if (academy.OwnerUserId != userId)
-            return Forbid("You don't own this academy.");
+        // ✅ NEW: org must be active to modify
+        var orgId = await GetMyOrganizationIdAsync(userId);
+        if (orgId is null) return Forbid("Instructor is not assigned to an organization.");
+        var orgActive = await IsOrganizationActiveAsync(orgId.Value);
+        if (!orgActive) return BadRequest("Your organization is disabled. Contact an admin.");
 
         if (!string.IsNullOrWhiteSpace(req.PrimaryColor))
             academy.PrimaryColor = req.PrimaryColor.Trim();
@@ -225,14 +294,17 @@ public class AcademiesController : ControllerBase
     [RequestSizeLimit(10 * 1024 * 1024)]
     public async Task<IActionResult> UploadFont(Guid academyId, IFormFile file)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = UserId();
         if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
-        var academy = await _db.Academies.FirstOrDefaultAsync(a => a.Id == academyId);
-        if (academy is null) return NotFound();
+        var academy = await LoadOwnedAcademyForInstructor(academyId, userId);
+        if (academy is null) return Forbid("You don't own this academy (or you're not assigned to an organization).");
 
-        if (academy.OwnerUserId != userId)
-            return Forbid("You don't own this academy.");
+        // ✅ NEW: org must be active
+        var orgId = await GetMyOrganizationIdAsync(userId);
+        if (orgId is null) return Forbid("Instructor is not assigned to an organization.");
+        var orgActive = await IsOrganizationActiveAsync(orgId.Value);
+        if (!orgActive) return BadRequest("Your organization is disabled. Contact an admin.");
 
         if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
 
@@ -273,14 +345,17 @@ public class AcademiesController : ControllerBase
     [RequestSizeLimit(5 * 1024 * 1024)]
     public async Task<IActionResult> UploadBanner(Guid academyId, IFormFile file)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = UserId();
         if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
-        var academy = await _db.Academies.FirstOrDefaultAsync(a => a.Id == academyId);
-        if (academy is null) return NotFound();
+        var academy = await LoadOwnedAcademyForInstructor(academyId, userId);
+        if (academy is null) return Forbid("You don't own this academy (or you're not assigned to an organization).");
 
-        if (academy.OwnerUserId != userId)
-            return Forbid("You don't own this academy.");
+        // ✅ NEW: org must be active
+        var orgId = await GetMyOrganizationIdAsync(userId);
+        if (orgId is null) return Forbid("Instructor is not assigned to an organization.");
+        var orgActive = await IsOrganizationActiveAsync(orgId.Value);
+        if (!orgActive) return BadRequest("Your organization is disabled. Contact an admin.");
 
         if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
 
@@ -315,14 +390,17 @@ public class AcademiesController : ControllerBase
     [Authorize(Roles = "Instructor")]
     public async Task<IActionResult> Delete(Guid academyId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = UserId();
         if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
 
-        var academy = await _db.Academies.FirstOrDefaultAsync(a => a.Id == academyId);
-        if (academy is null) return NotFound();
+        var academy = await LoadOwnedAcademyForInstructor(academyId, userId);
+        if (academy is null) return Forbid("You don't own this academy (or you're not assigned to an organization).");
 
-        if (academy.OwnerUserId != userId)
-            return Forbid("You don't own this academy.");
+        // ✅ NEW: org must be active to delete (optional, but consistent)
+        var orgId = await GetMyOrganizationIdAsync(userId);
+        if (orgId is null) return Forbid("Instructor is not assigned to an organization.");
+        var orgActive = await IsOrganizationActiveAsync(orgId.Value);
+        if (!orgActive) return BadRequest("Your organization is disabled. Contact an admin.");
 
         _db.Academies.Remove(academy);
         await _db.SaveChangesAsync();

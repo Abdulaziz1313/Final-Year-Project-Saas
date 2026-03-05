@@ -48,7 +48,7 @@ export class LoginComponent {
     }
   }
 
-  // --- topbar helpers (same pattern as home.ts) ---
+  // --- topbar helpers ---
   get isLoggedIn(): boolean {
     return !!this.auth.isLoggedIn?.();
   }
@@ -74,18 +74,16 @@ export class LoginComponent {
     this.toast.info('Forgot password is coming soon.');
   }
 
-  private postLoginRedirect() {
-    const returnUrl = sessionStorage.getItem('return_url');
-    if (returnUrl) {
-      sessionStorage.removeItem('return_url');
-      return returnUrl;
-    }
-
-    if (this.auth.hasRole('Admin')) return '/admin';
-    if (this.auth.hasRole('Instructor')) return '/instructor';
-    if (this.auth.hasRole('Student')) return '/my-learning';
-    return '/me';
-  }
+  
+private postLoginRedirect() {
+  const returnUrl = sessionStorage.getItem('return_url');
+  if (returnUrl) { sessionStorage.removeItem('return_url'); return returnUrl; }
+  if (this.auth.hasRole('Admin'))    return '/admin';
+  if (this.auth.hasRole('OrgAdmin')) return '/org/academies'; 
+  if (this.auth.hasRole('Instructor')) return '/instructor';
+  if (this.auth.hasRole('Student'))    return '/my-learning';
+  return '/me';
+}
 
   submit() {
     this.error = null;

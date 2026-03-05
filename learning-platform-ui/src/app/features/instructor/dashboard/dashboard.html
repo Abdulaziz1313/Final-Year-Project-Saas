@@ -1,4 +1,3 @@
-<!-- dashboard.html (ADMIN-STYLE) -->
 <main class="dash-page">
 
   <!-- ── PAGE HERO ── -->
@@ -8,7 +7,6 @@
         <div class="eyebrow-dot"></div>
         <span class="eyebrow-text">Instructor panel</span>
       </div>
-
       <h1 class="page-title">Dashboard &amp; <em>Overview</em></h1>
       <p class="page-desc">Quick overview of academies, publishing status, and activity.</p>
     </div>
@@ -16,14 +14,21 @@
     <div class="hero-right">
       <div class="action-group">
         <button class="btn btn-ghost" type="button" (click)="reload()">Refresh</button>
-        <a class="btn btn-primary" routerLink="/instructor/academy/create">Create academy</a>
       </div>
     </div>
   </div>
 
   <ng-container *ngIf="state$ | async as st">
-    <div class="state-loading" *ngIf="st.loading">Loading…</div>
-    <div class="alert-error" *ngIf="st.error"><span>⚠</span> {{ st.error }}</div>
+
+    <!-- Loading -->
+    <div class="state-loading" *ngIf="st.loading">
+      <span class="loading-dot"></span>Loading dashboard…
+    </div>
+
+    <!-- Error -->
+    <div class="alert-error" *ngIf="st.error">
+      <span>⚠</span> {{ st.error }}
+    </div>
 
     <ng-container *ngIf="st.data as vm">
 
@@ -73,46 +78,35 @@
         <section class="item-card">
           <div class="item-head">
             <div>
-              <div class="item-title-lg">Quick actions</div>
+              <div class="item-title-lg">Quick <em>actions</em></div>
               <div class="item-sub">Common tasks</div>
             </div>
           </div>
 
-          <div class="qa-list">
-            <a class="qa-row" routerLink="/instructor/academy/create">
-              <div class="qa-ico">➕</div>
-              <div class="qa-text">
-                <div class="qa-title">Create academy</div>
-                <div class="qa-sub">Start a new learning space</div>
-              </div>
-              <div class="qa-go">→</div>
-            </a>
+          <a class="qa-row" routerLink="/instructor/academies">
+            <div class="qa-ico">📚</div>
+            <div class="qa-text">
+              <div class="qa-title">Manage academies</div>
+              <div class="qa-sub">Edit, publish, hide</div>
+            </div>
+            <div class="qa-go">→</div>
+          </a>
 
-            <a class="qa-row" routerLink="/instructor/academies">
-              <div class="qa-ico">📚</div>
-              <div class="qa-text">
-                <div class="qa-title">Manage academies</div>
-                <div class="qa-sub">Edit, publish, hide</div>
-              </div>
-              <div class="qa-go">→</div>
-            </a>
-
-            <a class="qa-row" routerLink="/me">
-              <div class="qa-ico">👤</div>
-              <div class="qa-text">
-                <div class="qa-title">My account</div>
-                <div class="qa-sub">Profile &amp; security</div>
-              </div>
-              <div class="qa-go">→</div>
-            </a>
-          </div>
+          <a class="qa-row" routerLink="/me">
+            <div class="qa-ico">👤</div>
+            <div class="qa-text">
+              <div class="qa-title">My account</div>
+              <div class="qa-sub">Profile &amp; security</div>
+            </div>
+            <div class="qa-go">→</div>
+          </a>
         </section>
 
         <!-- Recent -->
         <section class="item-card">
           <div class="item-head">
             <div>
-              <div class="item-title-lg">Recent</div>
+              <div class="item-title-lg">Recent <em>activity</em></div>
               <div class="item-sub">Last academy activity</div>
             </div>
             <a class="btn btn-ghost btn-sm" routerLink="/instructor/academies">View all</a>
@@ -129,7 +123,6 @@
                       [class.status-hidden]="!r.pillOn">
                   {{ r.pillText }}
                 </span>
-
                 <div class="recent-actions">
                   <a class="btn btn-primary btn-sm" [routerLink]="r.href">Open</a>
                   <a class="btn btn-ghost btn-sm" routerLink="/instructor/academies">All academies</a>
@@ -156,7 +149,7 @@
         <section class="item-card">
           <div class="item-head">
             <div>
-              <div class="item-title-lg">Profile</div>
+              <div class="item-title-lg">Your <em>profile</em></div>
               <div class="item-sub">Signed in</div>
             </div>
             <a class="btn btn-ghost btn-sm" routerLink="/me">Manage</a>
@@ -175,9 +168,7 @@
               <div class="proles">
                 <span class="role-pill" *ngFor="let r of vm.roles">{{ r }}</span>
               </div>
-              <div class="pmono">
-                ID: <code>{{ vm.userId }}</code>
-              </div>
+              <div class="pmono">ID: <code>{{ vm.userId }}</code></div>
             </div>
           </div>
 
@@ -193,23 +184,24 @@
         <section class="item-card">
           <div class="item-head">
             <div>
-              <div class="item-title-lg">Your academies</div>
+              <div class="item-title-lg">Your <em>academies</em></div>
               <div class="item-sub">Manage and publish</div>
             </div>
             <a class="btn btn-ghost btn-sm" routerLink="/instructor/academies">View all</a>
           </div>
 
           <div class="empty" *ngIf="vm.academiesCount === 0">
-            <div class="empty-title">No academies</div>
+            <div class="empty-title">No academies yet</div>
             <div class="empty-sub">Create an academy to start publishing courses.</div>
             <a class="btn btn-primary" routerLink="/instructor/academy/create">Create academy</a>
           </div>
 
           <div class="items-grid" *ngIf="vm.academiesCount > 0">
-            <article class="academy-card" *ngFor="let a of vm.academies" [routerLink]="['/instructor/courses', a.id]">
+            <article class="academy-card" *ngFor="let a of vm.academies"
+              [routerLink]="['/instructor/courses', a.id]">
+
               <div class="item-header">
                 <div class="item-title" [title]="a.name">{{ a.name }}</div>
-
                 <span class="status-badge"
                       [class.status-hidden]="a.isHidden"
                       [class.status-good]="!a.isHidden && a.isPublished">
@@ -228,24 +220,21 @@
                 <div class="meta-text"><strong>Hidden by admin</strong></div>
                 <div class="meta-text">{{ hiddenMessage(a) }}</div>
                 <div class="item-actions">
-                  <button class="btn btn-ghost btn-sm"
-                          type="button"
-                          (click)="requestReview($event, a)"
-                          [disabled]="isPublishing(a.id)">
+                  <button class="btn btn-ghost btn-sm" type="button"
+                    (click)="requestReview($event, a)"
+                    [disabled]="isPublishing(a.id)">
                     Request review
                   </button>
                 </div>
               </div>
 
               <div class="item-actions" *ngIf="!a.isHidden">
-                <button class="btn btn-ghost btn-sm"
-                        type="button"
-                        (click)="togglePublish($event, a)"
-                        [disabled]="isPublishing(a.id)"
-                        [attr.aria-label]="a.isPublished ? 'Unpublish academy' : 'Publish academy'">
+                <button class="btn btn-ghost btn-sm" type="button"
+                  (click)="togglePublish($event, a)"
+                  [disabled]="isPublishing(a.id)"
+                  [attr.aria-label]="a.isPublished ? 'Unpublish academy' : 'Publish academy'">
                   {{ a.isPublished ? 'Unpublish' : 'Publish' }}
                 </button>
-
                 <span class="meta-text" *ngIf="isPublishing(a.id)">Saving…</span>
                 <span class="meta-text" *ngIf="!isPublishing(a.id)">Open →</span>
               </div>

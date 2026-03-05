@@ -17,14 +17,23 @@
           <span class="tab-ico">🏫</span>
           <span>Academies</span>
         </button>
+
         <button class="tab-btn" type="button" [class.active]="tab==='courses'" (click)="setTab('courses')">
           <span class="tab-ico">📚</span>
           <span>Courses</span>
         </button>
+
         <button class="tab-btn" type="button" [class.active]="tab==='users'" (click)="setTab('users')">
           <span class="tab-ico">👥</span>
           <span>Users</span>
         </button>
+
+        <!--Organizations -->
+        <button class="tab-btn" type="button" [class.active]="tab==='orgs'" (click)="setTab('orgs')">
+          <span class="tab-ico">🏢</span>
+          <span>Organizations</span>
+        </button>
+
         <button class="tab-btn" type="button" [class.active]="tab==='audit'" (click)="setTab('audit')">
           <span class="tab-ico">🧾</span>
           <span>Audit</span>
@@ -83,6 +92,11 @@
             <option value="user.lock">user.lock</option>
             <option value="user.unlock">user.unlock</option>
             <option value="user.roles">user.roles</option>
+            <option value="user.delete">user.delete</option>
+            <option value="org.create">org.create</option>
+            <option value="org.update">org.update</option>
+            <option value="org.delete">org.delete</option>
+            <option value="user.org">user.org</option>
           </select>
         </div>
 
@@ -93,12 +107,21 @@
             <option value="academy">academy</option>
             <option value="course">course</option>
             <option value="user">user</option>
+            <option value="organization">organization</option>
           </select>
         </div>
       </ng-container>
     </div>
 
     <div class="toolbar-right">
+      <!--Create org button -->
+      <button class="btn btn-primary btn-sm" type="button"
+              *ngIf="tab === 'orgs'"
+              (click)="openOrgDrawerForCreate()"
+              [disabled]="loading">
+        + New Org
+      </button>
+
       <span class="page-pill">
         Page <strong>{{ page }}</strong> / <strong>{{ totalPages }}</strong>
       </span>
@@ -291,6 +314,77 @@
     </div>
   </div>
 
+  <!--Organization drawer -->
+  <div class="drawer drawer-roles" *ngIf="orgDrawerOpen">
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-title">{{ editingOrg ? 'Edit organization' : 'Create organization' }}</div>
+        <div class="drawer-sub" *ngIf="editingOrg">Org: <code>{{ editingOrg.name }}</code></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="closeOrgDrawer()">Close</button>
+    </div>
+
+    <div class="drawer-body" [formGroup]="orgForm">
+      <div class="field">
+        <label class="field-label">Name</label>
+        <input class="input" formControlName="name" placeholder="e.g. Alef Academy Group" />
+      </div>
+
+      <div class="field">
+        <label class="field-label">Slug</label>
+        <input class="input" formControlName="slug" placeholder="e.g. alef-group" />
+      </div>
+
+      <div class="field">
+        <label class="field-label">Website</label>
+        <input class="input" formControlName="website" placeholder="https://…" />
+      </div>
+
+      <div class="field">
+        <label class="field-label">Primary color</label>
+        <input class="input" formControlName="primaryColor" placeholder="#7c3aed" />
+      </div>
+
+      <div class="drawer-actions">
+        <button class="btn btn-primary" type="button" (click)="saveOrg()" [disabled]="orgSaving">
+          {{ orgSaving ? 'Saving…' : 'Save' }}
+        </button>
+        <button class="btn btn-ghost" type="button" (click)="closeOrgDrawer()" [disabled]="orgSaving">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!--Assign org drawer -->
+  <div class="drawer drawer-lock" *ngIf="assignOrgOpen && assignOrgUser">
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-title">Assign organization</div>
+        <div class="drawer-sub">User: <code>{{ assignOrgUser.email }}</code></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="closeAssignOrgDrawer()">Close</button>
+    </div>
+
+    <div class="drawer-body">
+      <p class="drawer-hint">Choose the organization for this user (Instructor should have one).</p>
+
+      <div class="field">
+        <label class="field-label">Organization</label>
+        <select class="input select-input" [formControl]="assignOrgCtrl">
+          <option [ngValue]="null">— None —</option>
+          <option *ngFor="let o of orgsAll" [ngValue]="o.id">{{ o.name }} ({{ o.slug }})</option>
+        </select>
+      </div>
+
+      <div class="drawer-actions">
+        <button class="btn btn-primary" type="button" (click)="saveUserOrg()"
+                [disabled]="assignOrgSaving || !assignOrgUser || isBusy(assignOrgUser.id)">
+          {{ assignOrgSaving ? 'Saving…' : 'Save' }}
+        </button>
+        <button class="btn btn-ghost" type="button" (click)="closeAssignOrgDrawer()" [disabled]="assignOrgSaving">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── CONTENT GRIDS ── -->
 
   <!-- Academies -->
@@ -374,17 +468,68 @@
 
       <div class="meta-text">Name: {{ u.displayName || '—' }}</div>
       <div class="meta-text">Roles: {{ (u.roles || []).join(', ') || '—' }}</div>
+
+      <!--Organization -->
+      <div class="meta-text">
+        Org:
+        <code>{{ orgLabel(u.organizationId) }}</code>
+      </div>
       <div class="meta-text" *ngIf="u.lockoutEnd && formatDate(u.lockoutEnd) as d">
         Lockout end: <code>{{ d }}</code>
       </div>
 
       <div class="item-actions">
         <button class="btn btn-ghost btn-sm" type="button" (click)="openRolesDrawer(u)" [disabled]="isBusy(u.id)">Edit roles</button>
+
+        <!--Assign org -->
+        <button class="btn btn-ghost btn-sm" type="button" (click)="openAssignOrgDrawer(u)" [disabled]="isBusy(u.id)">Assign org…</button>
+
         <button class="btn btn-ghost btn-sm" type="button" *ngIf="!isUserLocked(u)"
                 (click)="openLockDrawer(u)" [disabled]="isBusy(u.id)">Lock…</button>
         <button class="btn btn-ghost btn-sm" type="button" *ngIf="isUserLocked(u)"
                 (click)="unlockUser(u)" [disabled]="isBusy(u.id)">Unlock</button>
+
         <button class="btn btn-ghost btn-sm" type="button" (click)="copy(u.id)">Copy ID</button>
+
+        <!--delete user -->
+        <button class="btn btn-danger-outline btn-sm" type="button"
+                (click)="openDeleteUserDrawer(u)" [disabled]="isBusy(u.id)">
+          Delete…
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <!-- Organizations -->
+  <div class="items-grid" *ngIf="!loading && tab==='orgs'">
+    <article class="item-card" *ngFor="let o of orgs; trackBy: trackById">
+      <div class="item-header">
+        <div class="item-title" [title]="o.name">{{ o.name }}</div>
+        <span class="status-badge" [class.status-good]="o.isActive" [class.status-hidden]="!o.isActive">
+          {{ o.isActive ? 'Active' : 'Disabled' }}
+        </span>
+      </div>
+
+      <div class="meta-row">
+        <span class="meta-text">Slug: <code>{{ o.slug }}</code></span>
+        <button class="copy-btn" type="button" (click)="copy(o.slug)">Copy</button>
+      </div>
+
+      <div class="meta-text">Website: {{ o.website || '—' }}</div>
+      <div class="meta-text">Primary: <code>{{ o.primaryColor || '—' }}</code></div>
+
+      <div class="item-actions">
+        <button class="btn btn-ghost btn-sm" type="button" (click)="openOrgDrawerForEdit(o)" [disabled]="isBusy(o.id)">Edit</button>
+        <button class="btn btn-ghost btn-sm" type="button" (click)="toggleOrgActive(o)" [disabled]="isBusy(o.id)">
+          {{ o.isActive ? 'Disable' : 'Enable' }}
+        </button>
+        <button class="btn btn-ghost btn-sm" type="button" (click)="copy(o.id)">Copy ID</button>
+
+        <!--delete organization -->
+        <button class="btn btn-danger-outline btn-sm" type="button"
+                (click)="openDeleteOrgDrawer(o)" [disabled]="isBusy(o.id)">
+          Delete…
+        </button>
       </div>
     </article>
   </div>

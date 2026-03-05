@@ -1,11 +1,10 @@
 // ─────────────────────────────────────────────
-//  academies-manage.component.scss
+//  academies-manage.scss
 //  Alef Learning Commerce — Academies Manage
-//  Upgraded to match home page design system
 // ─────────────────────────────────────────────
 
 :host {
-  // ── DESIGN TOKENS (home-aligned) ───────────
+  // ── DESIGN TOKENS───────────
   --text:          #0a0f1e;
   --muted:         #6b7280;
   --muted-2:       #9ca3af;
@@ -26,14 +25,14 @@
   --warn:          #d97706;
   --warn-light:    #fffbeb;
 
-  // ── RADII (home scale) ──────────────────────
+  // ── RADII ──────────────────────
   --r-sm:   10px;
   --r-md:   16px;
   --r-lg:   20px;
   --r-xl:   24px;
   --r-2xl:  32px;
 
-  // ── SHADOWS (home quality) ──────────────────
+  // ── SHADOWS ──────────────────
   --shadow-xs: 0 1px 2px rgba(10, 15, 30, 0.06);
   --shadow-sm: 0 2px 8px rgba(10, 15, 30, 0.07), 0 1px 2px rgba(10, 15, 30, 0.04);
   --shadow-md: 0 8px 24px rgba(10, 15, 30, 0.10), 0 2px 4px rgba(10, 15, 30, 0.05);
@@ -73,7 +72,7 @@
   padding-top: 8px;
 }
 
-// ── EYEBROW (matches home hero-eyebrow) ─────────
+// ── EYEBROW ─────────
 .eyebrow {
   display: inline-flex;
   align-items: center;
@@ -121,7 +120,7 @@
 
 .action-group { display: inline-flex; gap: 8px; flex-wrap: wrap; }
 
-// ── BUTTONS (home-aligned) ───────────────────────
+// ── BUTTONS ───────────────────────
 .btn {
   display: inline-flex;
   align-items: center;
@@ -216,7 +215,7 @@
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 
-  // Subtle accent bar at top — matches home feat-card
+  // Subtle accent bar at top 
   &::before {
     content: '';
     position: absolute;
@@ -370,7 +369,7 @@
   overflow: hidden;
   transition: box-shadow 0.22s ease, border-color 0.22s ease, transform 0.22s ease;
 
-  // Gradient accent bar — home feat-card style
+  // Gradient accent bar
   &::before {
     content: '';
     position: absolute;
@@ -408,7 +407,7 @@
   min-width: 0;
 }
 
-// Badge: dark gradient matching home logo-mark
+// Badge
 .badge {
   width: 38px;
   height: 38px;
@@ -426,7 +425,7 @@
   position: relative;
   overflow: hidden;
 
-  // Gold radial glow — matches home logo-mark::before
+  // Gold radial glow 
   &::before {
     content: '';
     position: absolute;
@@ -599,3 +598,18 @@
   .action-group a.btn { width: 100%; }
   .open-hint     { justify-self: start; }
 }
+
+.info-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--r-lg);
+  background: var(--accent-light);
+  border: 1px solid rgba(26, 86, 219, 0.12);
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.info-icon { font-size: 15px; flex-shrink: 0; }

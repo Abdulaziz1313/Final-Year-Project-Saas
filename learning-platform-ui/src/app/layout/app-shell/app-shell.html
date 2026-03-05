@@ -1,15 +1,11 @@
-<!-- app-shell.html — Alef design system v2 -->
-
 <div class="shell" [class.collapsed]="collapsed">
 
   <!-- ── SIDEBAR ── -->
   <aside class="side" [class.is-collapsed]="collapsed">
 
-    <!-- Brand / Logo -->
+    <!-- Brand -->
     <div class="sidebar-brand">
-      <div class="logo-mark">
-        <span>الف</span>
-      </div>
+      <div class="logo-mark"><span>الف</span></div>
 
       <div class="sidebar-brand-text" *ngIf="!collapsed">
         <div class="sidebar-name">Alef</div>
@@ -31,17 +27,13 @@
     <!-- Nav sections -->
     <div class="sidebar-nav" *ngIf="profileState$ | async as ps">
 
-      <!-- Admin -->
-      <div class="nav-group" *ngIf="ps.data?.roles?.includes('Admin')">
+      <!-- ── ADMIN ── -->
+      <div class="nav-group" *ngIf="isAdmin(ps.data)">
         <div class="nav-group-label" *ngIf="!collapsed">Admin</div>
         <nav>
-          <a
-            class="nav-item"
-            routerLink="/admin"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            [attr.data-tip]="collapsed ? 'Admin Panel' : null"
-          >
+          <a class="nav-item" routerLink="/admin" routerLinkActive="active"
+             [routerLinkActiveOptions]="{ exact: true }"
+             [attr.data-tip]="collapsed ? 'Admin Panel' : null">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
               <path d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4Z"/>
               <path d="M9 12l2 2 4-5" stroke-linecap="round"/>
@@ -51,49 +43,83 @@
         </nav>
       </div>
 
-      <!-- Instructor -->
-      <div class="nav-group" *ngIf="isInstructor(ps.data) && !ps.data?.roles?.includes('Admin')">
+      <!-- ── ORG ADMIN ── -->
+      <div class="nav-group" *ngIf="isOrgAdmin(ps.data)">
+        <div class="nav-group-label" *ngIf="!collapsed">Organization</div>
+        <nav>
+          <!-- Academies -->
+          <a class="nav-item" routerLink="/org/academies" routerLinkActive="active"
+             [attr.data-tip]="collapsed ? 'Academies' : null">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
+              <path d="M3 21V9l9-6 9 6v12"/>
+              <path d="M9 21V12h6v9"/>
+              <path d="M3 9h18" stroke-linecap="round"/>
+            </svg>
+            <span class="nav-label" *ngIf="!collapsed">Academies</span>
+          </a>
+
+          <!-- Members -->
+          <a class="nav-item" routerLink="/org/members" routerLinkActive="active"
+             [attr.data-tip]="collapsed ? 'Members' : null">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
+              <path d="M16 11c1.66 0 3-1.57 3-3.5S17.66 4 16 4s-3 1.57-3 3.5S14.34 11 16 11Z"/>
+              <path d="M8 11c1.66 0 3-1.57 3-3.5S9.66 4 8 4 5 5.57 5 7.5 6.34 11 8 11Z"/>
+              <path d="M8 13c-2.67 0-8 1.34-8 4v3h10"/>
+              <path d="M24 20v-3c0-2.66-5.33-4-8-4"/>
+            </svg>
+            <span class="nav-label" *ngIf="!collapsed">Members</span>
+          </a>
+        </nav>
+      </div>
+
+      <!-- ── INSTRUCTOR ── -->
+      <div class="nav-group" *ngIf="isInstructor(ps.data)">
         <div class="nav-group-label" *ngIf="!collapsed">Instructor</div>
         <nav>
-          <a
-            class="nav-item"
-            routerLink="/instructor"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            [attr.data-tip]="collapsed ? 'Dashboard' : null"
-          >
+          <!-- Dashboard -->
+          <a class="nav-item" routerLink="/instructor" routerLinkActive="active"
+             [routerLinkActiveOptions]="{ exact: true }"
+             [attr.data-tip]="collapsed ? 'Dashboard' : null">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
               <path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z"/>
             </svg>
             <span class="nav-label" *ngIf="!collapsed">Dashboard</span>
           </a>
 
-          <a
-            class="nav-item"
-            routerLink="/instructor/academy/create"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            [attr.data-tip]="collapsed ? 'Create Academy' : null"
-          >
-            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
-              <path d="M12 5v14M5 12h14"/>
+          <!-- My Academy (view/manage only — no create) -->
+          <a class="nav-item" routerLink="/instructor/academies" routerLinkActive="active"
+             [attr.data-tip]="collapsed ? 'My Academy' : null">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
+              <path d="M3 21V9l9-6 9 6v12"/>
+              <path d="M9 21V12h6v9"/>
+              <path d="M3 9h18" stroke-linecap="round"/>
             </svg>
-            <span class="nav-label" *ngIf="!collapsed">Create Academy</span>
+            <span class="nav-label" *ngIf="!collapsed">My Academy</span>
           </a>
+
+          <!-- Notifications -->
+          <div class="nav-item-notif" [attr.data-tip]="collapsed ? 'Notifications' : null">
+            <button class="nav-item nav-item-btn" type="button" (click)="toggleNotif(!notifOpen)">
+              <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke-linecap="round"/>
+              </svg>
+              <span class="nav-label" *ngIf="!collapsed">Notifications</span>
+              <ng-container *ngIf="unreadCount$ | async as uc">
+                <span class="badge-dot" *ngIf="(uc.data || 0) > 0">{{ uc.data }}</span>
+              </ng-container>
+            </button>
+          </div>
         </nav>
       </div>
 
-      <!-- Student -->
+      <!-- ── STUDENT ── -->
       <div class="nav-group" *ngIf="isStudent(ps.data)">
         <div class="nav-group-label" *ngIf="!collapsed">Student</div>
         <nav>
-          <a
-            class="nav-item"
-            routerLink="/my-learning"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            [attr.data-tip]="collapsed ? 'My Learning' : null"
-          >
+          <a class="nav-item" routerLink="/my-learning" routerLinkActive="active"
+             [routerLinkActiveOptions]="{ exact: true }"
+             [attr.data-tip]="collapsed ? 'My Learning' : null">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
               <path d="M4 19V6a2 2 0 0 1 2-2h12v15"/>
               <path d="M8 8h8M8 12h8" stroke-linecap="round"/>
@@ -101,13 +127,8 @@
             <span class="nav-label" *ngIf="!collapsed">My Learning</span>
           </a>
 
-          <a
-            class="nav-item"
-            routerLink="/academies"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            [attr.data-tip]="collapsed ? 'Explore' : null"
-          >
+          <a class="nav-item" routerLink="/academies" routerLinkActive="active"
+             [attr.data-tip]="collapsed ? 'Explore' : null">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
               <path d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
@@ -116,17 +137,13 @@
         </nav>
       </div>
 
-      <!-- Account -->
+      <!-- ── ACCOUNT (always shown) ── -->
       <div class="nav-group">
         <div class="nav-group-label" *ngIf="!collapsed">Account</div>
         <nav>
-          <a
-            class="nav-item"
-            routerLink="/me"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            [attr.data-tip]="collapsed ? 'My Account' : null"
-          >
+          <a class="nav-item" routerLink="/me" routerLinkActive="active"
+             [routerLinkActiveOptions]="{ exact: true }"
+             [attr.data-tip]="collapsed ? 'My Account' : null">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
               <path d="M20 21a8 8 0 0 0-16 0" stroke-linecap="round"/>
               <circle cx="12" cy="8" r="4" stroke-linejoin="round"/>
@@ -138,7 +155,7 @@
 
     </div>
 
-    <!-- Profile footer (expanded only) -->
+    <!-- Profile footer -->
     <div class="sidebar-profile" *ngIf="!collapsed && (profileState$ | async) as ps">
       <div class="sp-avatar">
         <img *ngIf="avatarUrl(ps.data)" [src]="avatarUrl(ps.data)!" alt="avatar" />
@@ -158,28 +175,22 @@
     <!-- Topbar -->
     <header class="topbar">
       <div class="topbar-left">
-        <!-- Hamburger -->
-        <button
-          class="icon-btn"
-          type="button"
-          (click)="toggleSidebar()"
-          [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
-        >
+        <button class="icon-btn" type="button" (click)="toggleSidebar()"
+                [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
           <svg viewBox="0 0 24 24" class="ico" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M4 7h16M4 12h16M4 17h16"/>
           </svg>
         </button>
 
-        <!-- Page context -->
         <div class="topbar-context">
           <div class="topbar-title">
             <span class="topbar-alef">Alef</span>
             <ng-container *ngIf="profileState$ | async as ps">
               <span class="topbar-sep">·</span>
-              <span class="topbar-role" *ngIf="ps.data?.roles?.includes('Admin')">Admin</span>
-              <span class="topbar-role" *ngIf="!ps.data?.roles?.includes('Admin') && isInstructor(ps.data)">Instructor</span>
-              <span class="topbar-role" *ngIf="!ps.data?.roles?.includes('Admin') && isStudent(ps.data)">Student</span>
-              <span class="topbar-role" *ngIf="!ps.data?.roles?.includes('Admin') && !isInstructor(ps.data) && !isStudent(ps.data)">Account</span>
+              <span class="topbar-role" *ngIf="isAdmin(ps.data)">Admin</span>
+              <span class="topbar-role" *ngIf="isOrgAdmin(ps.data)">Organization</span>
+              <span class="topbar-role" *ngIf="isInstructor(ps.data)">Instructor</span>
+              <span class="topbar-role" *ngIf="isStudent(ps.data)">Student</span>
             </ng-container>
           </div>
         </div>
@@ -188,7 +199,6 @@
       <div class="topbar-right">
         <ng-container *ngIf="profileState$ | async as ps">
 
-          <!-- Quick nav pills -->
           <a class="top-pill" routerLink="/academies">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" width="14" height="14">
               <path d="M4 6h16M4 12h16M4 18h16"/>
@@ -196,10 +206,11 @@
             Explore
           </a>
 
-          <a class="top-pill" *ngIf="ps.data?.roles?.includes('Admin')" routerLink="/admin">Admin</a>
+          <a class="top-pill" *ngIf="isAdmin(ps.data)" routerLink="/admin">Admin</a>
+          <a class="top-pill" *ngIf="isOrgAdmin(ps.data)" routerLink="/org/academies">Academies</a>
           <a class="top-pill" *ngIf="isStudent(ps.data)" routerLink="/my-learning">My Learning</a>
 
-          <!-- Notifications -->
+          <!-- Notifications dropdown (instructors) -->
           <div class="notif-wrap" *ngIf="isInstructor(ps.data)">
             <button class="icon-btn" type="button" (click)="toggleNotif(!notifOpen)" aria-label="Notifications">
               <svg viewBox="0 0 24 24" class="ico" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">

@@ -26,6 +26,68 @@ export class AdminApi {
     return this.http.put(`${this.api}/api/admin/users/${userId}/roles`, { roles });
   }
 
+  // Assign user to an organization 
+  setUserOrganization(userId: string, organizationId: string | null) {
+    return this.http.put(`${this.api}/api/admin/users/${userId}/organization`, { organizationId });
+  }
+
+  // delete user 
+  deleteUser(userId: string, reason: string) {
+    const params = new URLSearchParams();
+    if (reason) params.set('reason', reason);
+    return this.http.delete(`${this.api}/api/admin/users/${userId}?${params.toString()}`);
+  }
+
+  // ---- Organizations ----
+  listOrganizations(q = '', page = 1, pageSize = 25) {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    params.set('page', String(page));
+    params.set('pageSize', String(pageSize));
+    return this.http.get<any>(`${this.api}/api/admin/organizations?${params.toString()}`);
+  }
+
+  createOrganization(payload: {
+    name: string;
+    slug?: string | null;
+    website?: string | null;
+    primaryColor?: string | null;
+    description?: string | null;
+    logoUrl?: string | null;
+  }) {
+    return this.http.post<any>(`${this.api}/api/admin/organizations`, payload);
+  }
+
+  updateOrganization(
+    orgId: string,
+    payload: {
+      name?: string | null;
+      slug?: string | null;
+      website?: string | null;
+      primaryColor?: string | null;
+      description?: string | null;
+      logoUrl?: string | null;
+      regenerateInviteCode?: boolean | null;
+    }
+  ) {
+    return this.http.put<any>(`${this.api}/api/admin/organizations/${orgId}`, payload);
+  }
+
+  // enable/disable organization
+  setOrgActive(orgId: string, isActive: boolean, reason?: string | null) {
+    return this.http.put(`${this.api}/api/admin/organizations/${orgId}/active`, {
+      isActive,
+      reason: reason ?? null,
+    });
+  }
+
+  // delete organization 
+  deleteOrganization(orgId: string, reason: string) {
+    const params = new URLSearchParams();
+    if (reason) params.set('reason', reason);
+    return this.http.delete(`${this.api}/api/admin/organizations/${orgId}?${params.toString()}`);
+  }
+
   // ---- Academies ----
   listAcademies(q = '', status = 'all', page = 1, pageSize = 25) {
     const params = new URLSearchParams();

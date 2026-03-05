@@ -149,7 +149,7 @@ export type QuizSubmitResult = {
 };
 
 /* =========================
-   ✅ Reviews (NEW)
+   Reviews
 ========================= */
 
 export type ReviewTargetKind = 'course' | 'academy';
@@ -191,7 +191,7 @@ export type UpsertReviewPayload = {
 };
 
 /* =========================
-   ✅ Certificates (NEW)
+    Certificates 
 ========================= */
 export type CertificateIssueResponse = {
   id: string;
@@ -252,7 +252,7 @@ export class StudentApi {
   }
 
   /* =========================
-     ✅ Certificates API (NEW)
+      Certificates API 
   ========================= */
 
   issueCertificate(courseId: string) {
@@ -288,8 +288,7 @@ export class StudentApi {
   }
 
   /* =========================
-     ✅ Reviews API (NEW)
-     NOTE: adjust these routes if your backend differs.
+      Reviews API 
   ========================= */
 
   listCourseReviews(courseId: string, page = 1, pageSize = 10) {

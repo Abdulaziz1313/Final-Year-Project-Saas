@@ -1,10 +1,9 @@
 // ─────────────────────────────────────────────
-//  course-enrollments.component.scss
+//  course-enrollments.scss
 //  Alef Learning Commerce — Course Enrollments
-//  Elevated to match Home page aesthetics
 // ─────────────────────────────────────────────
 
-// ── DESIGN TOKENS (exact home.scss parity) ────
+// ── DESIGN TOKENS ────
 :host {
   --text:          #0a0f1e;
   --muted:         #6b7280;
@@ -124,7 +123,7 @@
 
 .action-group { display: inline-flex; gap: 8px; flex-wrap: wrap; }
 
-// ── BUTTONS (exact home match) ─────────────────
+// ── BUTTONS ─────────────────
 .btn {
   display: inline-flex;
   align-items: center;
@@ -271,7 +270,7 @@
   line-height: 1.5;
 }
 
-// ── SUMMARY CHIPS (home hcs-item pattern) ──────
+// ── SUMMARY CHIPS ──────
 .summary-chips {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -363,7 +362,7 @@
   gap: 10px;
 }
 
-// ── TIP BOX (home cta-point style) ────────────
+// ── TIP BOX ────────────
 .tip-box {
   margin-top: 4px;
   display: flex;
@@ -556,7 +555,7 @@
   white-space: nowrap;
 }
 
-// Progress bar (home hcp-bar style with shimmer)
+// Progress bar
 .progress-bar {
   height: 8px;
   background: var(--surface-3);

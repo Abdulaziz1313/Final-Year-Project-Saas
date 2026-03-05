@@ -1,4 +1,3 @@
-<!-- courses.html — Elevated to match Home page aesthetics -->
 <main class="courses-page">
 
   <!-- ── PAGE HERO ── -->
@@ -238,6 +237,13 @@
 
           <!-- Actions -->
           <div class="item-actions">
+            <!-- Edit (metadata) -->
+            <button class="btn btn-ghost btn-sm" type="button"
+              [disabled]="isBusy(c.id) || editSaving"
+              (click)="openEditDrawer(c)">
+              Edit
+            </button>
+
             <a class="btn btn-ghost btn-sm" [routerLink]="['/instructor/course-builder', c.id]">Builder</a>
             <a class="btn btn-ghost btn-sm" [routerLink]="['/instructor/course-enrollments', c.id]">Students</a>
             <button class="btn btn-ghost btn-sm" type="button" (click)="copyCourseLink(c.id)">Copy link</button>
@@ -263,5 +269,73 @@
 
     </ng-container>
   </ng-container>
+
+  <!-- ── EDIT DRAWER ── -->
+  <div class="drawer" *ngIf="editOpen && editingCourse" [formGroup]="editForm">
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-title">Edit course</div>
+        <div class="drawer-sub">Target: <code>{{ editingCourse.title }}</code></div>
+      </div>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="closeEditDrawer()" [disabled]="editSaving">Close</button>
+    </div>
+
+    <div class="drawer-body">
+      <div class="drawer-grid">
+        <div class="field">
+          <label class="field-label">Title</label>
+          <input class="input" formControlName="title" placeholder="Course title" />
+        </div>
+
+        <div class="field">
+          <label class="field-label">Category</label>
+          <input class="input" formControlName="category" placeholder="e.g. Programming" />
+        </div>
+
+        <div class="field">
+          <label class="field-label">Currency</label>
+          <input class="input" formControlName="currency" placeholder="EUR" />
+        </div>
+
+        <div class="field">
+          <label class="field-label">Pricing</label>
+          <div class="price-row">
+            <label class="check">
+              <input type="checkbox" [checked]="editForm.controls.isFree.value" (change)="toggleFree($any($event.target).checked)" />
+              <span>Free</span>
+            </label>
+            <input class="input" formControlName="price" placeholder="Price" [disabled]="editForm.controls.isFree.value" />
+          </div>
+          <div class="hint">If course is paid, price must be > 0.</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Short description</label>
+        <textarea class="input textarea" formControlName="shortDescription" rows="3" placeholder="Short summary…"></textarea>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Full description</label>
+        <textarea class="input textarea" formControlName="fullDescription" rows="6" placeholder="Full description…"></textarea>
+      </div>
+
+      <div class="field">
+        <label class="field-label">TagsJson</label>
+        <textarea class="input textarea mono" formControlName="tagsJson" rows="3" placeholder='Example: ["web","angular"]'></textarea>
+        <div class="hint">Must be valid JSON array string.</div>
+      </div>
+
+      <div class="drawer-actions">
+        <button class="btn btn-primary" type="button" (click)="saveEdit()" [disabled]="editSaving">
+          {{ editSaving ? 'Saving…' : 'Save changes' }}
+        </button>
+        <button class="btn btn-ghost" type="button" (click)="closeEditDrawer()" [disabled]="editSaving">
+          Cancel
+        </button>
+        <span class="drawer-note" *ngIf="editingCourse.isHidden">Note: Course is hidden by admin; publishing is blocked.</span>
+      </div>
+    </div>
+  </div>
 
 </main>

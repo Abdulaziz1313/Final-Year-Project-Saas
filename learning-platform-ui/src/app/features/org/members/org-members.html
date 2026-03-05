@@ -1,0 +1,182 @@
+<main class="members-page">
+
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">Organization</span>
+      </div>
+      <h1 class="page-title" *ngIf="!setupMode">Instructors &amp; <em>Members</em></h1>
+      <h1 class="page-title" *ngIf="setupMode">Create your <em>Organization</em></h1>
+      <p class="page-desc" *ngIf="!setupMode">People who have joined your organization.</p>
+      <p class="page-desc" *ngIf="setupMode">
+        You don't have an organization yet. Create one to generate an invite code for instructors.
+      </p>
+    </div>
+
+    <!-- Search + Refresh (normal mode) -->
+    <div class="page-actions" *ngIf="!setupMode">
+      <div class="search-wrap">
+        <input
+          class="input"
+          [(ngModel)]="q"
+          name="q"
+          placeholder="Search name or email…"
+          (keyup.enter)="load()"
+        />
+      </div>
+      <button class="btn btn-ghost" type="button" (click)="load()" [disabled]="loading">
+        {{ loading ? 'Loading…' : 'Refresh' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Error ── -->
+  <div class="alert-error" *ngIf="error">
+    <div class="err-icon">⚠</div>
+    <div class="err-body">
+      <div class="err-title">Error</div>
+      <div class="err-msg">{{ error }}</div>
+    </div>
+  </div>
+
+  <!-- ── SETUP MODE: CREATE ORG ── -->
+  <section class="panel setup-panel" *ngIf="setupMode">
+
+    <div class="panel-head">
+      <div class="panel-head-icon">🏢</div>
+      <div>
+        <div class="panel-eyebrow">Get started</div>
+        <div class="panel-title">Organization details</div>
+        <div class="panel-sub">Fill in the fields below to create your org.</div>
+      </div>
+    </div>
+
+    <div class="alert-error setup-err" *ngIf="createError">
+      <div class="err-icon">⚠</div>
+      <div class="err-body">
+        <div class="err-msg">{{ createError }}</div>
+      </div>
+    </div>
+
+    <div class="form">
+
+      <div class="field">
+        <label class="field-label">Organization name</label>
+        <input class="input" [(ngModel)]="form.name" name="name" placeholder="e.g. Alef Academy" />
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">Website <span class="opt-badge">optional</span></label>
+          <input class="input" [(ngModel)]="form.website" name="website" placeholder="https://…" />
+        </div>
+        <div class="field">
+          <label class="field-label">Primary color <span class="opt-badge">optional</span></label>
+          <input class="input" [(ngModel)]="form.primaryColor" name="primaryColor" placeholder="#1a56db" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">Logo URL <span class="opt-badge">optional</span></label>
+        <input class="input" [(ngModel)]="form.logoUrl" name="logoUrl" placeholder="https://…/logo.png" />
+      </div>
+
+      <div class="field">
+        <label class="field-label">Description <span class="opt-badge">optional</span></label>
+        <textarea
+          class="input"
+          [(ngModel)]="form.description"
+          name="description"
+          rows="4"
+          placeholder="Short description about your organization…"
+        ></textarea>
+      </div>
+
+      <div class="form-footer">
+        <button class="btn btn-primary" type="button" (click)="createOrg()" [disabled]="createLoading">
+          <span class="spinner" *ngIf="createLoading"></span>
+          {{ createLoading ? 'Creating…' : 'Create organization' }}
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── INVITE CARD (normal mode) ── -->
+  <div class="invite-card" *ngIf="!setupMode && inviteCode as code">
+
+    <div class="invite-left">
+      <div class="invite-icon">🔑</div>
+      <div>
+        <div class="invite-label">Invite code</div>
+        <div class="invite-hint">
+          Share with instructors so they can join via <strong>/join-org</strong>.
+        </div>
+      </div>
+    </div>
+
+    <div class="invite-right">
+      <code class="invite-code">{{ code }}</code>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="copyInvite(code)">📋 Copy</button>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="rotateInvite()" [disabled]="loading">↺ Rotate</button>
+    </div>
+
+  </div>
+
+  <!-- ── MEMBERS TABLE (normal mode) ── -->
+  <section class="panel members-panel" *ngIf="!setupMode && !error">
+
+    <div class="panel-head flat">
+      <div>
+        <div class="panel-eyebrow">Team</div>
+        <div class="panel-title">Members</div>
+      </div>
+      <div class="member-count-badge">{{ items.length }}</div>
+    </div>
+
+    <!-- Loading skeleton -->
+    <div class="skeleton" *ngIf="loading">
+      <div class="sk-row" *ngFor="let _ of [1,2,3]"></div>
+    </div>
+
+    <ng-container *ngIf="!loading">
+
+      <!-- Table head -->
+      <div class="table-head">
+        <div>Member</div>
+        <div>Roles</div>
+        <div>Status</div>
+      </div>
+
+      <!-- Rows -->
+      <div class="table-row" *ngFor="let u of items">
+        <div class="user-cell">
+          <div class="user-avatar">{{ (u.displayName || u.email)?.[0]?.toUpperCase() }}</div>
+          <div class="user-info">
+            <div class="user-name">{{ u.displayName || u.email }}</div>
+            <div class="user-email">{{ u.email }}</div>
+          </div>
+        </div>
+
+        <div class="roles-cell">
+          <span class="pill" *ngFor="let r of (u.roles || [])">{{ r }}</span>
+        </div>
+
+        <div class="status-cell">
+          <span class="pill pill-ok">Active</span>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" *ngIf="items.length === 0">
+        <div class="empty-icon">👥</div>
+        <div class="empty-title">No members yet</div>
+        <p class="empty-desc">Share the invite code above so instructors can join your organization.</p>
+      </div>
+
+    </ng-container>
+  </section>
+
+</main>

@@ -1,0 +1,365 @@
+<main class="create-page">
+
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">Org panel</span>
+      </div>
+      <h1 class="page-title">New <em>Academy</em></h1>
+      <p class="page-desc">Set up your branded learning space and share it with your instructors.</p>
+    </div>
+    <div class="hero-right">
+      <button class="btn btn-ghost" type="button" (click)="done()">← Academies</button>
+    </div>
+  </div>
+
+  <!-- ── ERROR ── -->
+  <div class="alert-error" *ngIf="error">
+    <div class="err-icon">⚠</div>
+    <div class="err-body">
+      <div class="err-title">Something went wrong</div>
+      <div class="err-msg">{{ error }}</div>
+    </div>
+  </div>
+
+  <!-- ── SUCCESS STATE ── -->
+  <div class="success-card" *ngIf="created">
+    <div class="success-header">
+      <div class="success-icon-wrap">✅</div>
+      <div>
+        <div class="success-eyebrow">Academy created</div>
+        <div class="success-title">"{{ created.name }}" is ready</div>
+      </div>
+    </div>
+    <p class="success-desc">
+      Share this instructor registration link with your team so they can join this academy.
+    </p>
+    <div class="link-box">
+      <div class="link-label">Instructor registration link</div>
+      <div class="link-row">
+        <input class="link-input" type="text" [value]="instructorLink" readonly />
+        <button class="btn btn-primary btn-sm" type="button" (click)="copyLink()">
+          {{ copied ? '✓ Copied!' : '📋 Copy link' }}
+        </button>
+      </div>
+    </div>
+    <div class="success-actions">
+      <button class="btn btn-primary" type="button" (click)="done()">View All Academies</button>
+      <button class="btn btn-ghost" type="button" (click)="copyLink()">
+        {{ copied ? '✓ Copied!' : 'Copy instructor link' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── 3-COLUMN EDITOR ── -->
+  <section class="editor" *ngIf="!created">
+
+    <!-- ── LEFT: Stepper ── -->
+    <aside class="stepper" aria-label="Academy creation steps">
+
+      <div class="stepper-head">
+        <div class="stepper-eyebrow">Progress</div>
+        <div class="stepper-title">Setup steps</div>
+      </div>
+
+      <div class="steps-list">
+        <button type="button" class="step"
+          [class.active]="step === 'details'"
+          [class.done]="isStepDone('details')"
+          (click)="goStep('details')">
+          <div class="step-dot">
+            <span *ngIf="!isStepDone('details')">1</span>
+            <span *ngIf="isStepDone('details')">✓</span>
+          </div>
+          <div class="step-meta">
+            <div class="step-title">Details</div>
+            <div class="step-sub">Name, description, website</div>
+          </div>
+        </button>
+
+        <button type="button" class="step"
+          [class.active]="step === 'branding'"
+          [class.done]="isStepDone('branding')"
+          (click)="goStep('branding')">
+          <div class="step-dot">
+            <span *ngIf="!isStepDone('branding')">2</span>
+            <span *ngIf="isStepDone('branding')">✓</span>
+          </div>
+          <div class="step-meta">
+            <div class="step-title">Branding</div>
+            <div class="step-sub">Color &amp; font</div>
+          </div>
+        </button>
+
+        <button type="button" class="step"
+          [class.active]="step === 'review'"
+          (click)="goStep('review')">
+          <div class="step-dot"><span>3</span></div>
+          <div class="step-meta">
+            <div class="step-title">Review</div>
+            <div class="step-sub">Check and create</div>
+          </div>
+        </button>
+      </div>
+
+      <div class="stepper-foot">
+        <div class="foot-label">Academy name</div>
+        <div class="foot-url">{{ name || '—' }}</div>
+      </div>
+    </aside>
+
+    <!-- ── MIDDLE: Form panel ── -->
+    <section class="panel">
+      <form class="form" (ngSubmit)="submit()" novalidate>
+
+        <!-- STEP 1: DETAILS -->
+        <section class="card" *ngIf="step === 'details'">
+          <div class="card-top">
+            <div>
+              <div class="card-eyebrow">Step 1 of 3</div>
+              <div class="card-title">Details</div>
+              <div class="card-sub">Name, description, and website for your academy.</div>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="field full">
+              <label>Academy Name <span class="req">*</span></label>
+              <input class="input" type="text" [(ngModel)]="name" name="name"
+                placeholder="e.g. Alef Academy" autocomplete="organization" />
+            </div>
+
+            <div class="field full">
+              <label>Description</label>
+              <textarea class="input" [(ngModel)]="description" name="description"
+                rows="4" placeholder="What do you teach? Who is it for?"></textarea>
+              <div class="help muted">Optional. Shown on your public academy page.</div>
+            </div>
+
+            <div class="field full">
+              <label>Website</label>
+              <input class="input" type="url" [(ngModel)]="website" name="website"
+                placeholder="https://example.com" inputmode="url" />
+              <div class="help muted">Optional.</div>
+            </div>
+          </div>
+
+          <div class="navrow">
+            <div class="hint muted">Next: choose branding.</div>
+            <button class="btn btn-primary" type="button"
+              (click)="nextStep()" [disabled]="!name.trim()">
+              Continue →
+            </button>
+          </div>
+        </section>
+
+        <!-- STEP 2: BRANDING -->
+        <section class="card" *ngIf="step === 'branding'">
+          <div class="card-top">
+            <div>
+              <div class="card-eyebrow">Step 2 of 3</div>
+              <div class="card-title">Branding</div>
+              <div class="card-sub">Choose color and typography for your academy.</div>
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="field">
+              <label>Primary color</label>
+              <div class="colorline">
+                <input class="color-input" type="color" [(ngModel)]="primaryColor" name="primaryColor" />
+                <div class="color-hex">{{ primaryColor }}</div>
+              </div>
+              <div class="palette">
+                <button type="button" class="swatch" title="Purple"  style="background:#7c3aed" (click)="primaryColor='#7c3aed'"></button>
+                <button type="button" class="swatch" title="Blue"    style="background:#2563eb" (click)="primaryColor='#2563eb'"></button>
+                <button type="button" class="swatch" title="Sky"     style="background:#0ea5e9" (click)="primaryColor='#0ea5e9'"></button>
+                <button type="button" class="swatch" title="Emerald" style="background:#10b981" (click)="primaryColor='#10b981'"></button>
+                <button type="button" class="swatch" title="Amber"   style="background:#f59e0b" (click)="primaryColor='#f59e0b'"></button>
+                <button type="button" class="swatch" title="Red"     style="background:#ef4444" (click)="primaryColor='#ef4444'"></button>
+                <button type="button" class="swatch" title="Dark"    style="background:#111827" (click)="primaryColor='#111827'"></button>
+              </div>
+              <div class="help muted">Used for buttons and accents across your academy.</div>
+            </div>
+
+            <div class="field">
+              <label>Quick preview</label>
+              <div class="preview-mini">
+                <div class="pm-top">
+                  <div class="pm-badge" [style.borderColor]="primaryColor">
+                    <span class="pm-dot" [style.background]="primaryColor"></span>
+                    Accent color
+                  </div>
+                </div>
+                <button class="pm-btn" type="button" [style.background]="primaryColor" disabled>
+                  Primary button
+                </button>
+              </div>
+            </div>
+
+            <div class="field full">
+              <label>Font</label>
+              <select class="input select-input" [(ngModel)]="fontKey" name="fontKey">
+                <option value="system">System (Default)</option>
+                <option value="inter">Inter</option>
+                <option value="poppins">Poppins</option>
+                <option value="cairo">Cairo (Arabic)</option>
+                <option value="tajawal">Tajawal (Arabic)</option>
+                <option value="ibmplexar">IBM Plex Sans Arabic</option>
+              </select>
+              <div class="help muted">Typography for your academy pages.</div>
+            </div>
+
+            <div class="field full">
+              <label>Font preview</label>
+              <div class="fontbox">
+                <div class="font-sample">
+                  <div class="fs-heading">{{ name || 'Academy Name' }}</div>
+                  <div class="fs-arabic">أكاديمية ألف</div>
+                  <div class="fs-meta">Headings · Buttons · Body</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="navrow">
+            <button class="btn btn-ghost" type="button" (click)="prevStep()">← Back</button>
+            <button class="btn btn-primary" type="button" (click)="nextStep()">Continue →</button>
+          </div>
+        </section>
+
+        <!-- STEP 3: REVIEW -->
+        <section class="card" *ngIf="step === 'review'">
+          <div class="card-top">
+            <div>
+              <div class="card-eyebrow">Step 3 of 3</div>
+              <div class="card-title">Review</div>
+              <div class="card-sub">Confirm everything before creating.</div>
+            </div>
+          </div>
+
+          <div class="review">
+            <div class="rrow">
+              <div class="rt">Name</div>
+              <div class="rv">{{ name.trim() || '—' }}</div>
+            </div>
+            <div class="rrow">
+              <div class="rt">Description</div>
+              <div class="rv">{{ description.trim() || '—' }}</div>
+            </div>
+            <div class="rrow">
+              <div class="rt">Website</div>
+              <div class="rv"><span class="mono-inline">{{ website.trim() || '—' }}</span></div>
+            </div>
+            <div class="rrow">
+              <div class="rt">Primary color</div>
+              <div class="rv">
+                <span class="color-chip">
+                  <span class="color-dot" [style.background]="primaryColor"></span>
+                  <span class="mono-inline">{{ primaryColor }}</span>
+                </span>
+              </div>
+            </div>
+            <div class="rrow">
+              <div class="rt">Font</div>
+              <div class="rv">{{ fontKey }}</div>
+            </div>
+
+            <div class="valsum">
+              <div class="valtop">
+                <div class="state" [class.ok]="!!name.trim()" [class.bad]="!name.trim()">
+                  <span class="state-dot"></span>
+                  <span *ngIf="name.trim()">Ready to create</span>
+                  <span *ngIf="!name.trim()">Academy name is required</span>
+                </div>
+              </div>
+              <div class="ok-line" *ngIf="name.trim()">✓ All required fields look good.</div>
+            </div>
+          </div>
+
+          <div class="navrow">
+            <button class="btn btn-ghost" type="button" (click)="prevStep()">← Back</button>
+            <button class="btn btn-primary" type="submit" [disabled]="loading || !name.trim()">
+              <span class="spinner" *ngIf="loading"></span>
+              {{ loading ? 'Creating…' : 'Create Academy' }}
+            </button>
+          </div>
+        </section>
+
+      </form>
+    </section>
+
+    <!-- ── RIGHT: Live Preview ── -->
+    <section class="preview" [style.--brand]="primaryColor">
+      <header class="pv-top">
+        <div class="pv-inner">
+          <div class="pv-left">
+            <div class="pv-brand">
+              <span class="pv-logo" [style.background]="primaryColor">الف</span>
+              <span class="pv-name">Alef</span>
+            </div>
+            <nav class="pv-nav">
+              <span class="pv-link active">Home</span>
+              <span class="pv-link">Explore</span>
+            </nav>
+          </div>
+          <div class="pv-right">
+            <button class="btn btn-ghost btn-sm" type="button" disabled>Sign in</button>
+            <button class="btn btn-primary btn-sm" type="button" disabled
+              [style.background]="primaryColor">Create account</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="preview-canvas">
+        <div class="site">
+          <div class="site-header">
+            <div class="pbrand">
+              <div class="pbrand-logo" [style.background]="primaryColor">
+                {{ (name || 'A').slice(0,1).toUpperCase() }}
+              </div>
+              <div class="pbrand-text">
+                <div class="b1">{{ name || 'Academy Name' }}</div>
+                <div class="b2">/academy/{{ name ? name.toLowerCase().replace(' ', '-') : 'your-academy' }}</div>
+              </div>
+            </div>
+            <div class="site-actions">
+              <button class="btn btn-ghost btn-sm" type="button" disabled>Login</button>
+              <button class="btn btn-primary btn-sm" type="button" disabled
+                [style.background]="primaryColor">View academy</button>
+            </div>
+          </div>
+
+          <div class="site-hero">
+            <div class="site-hero-title">Latest courses</div>
+            <div class="site-hero-sub">
+              {{ description || 'Add a short description to introduce your academy.' }}
+            </div>
+            <div class="hero-cta">
+              <button class="btn btn-primary btn-sm" type="button" disabled
+                [style.background]="primaryColor">Browse courses</button>
+              <button class="btn btn-ghost btn-sm" type="button" disabled>Contact</button>
+            </div>
+          </div>
+
+          <div class="site-empty">
+            <div class="site-empty-icon">👜</div>
+            <div class="site-empty-title">No courses yet</div>
+            <div class="site-empty-sub">Instructors can start building and publishing courses right away.</div>
+          </div>
+
+          <div class="site-footer">Links · Contact · Terms</div>
+        </div>
+      </div>
+
+      <div class="preview-label">
+        <span class="preview-label-dot"></span>
+        Live preview
+      </div>
+    </section>
+
+  </section>
+
+</main>

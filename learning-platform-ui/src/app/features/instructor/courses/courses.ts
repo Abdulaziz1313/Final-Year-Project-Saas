@@ -15,7 +15,7 @@ import { FormBuilder, ReactiveFormsModule, FormGroup, FormControl } from '@angul
 
 import { InstructorApi, CourseDto } from '../../../core/services/instructor-api';
 import { ToastService } from '../../../shared/ui/toast.service';
-import { environment } from '../../../../environments/environment'; // ✅ FIX
+import { environment } from '../../../../environments/environment';
 
 type LoadState<T> = { loading: boolean; data: T; error: string | null };
 
@@ -35,6 +35,17 @@ type AcademyInfo = {
   primaryColor?: string | null;
   isPublished?: boolean;
   publishedAt?: string | null;
+};
+
+type EditCourseForm = {
+  title: FormControl<string>;
+  category: FormControl<string>;
+  shortDescription: FormControl<string>;
+  fullDescription: FormControl<string>;
+  isFree: FormControl<boolean>;
+  price: FormControl<string>;
+  currency: FormControl<string>;
+  tagsJson: FormControl<string>;
 };
 
 @Component({
@@ -64,6 +75,13 @@ export class CoursesComponent {
 
   apiBase = environment.apiBaseUrl;
 
+  // Edit drawer state
+  editOpen = false;
+  editSaving = false;
+  editingCourse: CourseDto | null = null;
+
+  editForm: FormGroup<EditCourseForm>;
+
   img(url?: string | null) {
     if (!url) return null;
     return url.startsWith('http') ? url : this.apiBase + url;
@@ -81,6 +99,17 @@ export class CoursesComponent {
       q: this.fb.control('', { nonNullable: true }),
       status: this.fb.control('all', { nonNullable: true }),
       category: this.fb.control('', { nonNullable: true }),
+    });
+
+    this.editForm = this.fb.group<EditCourseForm>({
+      title: this.fb.control('', { nonNullable: true }),
+      category: this.fb.control('', { nonNullable: true }),
+      shortDescription: this.fb.control('', { nonNullable: true }),
+      fullDescription: this.fb.control('', { nonNullable: true }),
+      isFree: this.fb.control(true, { nonNullable: true }),
+      price: this.fb.control('', { nonNullable: true }),
+      currency: this.fb.control('EUR', { nonNullable: true }),
+      tagsJson: this.fb.control('[]', { nonNullable: true }),
     });
 
     // Load academy info
@@ -216,6 +245,150 @@ export class CoursesComponent {
       error: (err) => {
         this.busyIds.delete(courseId);
         this.toast.error(`Delete failed: ${err?.status} ${err?.statusText}`);
+      }
+    });
+  }
+
+  // ---------------- Edit Course Drawer ----------------
+
+  openEditDrawer(c: CourseDto) {
+    if (!c?.id) return;
+
+    this.editingCourse = c;
+    this.editOpen = true;
+    this.editSaving = false;
+
+    // load full course details (so we can edit descriptions/tags reliably)
+    this.api.getCourse(c.id).subscribe({
+      next: (full: any) => {
+        const isFree = !!full?.isFree;
+        const price = full?.price != null ? String(full.price) : '';
+        const currency = (full?.currency || 'EUR').toString();
+
+        this.editForm.reset(
+          {
+            title: (full?.title || c.title || '').toString(),
+            category: (full?.category || c.category || '').toString(),
+            shortDescription: (full?.shortDescription || '').toString(),
+            fullDescription: (full?.fullDescription || '').toString(),
+            isFree,
+            price,
+            currency,
+            tagsJson: (full?.tagsJson || '[]').toString(),
+          },
+          { emitEvent: false }
+        );
+
+        this.toggleFree(isFree, false);
+      },
+      error: (err) => {
+        this.toast.error(`Failed to load course: ${err?.status} ${err?.statusText}`);
+        // still open with minimal data
+        this.editForm.reset(
+          {
+            title: (c.title || '').toString(),
+            category: (c.category || '').toString(),
+            shortDescription: '',
+            fullDescription: '',
+            isFree: !!c.isFree,
+            price: c.price != null ? String(c.price) : '',
+            currency: (c.currency || 'EUR').toString(),
+            tagsJson: '[]',
+          },
+          { emitEvent: false }
+        );
+        this.toggleFree(!!c.isFree, false);
+      },
+    });
+  }
+
+  closeEditDrawer() {
+    this.editOpen = false;
+    this.editSaving = false;
+    this.editingCourse = null;
+  }
+
+  toggleFree(isFree: boolean, emit = true) {
+    this.editForm.controls.isFree.setValue(isFree, { emitEvent: emit });
+    if (isFree) {
+      this.editForm.controls.price.disable({ emitEvent: false });
+      this.editForm.controls.price.setValue('', { emitEvent: false });
+    } else {
+      this.editForm.controls.price.enable({ emitEvent: false });
+    }
+  }
+
+  saveEdit() {
+    const c = this.editingCourse;
+    if (!c?.id || this.editSaving) return;
+
+    const v = this.editForm.getRawValue();
+    const title = (v.title || '').trim();
+    const category = (v.category || '').trim();
+    const shortDescription = (v.shortDescription || '').trim();
+    const fullDescription = (v.fullDescription || '').trim();
+    const isFree = !!v.isFree;
+
+    const currency = (v.currency || 'EUR').trim().toUpperCase();
+    const tagsJson = (v.tagsJson || '[]').trim();
+
+    // normalize price
+    let priceNum: number | null = null;
+    if (!isFree) {
+      const raw = (v.price || '').trim();
+      const parsed = Number(raw);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        this.toast.error('Paid courses must have a price > 0.');
+        return;
+      }
+      priceNum = parsed;
+    }
+
+    if (!title) {
+      this.toast.error('Title is required.');
+      return;
+    }
+
+    
+    try {
+      const parsed = JSON.parse(tagsJson || '[]');
+      if (!Array.isArray(parsed)) {
+        this.toast.error('TagsJson must be a JSON array (e.g. ["web","angular"]).');
+        return;
+      }
+    } catch {
+      this.toast.error('TagsJson must be valid JSON (e.g. ["web","angular"]).');
+      return;
+    }
+
+    this.editSaving = true;
+    this.busyIds.add(c.id);
+
+    this.api.updateCourse(c.id, {
+      title,
+      category: category || null,
+      shortDescription: shortDescription || null,
+      fullDescription: fullDescription || null,
+      isFree,
+      price: isFree ? null : priceNum,
+      currency,
+      tagsJson,
+    }).subscribe({
+      next: () => {
+        this.busyIds.delete(c.id);
+        this.editSaving = false;
+        this.toast.success('Course updated.');
+        this.closeEditDrawer();
+        this.reload();
+      },
+      error: (err) => {
+        this.busyIds.delete(c.id);
+        this.editSaving = false;
+        const msg =
+          err?.error?.message ||
+          (typeof err?.error === 'string' ? err.error : null) ||
+          `Update failed: ${err?.status ?? ''} ${err?.statusText ?? ''}`.trim();
+        this.toast.error(msg);
       }
     });
   }

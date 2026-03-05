@@ -1,23 +1,16 @@
-<!-- academies-manage.html (ADMIN-STYLE) -->
 <main class="am-page">
 
-  <!-- ── PAGE HERO ── -->
   <div class="page-hero">
     <div class="hero-left">
       <div class="eyebrow">
         <div class="eyebrow-dot"></div>
         <span class="eyebrow-text">Instructor panel</span>
       </div>
-
-      <h1 class="page-title">Manage &amp; <em>Academies</em></h1>
-      <p class="page-desc">Publish, edit, and delete your academies.</p>
+      <h1 class="page-title">My <em>Academy</em></h1>
+      <p class="page-desc">Your assigned academy and its courses.</p>
     </div>
-
     <div class="hero-right">
-      <div class="action-group">
-        <button class="btn btn-ghost" type="button" (click)="reload()">Refresh</button>
-        <a class="btn btn-primary" routerLink="/instructor/academy/create">Create academy</a>
-      </div>
+      <button class="btn btn-ghost" type="button" (click)="reload()">Refresh</button>
     </div>
   </div>
 
@@ -25,142 +18,52 @@
     <div class="state-loading" *ngIf="st.loading">Loading…</div>
     <div class="alert-error" *ngIf="st.error"><span>⚠</span> {{ st.error }}</div>
 
-    <ng-container *ngIf="!st.loading && !st.error && st.data as vm">
+    <ng-container *ngIf="!st.loading && !st.error && st.data as academies">
 
-      <!-- ── KPI STRIP ── -->
-      <div class="kpi-strip">
-        <div class="kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-label">Total</span>
-            <span class="kpi-icon">🏛️</span>
-          </div>
-          <div class="kpi-value">{{ vm.total }}</div>
-          <div class="kpi-sub">All academies</div>
-        </div>
-
-        <div class="kpi-card kpi-success">
-          <div class="kpi-header">
-            <span class="kpi-label">Published</span>
-            <span class="kpi-icon">✅</span>
-          </div>
-          <div class="kpi-value">{{ vm.published }}</div>
-          <div class="kpi-sub">Visible to students</div>
-        </div>
-
-        <div class="kpi-card">
-          <div class="kpi-header">
-            <span class="kpi-label">Draft</span>
-            <span class="kpi-icon">📝</span>
-          </div>
-          <div class="kpi-value">{{ vm.drafts }}</div>
-          <div class="kpi-sub">Not published</div>
-        </div>
-
-        <div class="kpi-card kpi-danger" *ngIf="vm.hidden > 0">
-          <div class="kpi-header">
-            <span class="kpi-label">Hidden</span>
-            <span class="kpi-icon">⛔</span>
-          </div>
-          <div class="kpi-value">{{ vm.hidden }}</div>
-          <div class="kpi-sub">Requires review</div>
-        </div>
-      </div>
-
-      <!-- ── EMPTY ── -->
-      <div class="empty" *ngIf="vm.total === 0">
+      <!-- No academy assigned -->
+      <div class="empty" *ngIf="academies.length === 0">
         <div class="empty-ic">🏛️</div>
-        <div class="empty-title">No academies yet</div>
-        <div class="empty-sub">Create your first academy to start building courses.</div>
-        <a class="btn btn-primary" routerLink="/instructor/academy/create">Create academy</a>
+        <div class="empty-title">No academy assigned</div>
+        <div class="empty-sub">
+          You haven't been linked to an academy yet. Contact your organization admin for a registration link.
+        </div>
       </div>
 
-      <!-- ── ITEMS GRID ── -->
-      <div class="items-grid" *ngIf="vm.total > 0">
+      <!-- Academy cards (read-only) -->
+      <div class="items-grid" *ngIf="academies.length > 0">
+        <article class="item-card academy-card"
+                 *ngFor="let a of academies"
+                 [routerLink]="['/instructor/courses', a.id]">
 
-        <article
-          class="item-card academy-card"
-          *ngFor="let a of vm.academies"
-          [routerLink]="['/instructor/courses', a.id]"
-        >
           <div class="item-header">
             <div class="title-wrap">
-              <div class="badge" [attr.aria-label]="a.name">{{ badgeLetter(a.name) }}</div>
+              <div class="badge">{{ badgeLetter(a.name) }}</div>
               <div class="item-title" [title]="a.name">{{ a.name }}</div>
             </div>
-
-            <span
-              class="status-badge"
-              [class.status-hidden]="a.isHidden"
-              [class.status-good]="!a.isHidden && a.isPublished"
-            >
-              {{ a.isHidden ? 'Hidden' : (a.isPublished ? 'Published' : 'Draft') }}
+            <span class="status-badge"
+                  [class.status-good]="a.isPublished">
+              {{ a.isPublished ? 'Published' : 'Draft' }}
             </span>
           </div>
 
-          <div class="meta-text">{{ subtitle(a) }}</div>
+          <p class="meta-text" *ngIf="a.description">{{ a.description }}</p>
 
-          <div class="meta-row">
-            <span class="meta-text">Courses: <code>{{ a.courseCount }}</code></span>
-            <span class="meta-text">ID: <code>{{ a.id }}</code></span>
+          <div class="info-note">
+            <span class="info-icon">ℹ️</span>
+            <span>Academy settings are managed by your organization admin.</span>
           </div>
 
-          <!-- Hidden info -->
-          <div class="hidden-info" *ngIf="a.isHidden">
-            <div class="meta-text"><strong>Admin notice:</strong> {{ hiddenMessage(a) }}</div>
-
-            <div class="item-actions">
-              <button
-                class="btn btn-ghost btn-sm"
-                type="button"
-                (click)="requestReview($event, a)"
-              >
-                Request review
-              </button>
-            </div>
-          </div>
-
-          <!-- Actions -->
           <div class="item-actions">
-
-            <!-- Publish / Draft toggle (admin style switch) -->
-            <button
-              class="switch"
-              type="button"
-              [class.on]="a.isPublished && !a.isHidden"
-              [disabled]="!canTogglePublish(a)"
-              (click)="togglePublish($event, a)"
-              [attr.aria-label]="a.isPublished ? 'Unpublish academy' : 'Publish academy'"
-              title="Publish / Unpublish"
-            >
-              <span class="knob"></span>
-            </button>
-
-            <span class="meta-text" *ngIf="isPublishing(a.id)">Saving…</span>
-
-            <span class="spacer"></span>
-
-            <a
-              class="btn btn-ghost btn-sm"
-              [routerLink]="editLink(a)"
-              (click)="$event.stopPropagation()"
-            >
-              Edit
+            <a class="btn btn-primary btn-sm"
+               [routerLink]="['/instructor/courses', a.id]">
+              View Courses →
             </a>
-
-            <button
-              class="btn btn-danger-outline btn-sm"
-              type="button"
-              [disabled]="isDeleting(a.id)"
-              (click)="deleteAcademy($event, a)"
-            >
-              {{ isDeleting(a.id) ? 'Deleting…' : 'Delete…' }}
-            </button>
           </div>
 
           <div class="open-hint">Open →</div>
         </article>
-
       </div>
+
     </ng-container>
   </ng-container>
 

@@ -13,8 +13,11 @@ export const instructorGuard: CanActivateFn = (route, state) => {
     return false;
   }
 
-  // ✅ Instructor ONLY (Admin should NOT access instructor pages)
-  if (!auth.hasRole('Instructor')) {
+  // Allow Instructor OR OrgAdmin 
+  const ok = auth.hasRole('Instructor') || auth.hasRole('OrgAdmin');
+
+  // Admin should NOT access instructor pages
+  if (!ok) {
     sessionStorage.setItem('login_notice', 'You do not have permission to access that page.');
     router.navigateByUrl('/home');
     return false;

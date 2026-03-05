@@ -1,7 +1,6 @@
 // ─────────────────────────────────────────────
-//  course-builder.component.scss
+//  course-builder.scss
 //  Alef Learning Commerce — Course Builder
-//  Upgraded to match home page aesthetic
 // ─────────────────────────────────────────────
 
 :host {
@@ -237,7 +236,7 @@
 
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.88em; }
 
-// Status badge (matches my-learning pattern)
+// Status badge
 .status-badge {
   display: inline-flex;
   align-items: center;

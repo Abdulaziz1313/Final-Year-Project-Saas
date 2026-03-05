@@ -1,8 +1,11 @@
+// AdminController.cs
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
+using LearningPlatform.Api.Services;
 using LearningPlatform.Domain.Entities;
 using LearningPlatform.Infrastructure.Identity;
 using LearningPlatform.Infrastructure.Persistence;
-using LearningPlatform.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -79,7 +82,8 @@ public class AdminController : ControllerBase
                 displayName = u.DisplayName,
                 profileImageUrl = u.ProfileImageUrl,
                 roles = rs,
-                lockoutEnd = u.LockoutEnd
+                lockoutEnd = u.LockoutEnd,
+                organizationId = u.OrganizationId
             });
         }
 
@@ -200,6 +204,404 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
+    // ✅ Assign user to organization (frontend already calls this)
+    public record SetUserOrganizationRequest(Guid? OrganizationId);
+
+    [HttpPut("users/{userId}/organization")]
+    public async Task<IActionResult> SetUserOrganization(string userId, [FromBody] SetUserOrganizationRequest req)
+    {
+        var adminId = AdminId();
+        if (string.IsNullOrWhiteSpace(adminId)) return Unauthorized();
+
+        var u = await _users.FindByIdAsync(userId);
+        if (u is null) return NotFound();
+
+        Guid? orgId = req.OrganizationId;
+
+        Organization? org = null;
+        if (orgId.HasValue)
+        {
+            org = await _db.Organizations.AsNoTracking().FirstOrDefaultAsync(o => o.Id == orgId.Value);
+            if (org is null) return BadRequest("Organization not found.");
+
+            // ✅ Block assigning users into a disabled org
+            if (!org.IsActive) return BadRequest("Organization is disabled.");
+        }
+
+        var before = u.OrganizationId;
+        u.OrganizationId = orgId;
+
+        var res = await _users.UpdateAsync(u);
+        if (!res.Succeeded) return BadRequest("Failed to update user organization.");
+
+        await _audit.Add(
+            actorUserId: adminId,
+            action: "user.organization",
+            targetType: "user",
+            targetId: u.Id,
+            targetLabel: u.Email,
+            reason: null,
+            meta: new
+            {
+                before,
+                after = orgId,
+                organizationName = org?.Name
+            }
+        );
+
+        return NoContent();
+    }
+
+    // ✅ NEW: delete user
+    // DELETE /api/admin/users/{id}?reason=...
+    [HttpDelete("users/{userId}")]
+    public async Task<IActionResult> DeleteUser(string userId, [FromQuery] string? reason = null)
+    {
+        var adminId = AdminId();
+        if (string.IsNullOrWhiteSpace(adminId)) return Unauthorized();
+
+        var u = await _users.FindByIdAsync(userId);
+        if (u is null) return NotFound();
+
+        var finalReason = string.IsNullOrWhiteSpace(reason) ? "Policy violation" : reason.Trim();
+
+        // safety: prevent deleting self
+        if (u.Id == adminId) return BadRequest("You cannot delete your own account.");
+
+        await _audit.Add(
+            actorUserId: adminId,
+            action: "user.delete",
+            targetType: "user",
+            targetId: u.Id,
+            targetLabel: u.Email,
+            reason: finalReason,
+            meta: new
+            {
+                u.DisplayName,
+                u.OrganizationId
+            }
+        );
+
+        var res = await _users.DeleteAsync(u);
+        if (!res.Succeeded) return BadRequest("Failed to delete user.");
+
+        return NoContent();
+    }
+
+    // ---------------- ORGANIZATIONS ----------------
+
+    private static string Slugify(string input)
+    {
+        input = (input ?? "").Trim().ToLowerInvariant();
+        input = Regex.Replace(input, @"\s+", "-");
+        input = Regex.Replace(input, @"[^a-z0-9\-]", "");
+        input = Regex.Replace(input, @"\-{2,}", "-").Trim('-');
+        return string.IsNullOrWhiteSpace(input) ? "org" : input;
+    }
+
+    private static string GenerateInviteCode(int bytes = 16)
+    {
+        var b = RandomNumberGenerator.GetBytes(bytes);
+        // url-safe-ish token
+        return Convert.ToBase64String(b)
+            .Replace("+", "-")
+            .Replace("/", "_")
+            .Replace("=", "");
+    }
+
+    public record CreateOrganizationRequest(
+        string Name,
+        string? Slug = null,
+        string? Website = null,
+        string? PrimaryColor = null,
+        string? Description = null,
+        string? LogoUrl = null
+    );
+
+    [HttpPost("organizations")]
+    public async Task<IActionResult> CreateOrganization([FromBody] CreateOrganizationRequest req)
+    {
+        var adminId = AdminId();
+        if (string.IsNullOrWhiteSpace(adminId)) return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(req.Name))
+            return BadRequest("Name is required.");
+
+        var desiredSlug = string.IsNullOrWhiteSpace(req.Slug) ? Slugify(req.Name) : Slugify(req.Slug);
+
+        // ensure uniqueness (append -2, -3, ...)
+        var baseSlug = desiredSlug;
+        var i = 2;
+        while (await _db.Organizations.AsNoTracking().AnyAsync(o => o.Slug == desiredSlug))
+        {
+            desiredSlug = $"{baseSlug}-{i}";
+            i++;
+            if (i > 200) return BadRequest("Could not generate a unique slug.");
+        }
+
+        var org = new Organization
+        {
+            Id = Guid.NewGuid(),
+            Name = req.Name.Trim(),
+            Slug = desiredSlug,
+            Website = string.IsNullOrWhiteSpace(req.Website) ? null : req.Website.Trim(),
+            PrimaryColor = string.IsNullOrWhiteSpace(req.PrimaryColor) ? "#7c3aed" : req.PrimaryColor.Trim(),
+            Description = string.IsNullOrWhiteSpace(req.Description) ? null : req.Description.Trim(),
+            LogoUrl = string.IsNullOrWhiteSpace(req.LogoUrl) ? null : req.LogoUrl.Trim(),
+            InviteCode = GenerateInviteCode(),
+            CreatedAt = DateTimeOffset.UtcNow,
+            IsActive = true
+        };
+
+        _db.Organizations.Add(org);
+        await _db.SaveChangesAsync();
+
+        await _audit.Add(
+            actorUserId: adminId,
+            action: "org.create",
+            targetType: "organization",
+            targetId: org.Id.ToString(),
+            targetLabel: org.Name,
+            reason: null,
+            meta: new { org.Slug }
+        );
+
+        return Ok(new
+        {
+            org.Id,
+            org.Name,
+            org.Slug,
+            org.Website,
+            org.PrimaryColor,
+            org.Description,
+            org.LogoUrl,
+            org.InviteCode,
+            org.CreatedAt,
+            org.IsActive
+        });
+    }
+
+    [HttpGet("organizations")]
+    public async Task<IActionResult> ListOrganizations(string? q = null, int page = 1, int pageSize = 25)
+    {
+        page = page < 1 ? 1 : page;
+        pageSize = pageSize is < 1 or > 100 ? 25 : pageSize;
+
+        var query = _db.Organizations.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            q = q.Trim().ToLowerInvariant();
+            query = query.Where(o =>
+                o.Name.ToLower().Contains(q) ||
+                o.Slug.ToLower().Contains(q));
+        }
+
+        var total = await query.CountAsync();
+
+        var items = await query
+            .OrderByDescending(o => o.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(o => new
+            {
+                o.Id,
+                o.Name,
+                o.Slug,
+                o.Website,
+                o.PrimaryColor,
+                o.LogoUrl,
+                o.InviteCode,
+                o.CreatedAt,
+                o.IsActive,
+                academiesCount = _db.Academies.Count(a => a.OrganizationId == o.Id),
+                usersCount = _db.Users.Count(u => u.OrganizationId == o.Id)
+            })
+            .ToListAsync();
+
+        return Ok(new { total, page, pageSize, items });
+    }
+
+    public record UpdateOrganizationRequest(
+        string? Name = null,
+        string? Slug = null,
+        string? Website = null,
+        string? PrimaryColor = null,
+        string? Description = null,
+        string? LogoUrl = null,
+        bool? RegenerateInviteCode = null
+    );
+
+    [HttpPut("organizations/{orgId:guid}")]
+    public async Task<IActionResult> UpdateOrganization(Guid orgId, [FromBody] UpdateOrganizationRequest req)
+    {
+        var adminId = AdminId();
+        if (string.IsNullOrWhiteSpace(adminId)) return Unauthorized();
+
+        var org = await _db.Organizations.FirstOrDefaultAsync(o => o.Id == orgId);
+        if (org is null) return NotFound();
+
+        var before = new
+        {
+            org.Name,
+            org.Slug,
+            org.Website,
+            org.PrimaryColor,
+            org.Description,
+            org.LogoUrl,
+            org.InviteCode,
+            org.IsActive
+        };
+
+        if (!string.IsNullOrWhiteSpace(req.Name))
+            org.Name = req.Name.Trim();
+
+        if (!string.IsNullOrWhiteSpace(req.Website))
+            org.Website = req.Website.Trim();
+        else if (req.Website is not null && string.IsNullOrWhiteSpace(req.Website))
+            org.Website = null;
+
+        if (!string.IsNullOrWhiteSpace(req.Description))
+            org.Description = req.Description.Trim();
+        else if (req.Description is not null && string.IsNullOrWhiteSpace(req.Description))
+            org.Description = null;
+
+        if (!string.IsNullOrWhiteSpace(req.LogoUrl))
+            org.LogoUrl = req.LogoUrl.Trim();
+        else if (req.LogoUrl is not null && string.IsNullOrWhiteSpace(req.LogoUrl))
+            org.LogoUrl = null;
+
+        if (!string.IsNullOrWhiteSpace(req.PrimaryColor))
+            org.PrimaryColor = req.PrimaryColor.Trim();
+
+        if (!string.IsNullOrWhiteSpace(req.Slug))
+        {
+            var desiredSlug = Slugify(req.Slug);
+
+            // unique check excluding this org
+            var exists = await _db.Organizations.AsNoTracking()
+                .AnyAsync(o => o.Slug == desiredSlug && o.Id != org.Id);
+
+            if (exists)
+                return BadRequest("Slug already exists.");
+
+            org.Slug = desiredSlug;
+        }
+
+        if (req.RegenerateInviteCode == true)
+            org.InviteCode = GenerateInviteCode();
+
+        await _db.SaveChangesAsync();
+
+        var after = new
+        {
+            org.Name,
+            org.Slug,
+            org.Website,
+            org.PrimaryColor,
+            org.Description,
+            org.LogoUrl,
+            org.InviteCode,
+            org.IsActive
+        };
+
+        await _audit.Add(
+            actorUserId: adminId,
+            action: "org.update",
+            targetType: "organization",
+            targetId: org.Id.ToString(),
+            targetLabel: org.Name,
+            reason: null,
+            meta: new
+            {
+                before,
+                after
+            }
+        );
+
+        return Ok(new
+        {
+            org.Id,
+            org.Name,
+            org.Slug,
+            org.Website,
+            org.PrimaryColor,
+            org.Description,
+            org.LogoUrl,
+            org.InviteCode,
+            org.CreatedAt,
+            org.IsActive
+        });
+    }
+
+    // ✅ NEW: enable/disable organization
+    public record SetOrgActiveRequest(bool IsActive, string? Reason = null);
+
+    [HttpPut("organizations/{orgId:guid}/active")]
+    public async Task<IActionResult> SetOrganizationActive(Guid orgId, [FromBody] SetOrgActiveRequest req)
+    {
+        var adminId = AdminId();
+        if (string.IsNullOrWhiteSpace(adminId)) return Unauthorized();
+
+        var org = await _db.Organizations.FirstOrDefaultAsync(o => o.Id == orgId);
+        if (org is null) return NotFound();
+
+        var before = org.IsActive;
+        org.IsActive = req.IsActive;
+
+        await _db.SaveChangesAsync();
+
+        var reason = string.IsNullOrWhiteSpace(req.Reason) ? null : req.Reason.Trim();
+
+        await _audit.Add(
+            actorUserId: adminId,
+            action: req.IsActive ? "org.enable" : "org.disable",
+            targetType: "organization",
+            targetId: org.Id.ToString(),
+            targetLabel: org.Name,
+            reason: reason,
+            meta: new { before, after = org.IsActive }
+        );
+
+        return NoContent();
+    }
+
+    // ✅ NEW: delete organization
+    // DELETE /api/admin/organizations/{id}?reason=...
+    [HttpDelete("organizations/{orgId:guid}")]
+    public async Task<IActionResult> DeleteOrganization(Guid orgId, [FromQuery] string? reason = null)
+    {
+        var adminId = AdminId();
+        if (string.IsNullOrWhiteSpace(adminId)) return Unauthorized();
+
+        var org = await _db.Organizations.FirstOrDefaultAsync(o => o.Id == orgId);
+        if (org is null) return NotFound();
+
+        var finalReason = string.IsNullOrWhiteSpace(reason) ? "Policy violation" : reason.Trim();
+
+        // safest policy: block delete when org still has academies/users
+        var hasAcademies = await _db.Academies.AnyAsync(a => a.OrganizationId == orgId);
+        var hasUsers = await _db.Users.AnyAsync(u => u.OrganizationId == orgId);
+
+        if (hasAcademies || hasUsers)
+            return BadRequest("Organization has academies/users. Remove them first or unassign users.");
+
+        await _audit.Add(
+            actorUserId: adminId,
+            action: "org.delete",
+            targetType: "organization",
+            targetId: org.Id.ToString(),
+            targetLabel: org.Name,
+            reason: finalReason,
+            meta: new { org.Slug }
+        );
+
+        _db.Organizations.Remove(org);
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
     // ---------------- MODERATION ----------------
     public record ModerateRequest(bool IsHidden, string? Reason);
 
@@ -237,6 +639,7 @@ public class AdminController : ControllerBase
                 a.Name,
                 a.Slug,
                 a.OwnerUserId,
+                a.OrganizationId,
                 a.IsPublished,
                 a.PublishedAt,
                 a.IsHidden,

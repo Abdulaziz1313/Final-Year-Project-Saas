@@ -14,12 +14,10 @@ type LoadState<T> = { loading: boolean; data: T | null; error: string | null };
 type AcademyVm = AcademyDto & {
   courseCount?: number;
 
-  // moderation fields (coming from your Mine() endpoint)
+  // moderation fields
   isHidden?: boolean;
   hiddenReason?: string | null;
   hiddenAt?: string | null;
-
-  // optional timestamps if your API has them (safe fallback)
   updatedAt?: string | null;
   createdAt?: string | null;
 };
@@ -100,7 +98,7 @@ export class DashboardComponent {
                 ...a,
                 courseCount: n,
 
-                // moderation fields (support both cases)
+                // moderation fields
                 isHidden: !!(a?.isHidden ?? a?.IsHidden),
                 hiddenReason: (a?.hiddenReason ?? a?.HiddenReason ?? null) as string | null,
                 hiddenAt: (a?.hiddenAt ?? a?.HiddenAt ?? null) as string | null,
@@ -112,7 +110,7 @@ export class DashboardComponent {
 
             const academiesCount = patched.length;
 
-            // ✅ better KPI math:
+            // better KPI math:
             const hiddenCount = patched.reduce((n, a) => n + (a.isHidden ? 1 : 0), 0);
             const publishedCount = patched.reduce(
               (n, a) => n + ((a.isPublished ?? false) && !a.isHidden ? 1 : 0),
@@ -201,7 +199,7 @@ export class DashboardComponent {
       document.execCommand('copy');
       document.body.removeChild(ta);
     } catch {
-      // ignore
+
     }
   }
 
@@ -251,7 +249,7 @@ export class DashboardComponent {
     });
   }
 
-  // ✅ Request review (no backend needed)
+  // Request review
   async requestReview(ev: Event, a: AcademyVm) {
     ev.preventDefault();
     ev.stopPropagation();

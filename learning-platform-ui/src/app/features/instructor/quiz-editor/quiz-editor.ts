@@ -72,7 +72,6 @@ export class QuizEditorComponent {
     return this.questions.length > 0;
   }
 
-  // Optional: nicer ngFor perf if you want to use trackBy in html
   trackByIndex = (i: number) => i;
 
   qChoices(i: number): UntypedFormArray {

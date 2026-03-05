@@ -9,7 +9,7 @@ export type ProfileDto = {
   profileImageUrl: string | null;
   displayName?: string | null;
 
-  // ✅ NEW: returned from GET /api/profile
+  // returned from GET /api/profile
   phoneNumber: string | null;
 };
 

@@ -25,7 +25,6 @@ export class AppShellComponent {
   private reloadProfile$ = new BehaviorSubject<void>(undefined);
   profileState$: Observable<LoadState<ProfileDto>>;
 
-  // Notifications
   notifOpen = false;
   private reloadCount$ = new BehaviorSubject<void>(undefined);
   private reloadList$ = new BehaviorSubject<void>(undefined);
@@ -48,8 +47,7 @@ export class AppShellComponent {
           startWith({ loading: true, data: null, error: null } as LoadState<ProfileDto>),
           catchError((err) =>
             of({
-              loading: false,
-              data: null,
+              loading: false, data: null,
               error: `Failed to load profile: ${err?.status ?? ''} ${err?.statusText ?? ''}`.trim(),
             } as LoadState<ProfileDto>)
           )
@@ -76,8 +74,7 @@ export class AppShellComponent {
           startWith({ loading: true, data: [], error: null } as LoadState<NotificationItem[]>),
           catchError((err) =>
             of({
-              loading: false,
-              data: [],
+              loading: false, data: [],
               error: `Failed to load notifications: ${err?.status ?? ''} ${err?.statusText ?? ''}`.trim(),
             } as LoadState<NotificationItem[]>)
           )
@@ -92,9 +89,7 @@ export class AppShellComponent {
     localStorage.setItem(KEY, this.collapsed ? '1' : '0');
   }
 
-  refreshProfile() {
-    this.reloadProfile$.next();
-  }
+  refreshProfile() { this.reloadProfile$.next(); }
 
   avatarUrl(profile: ProfileDto | null): string | null {
     if (!profile?.profileImageUrl) return null;
@@ -102,28 +97,35 @@ export class AppShellComponent {
   }
 
   initial(profile: ProfileDto | null): string {
-    const email = profile?.email || 'A';
-    return email.slice(0, 1).toUpperCase();
+    return (profile?.email || 'A').slice(0, 1).toUpperCase();
+  }
+
+  // ── Role helpers ──────────────────────────────────────────
+  isAdmin(profile: ProfileDto | null): boolean {
+    return profile?.roles?.includes('Admin') ?? false;
+  }
+
+  isOrgAdmin(profile: ProfileDto | null): boolean {
+    return (profile?.roles?.includes('OrgAdmin') ?? false) && !this.isAdmin(profile);
   }
 
   isInstructor(profile: ProfileDto | null): boolean {
-    const roles = profile?.roles || [];
-    return roles.includes('Instructor');
+    return (profile?.roles?.includes('Instructor') ?? false)
+      && !this.isAdmin(profile)
+      && !this.isOrgAdmin(profile);
   }
 
-  // ---- Notifications UI ----
+  isStudent(profile: ProfileDto | null): boolean {
+    return profile?.roles?.includes('Student') ?? false;
+  }
+
+  // ── Notifications ─────────────────────────────────────────
   toggleNotif(open: boolean) {
     this.notifOpen = open;
-    if (open) {
-      this.reloadList$.next();
-      this.reloadCount$.next();
-    }
+    if (open) { this.reloadList$.next(); this.reloadCount$.next(); }
   }
 
-  refreshNotifs() {
-    this.reloadList$.next();
-    this.reloadCount$.next();
-  }
+  refreshNotifs() { this.reloadList$.next(); this.reloadCount$.next(); }
 
   markAllRead() {
     this.notifApi.markAllRead().subscribe({
@@ -133,34 +135,20 @@ export class AppShellComponent {
   }
 
   openNotification(n: NotificationItem) {
-    // mark read first (best effort)
     if (!n.isRead) {
       this.notifApi.markRead(n.id).subscribe({ next: () => this.refreshNotifs(), error: () => {} });
     }
-
     this.notifOpen = false;
-
-    if (n.linkUrl) {
-      this.router.navigateByUrl(n.linkUrl);
-    }
+    if (n.linkUrl) this.router.navigateByUrl(n.linkUrl);
   }
 
   timeAgo(iso: string): string {
-    const d = new Date(iso).getTime();
-    const now = Date.now();
-    const sec = Math.max(1, Math.floor((now - d) / 1000));
-
+    const sec = Math.max(1, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
     if (sec < 60) return `${sec}s`;
     const min = Math.floor(sec / 60);
     if (min < 60) return `${min}m`;
     const hr = Math.floor(min / 60);
     if (hr < 24) return `${hr}h`;
-    const day = Math.floor(hr / 24);
-    return `${day}d`;
+    return `${Math.floor(hr / 24)}d`;
   }
-
-  isStudent(profile: ProfileDto | null): boolean {
-  const roles = profile?.roles || [];
-  return roles.includes('Student');
-}
 }

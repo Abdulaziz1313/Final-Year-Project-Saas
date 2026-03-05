@@ -1,0 +1,367 @@
+<div class="register-page" [style.--accent]="accentColor">
+  <div class="home-bg"></div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" routerLink="/home">
+        <div class="logo-mark"><span>الف</span></div>
+        <div class="brand-text">
+          <span class="brand-name">Alef</span>
+          <span class="brand-sub">Learning Commerce</span>
+        </div>
+      </a>
+      <nav class="nav-links">
+        <a class="nav-link" routerLink="/academies">Explore</a>
+        <div class="nav-sep"></div>
+        <a class="nav-link" [routerLink]="['/login-academy']" [queryParams]="{academy: academySlug}">Sign in</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="layout">
+
+      <!-- ══════════════════════════════
+           LEFT PANEL
+      ══════════════════════════════ -->
+      <div class="copy-panel">
+
+        <!-- Loading -->
+        <div class="loading-state" *ngIf="step === 'loading'">
+          <div class="spinner-lg"></div>
+          <p>Loading academy…</p>
+        </div>
+
+        <!-- Loaded -->
+        <ng-container *ngIf="step !== 'loading' && step !== 'invalid' && academy">
+
+          <!-- Academy branding card -->
+          <div class="academy-branding">
+            <img *ngIf="academy.logoUrl" [src]="academy.logoUrl" class="academy-logo" alt="" />
+            <div *ngIf="!academy.logoUrl" class="academy-logo-placeholder" [style.background]="accentColor">
+              {{ academy.name[0] }}
+            </div>
+            <div class="academy-branding-text">
+              <div class="academy-branding-name">{{ academy.name }}</div>
+              <div class="academy-branding-org" *ngIf="academy.orgName">{{ academy.orgName }}</div>
+            </div>
+          </div>
+
+          <div class="eyebrow">
+            <div class="eyebrow-dot"></div>
+            <span class="eyebrow-text">Student Registration</span>
+          </div>
+
+          <h1 class="copy-title">
+            Join <em>{{ academy.name }}</em><br>and start learning.
+          </h1>
+
+          <p class="copy-desc" *ngIf="academy.description">{{ academy.description }}</p>
+          <p class="copy-desc" *ngIf="!academy.description">
+            Create your free student account and get access to all courses this academy offers.
+          </p>
+
+          <ul class="feature-list">
+            <li>
+              <div class="fl-icon">📚</div>
+              <div>
+                <div class="fl-title">Access all courses</div>
+                <div class="fl-desc">Browse and enroll in every course this academy publishes.</div>
+              </div>
+            </li>
+            <li>
+              <div class="fl-icon">📊</div>
+              <div>
+                <div class="fl-title">Track your progress</div>
+                <div class="fl-desc">Resume where you left off across all your enrolled courses.</div>
+              </div>
+            </li>
+            <li>
+              <div class="fl-icon">🏆</div>
+              <div>
+                <div class="fl-title">Earn certificates</div>
+                <div class="fl-desc">Complete courses to receive a verifiable certificate.</div>
+              </div>
+            </li>
+          </ul>
+
+          <div class="tip-card">
+            <div class="tip-icon">💡</div>
+            <div class="tip-text">
+              <div class="tip-title">Already have an account?</div>
+              <div class="tip-desc">
+                <a [routerLink]="['/login-academy']" [queryParams]="{academy: academySlug}" class="tip-link">
+                  Sign in here →
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </ng-container>
+
+        <!-- Invalid -->
+        <ng-container *ngIf="step === 'invalid'">
+          <div class="eyebrow">
+            <div class="eyebrow-dot"></div>
+            <span class="eyebrow-text">Registration</span>
+          </div>
+          <h1 class="copy-title">Invalid<br><em>link.</em></h1>
+          <p class="copy-desc">This registration link is not valid or has expired.</p>
+        </ng-container>
+
+      </div>
+
+      <!-- ══════════════════════════════
+           RIGHT PANEL
+      ══════════════════════════════ -->
+      <div class="form-panel">
+
+        <!-- Loading skeleton -->
+        <div class="register-card loading-card" *ngIf="step === 'loading'">
+          <div class="skeleton-line w60"></div>
+          <div class="skeleton-line w40"></div>
+          <div class="skeleton-block"></div>
+        </div>
+
+        <!-- Invalid state -->
+        <div class="register-card" *ngIf="step === 'invalid'">
+          <div class="card-head">
+            <div class="logo-mark sm"><span>الف</span></div>
+            <h2 class="card-title">Invalid Registration Link</h2>
+            <p class="card-sub">{{ invalidError }}</p>
+          </div>
+          <div class="alert-error"><span class="alert-icon">⚠</span> {{ invalidError }}</div>
+          <div style="margin-top: 24px;">
+            <a routerLink="/academies" class="btn btn-ghost btn-full">Browse Academies →</a>
+          </div>
+        </div>
+
+        <!-- Main form card -->
+        <div class="register-card" *ngIf="step === 'credentials' || step === 'verify'">
+
+          <div class="card-head">
+            <!-- Academy badge -->
+            <div class="academy-badge" *ngIf="academy">
+              <img *ngIf="academy.logoUrl" [src]="academy.logoUrl" class="badge-logo" alt="" />
+              <div *ngIf="!academy.logoUrl" class="badge-placeholder" [style.background]="accentColor">
+                {{ academy.name[0] }}
+              </div>
+              <span class="badge-name">{{ academy.name }}</span>
+            </div>
+
+            <h2 class="card-title">
+              <ng-container *ngIf="step === 'credentials'">Create your account</ng-container>
+              <ng-container *ngIf="step === 'verify'">Verify your phone</ng-container>
+            </h2>
+            <p class="card-sub">
+              <ng-container *ngIf="step === 'credentials'">
+                Join {{ academy?.name }} as a student.
+              </ng-container>
+              <ng-container *ngIf="step === 'verify'">
+                We sent a 6-digit code to your phone.
+              </ng-container>
+            </p>
+          </div>
+
+          <!-- Stepper -->
+          <div class="stepper">
+            <div class="step-item"
+                 [class.active]="step === 'credentials'"
+                 [class.done]="step === 'verify'">
+              <div class="step-num">
+                <span *ngIf="step === 'credentials'">1</span>
+                <span *ngIf="step === 'verify'" class="step-check">✓</span>
+              </div>
+              <span class="step-label">Details</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step-item" [class.active]="step === 'verify'">
+              <div class="step-num">2</div>
+              <span class="step-label">Verify</span>
+            </div>
+          </div>
+
+          <!-- ── STEP 1: Credentials ── -->
+          <form class="form" *ngIf="step === 'credentials'" [formGroup]="credForm" (ngSubmit)="sendCode()">
+
+            <div class="field">
+              <label class="label" for="rs-name">Full name <span class="optional">(optional)</span></label>
+              <input id="rs-name" type="text" formControlName="displayName"
+                     placeholder="Jane Smith" class="input" autocomplete="name" />
+            </div>
+
+            <div class="field">
+              <label class="label" for="rs-email">Email address <span class="req">*</span></label>
+              <input id="rs-email" type="email" formControlName="email"
+                     placeholder="you@example.com" class="input"
+                     autocomplete="email" inputmode="email" />
+              <small class="field-error" *ngIf="emailCtrl?.touched && emailCtrl?.invalid">
+                Please enter a valid email address.
+              </small>
+            </div>
+
+            <div class="field">
+              <label class="label" for="rs-phone">Phone number <span class="req">*</span></label>
+              <input id="rs-phone" type="tel" formControlName="phone"
+                     placeholder="+353 85 123 4567" class="input"
+                     autocomplete="tel" inputmode="tel" />
+              <small class="field-error" *ngIf="phoneCtrl?.touched && phoneCtrl?.invalid">
+                Please enter a valid phone number (used for verification).
+              </small>
+            </div>
+
+            <div class="pw-grid">
+              <div class="field">
+                <label class="label" for="rs-pass">Password <span class="req">*</span></label>
+                <div class="pw-wrap">
+                  <input id="rs-pass" class="input"
+                         [type]="showPassword ? 'text' : 'password'"
+                         formControlName="password"
+                         placeholder="At least 6 characters"
+                         autocomplete="new-password" />
+                  <button class="pw-toggle" type="button" (click)="togglePassword()">
+                    {{ showPassword ? 'Hide' : 'Show' }}
+                  </button>
+                </div>
+                <small class="field-error" *ngIf="passCtrl?.touched && passCtrl?.invalid">
+                  Minimum 6 characters.
+                </small>
+              </div>
+
+              <div class="field">
+                <label class="label" for="rs-confirm">Confirm password <span class="req">*</span></label>
+                <div class="pw-wrap">
+                  <input id="rs-confirm" class="input"
+                         [type]="showConfirm ? 'text' : 'password'"
+                         formControlName="confirmPassword"
+                         placeholder="Repeat your password"
+                         autocomplete="new-password" />
+                  <button class="pw-toggle" type="button" (click)="toggleConfirm()">
+                    {{ showConfirm ? 'Hide' : 'Show' }}
+                  </button>
+                </div>
+                <small class="field-error" *ngIf="pwMismatch">Passwords don't match.</small>
+              </div>
+            </div>
+
+            <button class="btn btn-primary btn-full" type="submit"
+                    [disabled]="loading || credForm.invalid">
+              <span *ngIf="!loading">Send Verification Code →</span>
+              <span *ngIf="loading" class="loading-row">
+                <span class="spinner"></span>Sending…
+              </span>
+            </button>
+
+            <div class="alert-error" *ngIf="error">
+              <span class="alert-icon">⚠</span> {{ error }}
+            </div>
+
+            <p class="terms-note">
+              By registering you agree to our
+              <a routerLink="/terms" class="terms-link">Terms</a> and
+              <a routerLink="/privacy" class="terms-link">Privacy Policy</a>.
+            </p>
+
+          </form>
+
+          <!-- ── STEP 2: OTP ── -->
+          <form class="form" *ngIf="step === 'verify'" [formGroup]="verifyForm" (ngSubmit)="submitVerify()">
+
+            <div class="field">
+              <label class="label">Verification code</label>
+              <div class="otp-grid" (paste)="onCodePaste($event)">
+                <input #codeInput class="otp-box" maxlength="1" inputmode="numeric" autocomplete="one-time-code"
+                       (input)="onDigitInput(0, $event)" (keydown)="onDigitKeyDown(0, $event)" />
+                <input #codeInput class="otp-box" maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(1, $event)" (keydown)="onDigitKeyDown(1, $event)" />
+                <input #codeInput class="otp-box" maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(2, $event)" (keydown)="onDigitKeyDown(2, $event)" />
+                <input #codeInput class="otp-box" maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(3, $event)" (keydown)="onDigitKeyDown(3, $event)" />
+                <input #codeInput class="otp-box" maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(4, $event)" (keydown)="onDigitKeyDown(4, $event)" />
+                <input #codeInput class="otp-box" maxlength="1" inputmode="numeric"
+                       (input)="onDigitInput(5, $event)" (keydown)="onDigitKeyDown(5, $event)" />
+              </div>
+              <p class="sent-hint">Code sent to <strong>{{ credForm.value.phone }}</strong></p>
+            </div>
+
+            <button class="btn btn-primary btn-full" type="submit"
+                    [disabled]="loading || verifyForm.invalid">
+              <span *ngIf="!loading">Create Student Account</span>
+              <span *ngIf="loading" class="loading-row">
+                <span class="spinner"></span>Creating account…
+              </span>
+            </button>
+
+            <div class="verify-actions">
+              <button class="btn btn-ghost btn-sm" type="button" (click)="backToCredentials()">← Back</button>
+              <button class="btn btn-ghost btn-sm" type="button"
+                      (click)="resendCode()" [disabled]="resendIn > 0 || loading">
+                {{ resendIn > 0 ? 'Resend (' + resendIn + 's)' : 'Resend code' }}
+              </button>
+            </div>
+
+            <div class="alert-error" *ngIf="error">
+              <span class="alert-icon">⚠</span> {{ error }}
+            </div>
+
+          </form>
+
+          <div class="card-foot">
+            <span class="card-foot-muted">Already have an account?</span>
+            <a [routerLink]="['/login-academy']" [queryParams]="{academy: academySlug}" class="card-foot-link">
+              Log in →
+            </a>
+          </div>
+
+        </div>
+
+        <!-- Success card -->
+        <div class="register-card success-card" *ngIf="step === 'done'">
+          <div class="card-head">
+            <span class="success-emoji">🎉</span>
+            <h2 class="card-title">You're in!</h2>
+            <p class="card-sub">
+              Your student account has been created. Log in to start learning at
+              <strong>{{ academy?.name }}</strong>.
+            </p>
+          </div>
+
+          <div class="success-features">
+            <div class="sf-item">
+              <div class="sf-icon">📚</div>
+              Browse and enroll in courses
+            </div>
+            <div class="sf-item">
+              <div class="sf-icon">📊</div>
+              Track your learning progress
+            </div>
+            <div class="sf-item">
+              <div class="sf-icon">🏆</div>
+              Earn completion certificates
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-full" (click)="goToLogin()">
+            Go to Login →
+          </button>
+
+          <div class="card-foot">
+            <span class="card-foot-muted">Explore more?</span>
+            <a routerLink="/academies" class="card-foot-link">Browse academies →</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <footer class="page-footer">
+      <div class="footer-copy">© {{ year }} Alef Learning Commerce. All rights reserved.</div>
+      <div class="footer-links">
+        <a routerLink="/privacy">Privacy</a>
+        <a routerLink="/terms">Terms</a>
+      </div>
+    </footer>
+  </main>
+</div>

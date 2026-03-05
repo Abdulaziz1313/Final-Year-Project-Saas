@@ -4,6 +4,9 @@ public class Academy
 {
     public Guid Id { get; set; } = Guid.NewGuid();
 
+    public Guid OrganizationId { get; set; }
+    public Organization? Organization { get; set; }
+
     public string Name { get; set; } = string.Empty;
     public string Slug { get; set; } = string.Empty;
 

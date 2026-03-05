@@ -8,9 +8,9 @@ import { AdminApi } from '../../core/services/admin-api';
 import { ToastService } from '../../shared/ui/toast.service';
 import { ConfirmService } from '../../shared/ui/confirm.service';
 
-type Tab = 'academies' | 'courses' | 'users' | 'audit';
+type Tab = 'academies' | 'courses' | 'users' | 'orgs' | 'audit';
 type HideTargetKind = 'academy' | 'course';
-type DeleteTargetKind = 'academy' | 'course';
+type DeleteTargetKind = 'academy' | 'course' | 'user' | 'organization';
 
 type AdminFilters = {
   q: FormControl<string>;
@@ -46,13 +46,31 @@ type UserItem = {
   displayName?: string | null;
   roles?: string[];
   lockoutEnd?: string | null;
+  organizationId?: string | null;
+};
+
+type OrgItem = {
+  id: string;
+  name: string;
+  slug: string;
+  website?: string | null;
+  primaryColor?: string | null;
+  logoUrl?: string | null;
+  inviteCode?: string | null;
+  createdAt?: string | null;
+
+  academiesCount?: number;
+  usersCount?: number;
+
+  // from backend now
+  isActive?: boolean;
 };
 
 type AuditItem = {
   id: string;
   actorUserId: string;
   action: string;
-  targetType: string; // academy | course | user
+  targetType: string;
   targetId: string;
   targetLabel?: string | null;
   reason?: string | null;
@@ -78,6 +96,10 @@ export class AdminComponent {
   users: UserItem[] = [];
   audit: AuditItem[] = [];
 
+  // orgs
+  orgs: OrgItem[] = [];
+  orgsAll: OrgItem[] = []; // for assign dropdown
+
   // pagination
   page = 1;
   pageSize = 25;
@@ -88,7 +110,7 @@ export class AdminComponent {
 
   form!: FormGroup<AdminFilters>;
 
-  // ✅ Audit filters
+  // Audit filters
   auditActionCtrl!: FormControl<string>;
   auditTargetCtrl!: FormControl<string>;
 
@@ -114,13 +136,31 @@ export class AdminComponent {
   lockPreset: '1d' | '7d' | '30d' | 'perm' = '7d';
   lockSaving = false;
 
-  // ✅ Delete drawer
+  // Delete drawer
   deleteOpen = false;
   deleteKind: DeleteTargetKind = 'academy';
   deleteId: string | null = null;
   deleteTitle: string | null = null;
   deleteReasonCtrl!: FormControl<string>;
   deleteQuickReasons = ['Policy violation', 'Spam or scam', 'Copyright infringement', 'Illegal content', 'Other'];
+
+  // Org create/edit drawer 
+  orgDrawerOpen = false;
+  orgSaving = false;
+  editingOrg: OrgItem | null = null;
+
+  orgForm!: FormGroup<{
+    name: FormControl<string>;
+    slug: FormControl<string>;
+    website: FormControl<string>;
+    primaryColor: FormControl<string>;
+  }>;
+
+  // Assign org drawer
+  assignOrgOpen = false;
+  assignOrgUser: UserItem | null = null;
+  assignOrgSaving = false;
+  assignOrgCtrl!: FormControl<string | null>;
 
   constructor(
     private api: AdminApi,
@@ -140,7 +180,16 @@ export class AdminComponent {
     this.reasonCtrl = this.fb.control('Policy violation', { nonNullable: true });
     this.deleteReasonCtrl = this.fb.control('Policy violation', { nonNullable: true });
 
-    // ✅ reload when base filters change
+    this.orgForm = this.fb.group({
+      name: this.fb.control('', { nonNullable: true }),
+      slug: this.fb.control('', { nonNullable: true }),
+      website: this.fb.control('', { nonNullable: true }),
+      primaryColor: this.fb.control('#7c3aed', { nonNullable: true }),
+    });
+
+    this.assignOrgCtrl = this.fb.control<string | null>(null);
+
+    // reload when base filters change
     this.form.valueChanges
       .pipe(debounceTime(350), map((v) => JSON.stringify(v)), distinctUntilChanged())
       .subscribe(() => {
@@ -148,7 +197,7 @@ export class AdminComponent {
         this.load();
       });
 
-    // ✅ reload when audit filters change (only on audit tab)
+    // reload when audit filters change 
     this.auditActionCtrl.valueChanges
       .pipe(debounceTime(250), distinctUntilChanged())
       .subscribe(() => {
@@ -208,8 +257,10 @@ export class AdminComponent {
     this.closeRolesDrawer();
     this.closeLockDrawer();
     this.closeDeleteDrawer();
+    this.closeOrgDrawer();
+    this.closeAssignOrgDrawer();
 
-    // reset filters (do not trigger valueChanges)
+    // reset filters 
     this.form.patchValue({ q: '', status: 'all', role: 'all' }, { emitEvent: false });
     this.auditActionCtrl.setValue('all', { emitEvent: false });
     this.auditTargetCtrl.setValue('all', { emitEvent: false });
@@ -261,6 +312,9 @@ export class AdminComponent {
           this.users = (res.items || []) as UserItem[];
           this.total = res.total ?? this.users.length;
           this.setLoading(false);
+
+          // keep org list ready for assign dropdown
+          this.loadAllOrgsForAssign();
         },
         error: () => {
           this.error = 'Failed to load users.';
@@ -270,7 +324,25 @@ export class AdminComponent {
       return;
     }
 
-    // ✅ audit
+    if (this.tab === 'orgs') {
+      this.api.listOrganizations(q, this.page, this.pageSize).subscribe({
+        next: (res) => {
+          const items = (res.items || []) as OrgItem[];
+          this.orgs = items;
+          this.total = res.total ?? this.orgs.length;
+          this.setLoading(false);
+
+          this.orgsAll = this.mergeOrgsAll(items);
+        },
+        error: () => {
+          this.error = 'Failed to load organizations.';
+          this.setLoading(false);
+        },
+      });
+      return;
+    }
+
+    // audit
     const action = (this.auditActionCtrl.value || 'all').trim();
     const targetType = (this.auditTargetCtrl.value || 'all').trim();
 
@@ -285,6 +357,24 @@ export class AdminComponent {
         this.setLoading(false);
       },
     });
+  }
+
+  private loadAllOrgsForAssign() {
+    this.api.listOrganizations('', 1, 200).subscribe({
+      next: (res) => {
+        const items = (res.items || []) as OrgItem[];
+        this.orgsAll = this.mergeOrgsAll(items);
+      },
+      error: () => {},
+    });
+  }
+
+  private mergeOrgsAll(items: OrgItem[]) {
+    const map = new Map<string, OrgItem>();
+    for (const o of [...(this.orgsAll || []), ...(items || [])]) {
+      if (o?.id) map.set(o.id, o);
+    }
+    return Array.from(map.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }
 
   // KPI counts
@@ -467,6 +557,17 @@ export class AdminComponent {
     this.deleteReasonCtrl.setValue(r);
   }
 
+  // helper open methods (users/orgs)
+  openDeleteUserDrawer(u: UserItem) {
+    if (!u?.id || this.isBusy(u.id)) return;
+    this.openDeleteDrawer('user', u.id, u.email || u.id);
+  }
+
+  openDeleteOrgDrawer(o: OrgItem) {
+    if (!o?.id || this.isBusy(o.id)) return;
+    this.openDeleteDrawer('organization', o.id, o.name || o.id);
+  }
+
   async confirmDelete() {
     const id = this.deleteId;
     if (!id) return;
@@ -501,21 +602,54 @@ export class AdminComponent {
       return;
     }
 
-    this.api.deleteCourse(id, safeReason).subscribe({
+    if (this.deleteKind === 'course') {
+      this.api.deleteCourse(id, safeReason).subscribe({
+        next: () => {
+          this.busy.delete(id);
+          this.toast.success('Course deleted.');
+          this.closeDeleteDrawer();
+          this.load();
+        },
+        error: () => {
+          this.busy.delete(id);
+          this.toast.error('Delete failed.');
+        },
+      });
+      return;
+    }
+
+    if (this.deleteKind === 'user') {
+      this.api.deleteUser(id, safeReason).subscribe({
+        next: () => {
+          this.busy.delete(id);
+          this.toast.success('User deleted.');
+          this.closeDeleteDrawer();
+          this.load();
+        },
+        error: (e) => {
+          this.busy.delete(id);
+          this.toast.error(e?.error || 'Delete failed.');
+        },
+      });
+      return;
+    }
+
+    // organization
+    this.api.deleteOrganization(id, safeReason).subscribe({
       next: () => {
         this.busy.delete(id);
-        this.toast.success('Course deleted.');
+        this.toast.success('Organization deleted.');
         this.closeDeleteDrawer();
         this.load();
       },
-      error: () => {
+      error: (e) => {
         this.busy.delete(id);
-        this.toast.error('Delete failed.');
+        this.toast.error(e?.error || 'Delete failed.');
       },
     });
   }
 
-  // ---------------- Users (Lock with duration) ----------------
+  // ---------------- Users ----------------
   isUserLocked(u: UserItem): boolean {
     if (!u?.lockoutEnd) return false;
     const t = Date.parse(u.lockoutEnd);
@@ -684,6 +818,209 @@ export class AdminComponent {
     });
   }
 
+  // ---------------- Organizations ----------------
+  openOrgDrawerForCreate() {
+    this.editingOrg = null;
+    this.orgDrawerOpen = true;
+    this.orgSaving = false;
+    this.orgForm.reset(
+      { name: '', slug: '', website: '', primaryColor: '#7c3aed' },
+      { emitEvent: false }
+    );
+  }
+
+  openOrgDrawerForEdit(o: OrgItem) {
+    if (!o?.id || this.isBusy(o.id)) return;
+    this.editingOrg = o;
+    this.orgDrawerOpen = true;
+    this.orgSaving = false;
+    this.orgForm.reset(
+      {
+        name: o.name || '',
+        slug: o.slug || '',
+        website: o.website || '',
+        primaryColor: o.primaryColor || '#7c3aed',
+      },
+      { emitEvent: false }
+    );
+  }
+
+  closeOrgDrawer() {
+    this.orgDrawerOpen = false;
+    this.orgSaving = false;
+    this.editingOrg = null;
+  }
+
+  async saveOrg() {
+    if (this.orgSaving) return;
+
+    const v = this.orgForm.getRawValue();
+    const name = (v.name || '').trim();
+    const slug = (v.slug || '').trim();
+    const website = (v.website || '').trim();
+    const primaryColor = (v.primaryColor || '').trim();
+
+    if (!name) {
+      this.toast.error('Organization name is required.');
+      return;
+    }
+
+    this.orgSaving = true;
+
+    if (!this.editingOrg) {
+      this.api.createOrganization({
+        name,
+        slug: slug || null,
+        website: website || null,
+        primaryColor: primaryColor || null,
+      }).subscribe({
+        next: () => {
+          this.orgSaving = false;
+          this.toast.success('Organization created.');
+          this.closeOrgDrawer();
+          this.load();
+        },
+        error: (e) => {
+          this.orgSaving = false;
+          this.toast.error(e?.error || 'Create failed.');
+        },
+      });
+      return;
+    }
+
+    const orgId = this.editingOrg.id;
+    this.busy.add(orgId);
+
+    this.api.updateOrganization(orgId, {
+      name,
+      slug: slug || null,
+      website: website || null,
+      primaryColor: primaryColor || null,
+    }).subscribe({
+      next: () => {
+        this.busy.delete(orgId);
+        this.orgSaving = false;
+        this.toast.success('Organization updated.');
+        this.closeOrgDrawer();
+        this.load();
+      },
+      error: (e) => {
+        this.busy.delete(orgId);
+        this.orgSaving = false;
+        this.toast.error(e?.error || 'Update failed.');
+      },
+    });
+  }
+
+  // ✅ NOW IMPLEMENTED (uses backend endpoint)
+  async toggleOrgActive(o: OrgItem) {
+    if (!o?.id || this.isBusy(o.id)) return;
+
+    const next = !(o.isActive ?? true);
+
+    const ok = await this.confirm.open({
+      title: next ? 'Enable organization?' : 'Disable organization?',
+      message: `${next ? 'Enable' : 'Disable'} "${(o.name || 'Organization').trim()}"?`,
+      confirmText: next ? 'Yes, enable' : 'Yes, disable',
+      cancelText: 'Cancel',
+    });
+
+    if (!ok) return;
+
+    this.busy.add(o.id);
+
+    this.api.setOrgActive(o.id, next, null).subscribe({
+      next: () => {
+        this.busy.delete(o.id);
+        this.toast.success(next ? 'Organization enabled.' : 'Organization disabled.');
+        this.load();
+      },
+      error: (e) => {
+        this.busy.delete(o.id);
+        this.toast.error(e?.error || 'Update failed.');
+      },
+    });
+  }
+
+  // ---------------- Assign org to user ----------------
+  openAssignOrgDrawer(u: UserItem) {
+    if (!u?.id || this.isBusy(u.id)) return;
+
+    // ✅ optional: enforce instructor role (avoids backend rejecting silently)
+    if (!((u.roles || []).includes('Instructor') || (u.roles || []).includes('OrgAdmin'))) {
+      this.toast.error('This user is not an Instructor/OrgAdmin. Assigning an org usually applies to instructors.');
+      // still allow if you want:
+      // return;
+    }
+
+    this.assignOrgOpen = true;
+    this.assignOrgUser = u;
+    this.assignOrgSaving = false;
+
+    this.assignOrgCtrl.setValue(u.organizationId ?? null, { emitEvent: false });
+    this.ensureOrgsAllLoaded();
+  }
+
+  closeAssignOrgDrawer() {
+    this.assignOrgOpen = false;
+    this.assignOrgUser = null;
+    this.assignOrgSaving = false;
+    this.assignOrgCtrl.setValue(null, { emitEvent: false });
+  }
+
+  async saveUserOrg() {
+    const u = this.assignOrgUser;
+    if (!u?.id || this.isBusy(u.id) || this.assignOrgSaving) return;
+
+    // normalize selection
+    let orgId = this.assignOrgCtrl.value ?? null;
+    if (typeof orgId === 'string' && !orgId.trim()) orgId = null;
+
+    const orgLabel = this.orgLabel(orgId);
+
+    const ok = await this.confirm.open({
+      title: 'Assign organization?',
+      message: `Assign organization to "${u.email}"?\n\nOrg: ${orgLabel}`,
+      confirmText: 'Yes, save',
+      cancelText: 'Cancel',
+    });
+
+    if (!ok) return;
+
+    // ✅ optimistic UI update (so you instantly see it changed)
+    const prev = u.organizationId ?? null;
+    u.organizationId = orgId;
+
+    this.assignOrgSaving = true;
+    this.busy.add(u.id);
+
+    this.api.setUserOrganization(u.id, orgId).subscribe({
+      next: () => {
+        this.busy.delete(u.id);
+        this.assignOrgSaving = false;
+        this.toast.success('Organization updated.');
+        this.closeAssignOrgDrawer();
+
+        // ✅ keep UI consistent + also refresh from server
+        // (refresh is still good to confirm backend persisted it)
+        this.load();
+      },
+      error: (e) => {
+        // rollback optimistic update
+        u.organizationId = prev;
+
+        this.busy.delete(u.id);
+        this.assignOrgSaving = false;
+
+        const msg =
+          e?.error?.message ||
+          (typeof e?.error === 'string' ? e.error : null) ||
+          'Update failed.';
+        this.toast.error(msg);
+      },
+    });
+  }
+
   // ---------------- UI helpers ----------------
   trackById = (_: number, x: any) => x?.id;
   trackByAuditId = (_: number, x: any) => x?.id;
@@ -719,8 +1056,17 @@ export class AdminComponent {
       document.execCommand('copy');
       document.body.removeChild(ta);
       this.toast.success('Copied');
-    } catch {
-      // ignore
-    }
+    } catch {}
+  }
+
+  orgLabel(orgId?: string | null): string {
+    if (!orgId) return '—';
+    const o = (this.orgsAll || []).find(x => x.id === orgId) || (this.orgs || []).find(x => x.id === orgId);
+    return o ? `${o.name} (${o.slug})` : orgId;
+  }
+
+  private ensureOrgsAllLoaded() {
+    if (this.orgsAll?.length) return;
+    this.loadAllOrgsForAssign();
   }
 }

@@ -9,6 +9,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+    // Organizations
+    public DbSet<Organization> Organizations => Set<Organization>();
+
     public DbSet<Academy> Academies => Set<Academy>();
     public DbSet<Course> Courses => Set<Course>();
     public DbSet<Module> Modules => Set<Module>();
@@ -22,7 +25,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<AcademyReview> AcademyReviews => Set<AcademyReview>();
     public DbSet<Certificate> Certificates => Set<Certificate>();
 
-    // ✅ Quizzes
+    // Quizzes
     public DbSet<Quiz> Quizzes => Set<Quiz>();
     public DbSet<QuizQuestion> QuizQuestions => Set<QuizQuestion>();
     public DbSet<QuizChoice> QuizChoices => Set<QuizChoice>();
@@ -33,17 +36,57 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(builder);
 
+        // ---------------- ORGANIZATIONS ----------------
+        builder.Entity<Organization>(e =>
+        {
+            e.HasKey(x => x.Id);
+
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Slug).HasMaxLength(200).IsRequired();
+            e.HasIndex(x => x.Slug).IsUnique();
+
+            e.Property(x => x.Website).HasMaxLength(300);
+            e.Property(x => x.PrimaryColor).HasMaxLength(32).IsRequired();
+
+            e.Property(x => x.Description).HasMaxLength(4000);
+            e.Property(x => x.LogoUrl).HasMaxLength(500);
+
+            e.Property(x => x.InviteCode).HasMaxLength(64).IsRequired();
+
+            e.Property(x => x.IsActive).HasDefaultValue(true);
+        });
+
+        // ---------------- USERS (Identity) ----------------
+        builder.Entity<ApplicationUser>(e =>
+        {
+            // OrganizationId is nullable; index helps filtering instructors by org
+            e.HasIndex(x => x.OrganizationId);
+        });
+
+        // ---------------- ACADEMIES ----------------
         builder.Entity<Academy>(e =>
         {
             e.HasKey(x => x.Id);
+
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
             e.Property(x => x.Slug).HasMaxLength(120).IsRequired();
             e.HasIndex(x => x.Slug).IsUnique();
+
             e.Property(x => x.Website).HasMaxLength(300);
             e.Property(x => x.PrimaryColor).HasMaxLength(20).IsRequired();
+
+            // keep required for now (matches your existing model)
             e.Property(x => x.OwnerUserId).IsRequired();
+
+            // ✅ New: org ownership
+            e.HasIndex(x => x.OrganizationId);
+            e.HasOne(x => x.Organization)
+                .WithMany(o => o.Academies)
+                .HasForeignKey(x => x.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // ---------------- COURSES ----------------
         builder.Entity<Course>(e =>
         {
             e.HasKey(x => x.Id);
@@ -60,6 +103,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             e.HasIndex(x => new { x.AcademyId, x.Status });
         });
 
+        // ---------------- MODULES ----------------
         builder.Entity<Module>(e =>
         {
             e.HasKey(x => x.Id);
@@ -72,6 +116,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // ---------------- LESSONS ----------------
         builder.Entity<Lesson>(e =>
         {
             e.HasKey(x => x.Id);
@@ -84,6 +129,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // ---------------- ENROLLMENTS ----------------
         builder.Entity<Enrollment>(e =>
         {
             e.HasKey(x => x.Id);
@@ -91,6 +137,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             e.HasIndex(x => new { x.CourseId, x.StudentUserId }).IsUnique();
         });
 
+        // ---------------- LESSON PROGRESS ----------------
         builder.Entity<LessonProgress>(e =>
         {
             e.HasKey(x => x.Id);
@@ -98,6 +145,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             e.HasIndex(x => new { x.LessonId, x.StudentUserId }).IsUnique();
         });
 
+        // ---------------- NOTIFICATIONS ----------------
         builder.Entity<Notification>(e =>
         {
             e.HasKey(x => x.Id);
@@ -109,6 +157,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             e.HasIndex(x => new { x.UserId, x.IsRead, x.CreatedAt });
         });
 
+        // ---------------- PENDING REGISTRATION ----------------
         builder.Entity<PendingRegistration>(e =>
         {
             e.HasKey(x => x.Id);
@@ -119,15 +168,13 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             e.Property(x => x.PasswordHash).IsRequired();
         });
 
-        // ✅ Quiz mappings
+        // ---------------- QUIZZES ----------------
         builder.Entity<Quiz>(e =>
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Title).HasMaxLength(200).IsRequired();
 
-            // IMPORTANT:
-            // datetimeoffset column MUST use a datetimeoffset default.
-            // SYSUTCDATETIME() returns datetime2 => can cause mismatches.
+            // datetimeoffset MUST use datetimeoffset default
             e.Property(x => x.CreatedAt)
                 .HasColumnType("datetimeoffset")
                 .HasDefaultValueSql("SYSDATETIMEOFFSET()");
@@ -187,23 +234,24 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
                 .OnDelete(DeleteBehavior.NoAction);
         });
 
+        // ---------------- CERTIFICATES ----------------
         builder.Entity<Certificate>(b =>
-            {
-                b.HasKey(x => x.Id);
+        {
+            b.HasKey(x => x.Id);
 
-                b.Property(x => x.CertificateNumber).HasMaxLength(32).IsRequired();
-                b.HasIndex(x => x.CertificateNumber).IsUnique();
+            b.Property(x => x.CertificateNumber).HasMaxLength(32).IsRequired();
+            b.HasIndex(x => x.CertificateNumber).IsUnique();
 
-                b.Property(x => x.UserId).HasMaxLength(450).IsRequired(); // Identity user id length safe
-                b.HasIndex(x => new { x.CourseId, x.UserId }).IsUnique();  // ✅ prevent duplicate certs
+            b.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+            b.HasIndex(x => new { x.CourseId, x.UserId }).IsUnique();
 
-                b.Property(x => x.StudentName).HasMaxLength(200).IsRequired();
-                b.Property(x => x.StudentEmail).HasMaxLength(256).IsRequired();
-                b.Property(x => x.CourseTitle).HasMaxLength(200).IsRequired();
-                b.Property(x => x.AcademyName).HasMaxLength(200).IsRequired();
+            b.Property(x => x.StudentName).HasMaxLength(200).IsRequired();
+            b.Property(x => x.StudentEmail).HasMaxLength(256).IsRequired();
+            b.Property(x => x.CourseTitle).HasMaxLength(200).IsRequired();
+            b.Property(x => x.AcademyName).HasMaxLength(200).IsRequired();
 
-                b.Property(x => x.CompletedAt).HasColumnType("datetimeoffset");
-                b.Property(x => x.CreatedAt).HasColumnType("datetimeoffset");
-            });
+            b.Property(x => x.CompletedAt).HasColumnType("datetimeoffset");
+            b.Property(x => x.CreatedAt).HasColumnType("datetimeoffset");
+        });
     }
 }

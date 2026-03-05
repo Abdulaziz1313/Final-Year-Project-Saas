@@ -1,0 +1,50 @@
+<main class="page">
+  <div class="card">
+
+    <!-- Card header -->
+    <div class="card-header">
+      <div class="card-header-icon">&#x1F3E2;</div>
+      <div>
+        <div class="kicker">Organization</div>
+        <h1 class="card-title">Join your organization</h1>
+        <p class="card-desc muted">
+          Enter the invite code your admin gave you. This links your account to an organization.
+        </p>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="alerts" *ngIf="disabledOrg || error">
+      <div class="alert alert-warn" *ngIf="disabledOrg">
+        <div class="alert-icon">&#x26A0;&#xFE0F;</div>
+        <div>Your organization is currently disabled. Contact the admin to re-enable it or send you a new invite.</div>
+      </div>
+      <div class="alert alert-err" *ngIf="error">
+        <div class="alert-icon">&#x2715;</div>
+        <div>{{ error }}</div>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form (ngSubmit)="submit()" class="form">
+      <div class="field">
+        <label class="lbl" for="inviteCode">Invite code</label>
+        <input
+          id="inviteCode"
+          class="input"
+          name="inviteCode"
+          [(ngModel)]="inviteCode"
+          placeholder="e.g. xYzAbC123..."
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <div class="field-hint muted">Paste the code exactly as your admin shared it.</div>
+      </div>
+
+      <button class="btn btn-primary" type="submit" [disabled]="loading">
+        {{ loading ? 'Joining...' : 'Join organization' }}
+      </button>
+    </form>
+
+  </div>
+</main>

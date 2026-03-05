@@ -1,10 +1,9 @@
 /* ──────────────────────────────────────────────
-   quiz-editor.component.scss
+   quiz-editor.scss
    Alef Learning Commerce — Quiz Editor
-   Elevated to match Home page aesthetics
    ────────────────────────────────────────────── */
 
-// ── DESIGN TOKENS (mirror home.scss exactly) ──
+// ── DESIGN TOKENS ──
 :host {
   --text:          #0a0f1e;
   --muted:         #6b7280;
@@ -46,7 +45,7 @@
   overflow-x: hidden;
 }
 
-// ── BACKGROUND (exact Home match) ─────────────
+// ── BACKGROUND ─────────────
 .home-bg {
   position: fixed;
   inset: 0;
@@ -82,7 +81,7 @@
 @keyframes pulse   { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 @keyframes fadeUp  { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
-// ── TOPBAR (matches Home sticky nav style) ────
+// ── TOPBAR ────
 .topbar {
   position: sticky;
   top: 0;
@@ -348,7 +347,7 @@ textarea.input { resize: vertical; }
   margin-top: 2px;
 }
 
-// ── ADD BUTTONS (elevated, home-card style) ───
+// ── ADD BUTTONS ───
 .add-grid {
   display: grid;
   gap: 8px;
@@ -428,7 +427,7 @@ textarea.input { resize: vertical; }
   flex-shrink: 0;
 }
 
-// ── BUTTONS (exact Home match) ─────────────────
+// ── BUTTONS ─────────────────
 .btn {
   display: inline-flex;
   align-items: center;
