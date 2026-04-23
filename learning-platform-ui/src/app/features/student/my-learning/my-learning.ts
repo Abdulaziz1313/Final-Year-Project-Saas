@@ -6,6 +6,8 @@ import { catchError, map, shareReplay, startWith, switchMap } from 'rxjs/operato
 import { StudentApi, MyLearningItem } from '../../../core/services/student-api';
 import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../../shared/ui/toast.service';
+import { TranslatePipe } from '../../../shared/pipes/translate-pipe';
+import { LanguageService } from '../../../core/services/language-services';
 
 type LoadState<T> = { loading: boolean; data: T; error: string | null };
 type SortKey = 'recent' | 'progress' | 'title';
@@ -13,7 +15,7 @@ type SortKey = 'recent' | 'progress' | 'title';
 @Component({
   selector: 'app-my-learning',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TranslatePipe],
   templateUrl: './my-learning.html',
   styleUrl: './my-learning.scss',
 })
@@ -29,7 +31,7 @@ export class MyLearningComponent {
   private reload$ = new BehaviorSubject<void>(undefined);
   state$: Observable<LoadState<MyLearningItem[]>>;
 
-  constructor(private student: StudentApi, private router: Router, private toast: ToastService) {
+  constructor(private student: StudentApi, private router: Router, private toast: ToastService, public lang: LanguageService) {
     this.state$ = this.reload$.pipe(
       switchMap(() =>
         this.student.myLearning().pipe(

@@ -26,12 +26,14 @@ export class AdminApi {
     return this.http.put(`${this.api}/api/admin/users/${userId}/roles`, { roles });
   }
 
-  // Assign user to an organization 
   setUserOrganization(userId: string, organizationId: string | null) {
     return this.http.put(`${this.api}/api/admin/users/${userId}/organization`, { organizationId });
   }
 
-  // delete user 
+  setUserAcademy(userId: string, academyId: string | null) {
+    return this.http.put(`${this.api}/api/admin/users/${userId}/academy`, { academyId });
+  }
+
   deleteUser(userId: string, reason: string) {
     const params = new URLSearchParams();
     if (reason) params.set('reason', reason);
@@ -73,7 +75,6 @@ export class AdminApi {
     return this.http.put<any>(`${this.api}/api/admin/organizations/${orgId}`, payload);
   }
 
-  // enable/disable organization
   setOrgActive(orgId: string, isActive: boolean, reason?: string | null) {
     return this.http.put(`${this.api}/api/admin/organizations/${orgId}/active`, {
       isActive,
@@ -81,7 +82,6 @@ export class AdminApi {
     });
   }
 
-  // delete organization 
   deleteOrganization(orgId: string, reason: string) {
     const params = new URLSearchParams();
     if (reason) params.set('reason', reason);
@@ -126,6 +126,10 @@ export class AdminApi {
     const params = new URLSearchParams();
     if (reason) params.set('reason', reason);
     return this.http.delete(`${this.api}/api/admin/courses/${id}?${params.toString()}`);
+  }
+
+  getCourseLessons(courseId: string) {
+    return this.http.get<any>(`${this.api}/api/admin/courses/${courseId}/lessons`);
   }
 
   // ---- Audit ----

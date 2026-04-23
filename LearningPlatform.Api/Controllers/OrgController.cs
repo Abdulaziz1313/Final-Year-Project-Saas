@@ -1,13 +1,15 @@
-// OrgController.cs
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
+using LearningPlatform.Api.Services;
 using LearningPlatform.Domain.Entities;
 using LearningPlatform.Infrastructure.Identity;
 using LearningPlatform.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
+using LearningPlatform.Application.Common.Interfaces;
 
 namespace LearningPlatform.Api.Controllers;
 
@@ -17,11 +19,19 @@ public class OrgController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly UserManager<ApplicationUser> _users;
+    private readonly IEmailSender _email;
+    private readonly IConfiguration _config;
 
-    public OrgController(AppDbContext db, UserManager<ApplicationUser> users)
+    public OrgController(
+        AppDbContext db,
+        UserManager<ApplicationUser> users,
+        IEmailSender email,
+        IConfiguration config)
     {
         _db = db;
         _users = users;
+        _email = email;
+        _config = config;
     }
 
     private string? UserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -32,10 +42,111 @@ public class OrgController : ControllerBase
             .Select(u => u.OrganizationId)
             .FirstOrDefaultAsync();
 
-    // =========================================================
-    // ME
-    // GET /api/orgs/me
-    // =========================================================
+    public record CreateInstructorRequest(
+        Guid AcademyId,
+        string Email,
+        string TempPassword,
+        string? DisplayName,
+        bool SendEmail = false
+    );
+
+    [HttpPost("instructors")]
+    [Authorize(Roles = "OrgAdmin")]
+    public async Task<IActionResult> CreateInstructor([FromBody] CreateInstructorRequest req)
+    {
+        var userId = UserId();
+        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+
+        var orgId = await GetMyOrgId(userId);
+        if (orgId is null) return BadRequest("Create an organization first.");
+
+        if (req.AcademyId == Guid.Empty) return BadRequest("AcademyId is required.");
+
+        var academy = await _db.Academies
+            .AsNoTracking()
+            .Where(a => a.Id == req.AcademyId && a.OrganizationId == orgId.Value)
+            .Select(a => new
+            {
+                a.Id,
+                a.Name,
+                a.Slug,
+                a.OrganizationId,
+                OrgIsActive = a.Organization != null && a.Organization.IsActive
+            })
+            .FirstOrDefaultAsync();
+
+        if (academy is null) return BadRequest("Academy not found for your organization.");
+        if (!academy.OrgIsActive) return BadRequest("Your organization is inactive.");
+
+        var email = (req.Email ?? "").Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains("@"))
+            return BadRequest("Valid instructor email is required.");
+
+        if (string.IsNullOrWhiteSpace(req.TempPassword) || req.TempPassword.Length < 6)
+            return BadRequest("TempPassword must be at least 6 characters.");
+
+        var exists = await _users.FindByEmailAsync(email);
+        if (exists != null) return Conflict("This email is already registered.");
+
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            EmailConfirmed = true,
+            DisplayName = string.IsNullOrWhiteSpace(req.DisplayName) ? null : req.DisplayName.Trim(),
+            OrganizationId = academy.OrganizationId,
+            AcademyId = academy.Id,
+            MustChangePassword = true
+        };
+
+        var created = await _users.CreateAsync(user, req.TempPassword);
+        if (!created.Succeeded)
+            return BadRequest(string.Join(", ", created.Errors.Select(e => e.Description)));
+
+        var roleAdd = await _users.AddToRoleAsync(user, "Instructor");
+        if (!roleAdd.Succeeded)
+            return BadRequest(string.Join(", ", roleAdd.Errors.Select(e => e.Description)));
+
+        if (req.SendEmail)
+        {
+            var feBase = _config["Frontend:BaseUrl"] ?? "http://localhost:4201/#";
+            var loginUrl = $"{feBase}/login-instructor?academy={Uri.EscapeDataString(academy.Slug)}";
+
+            var subject = $"Your instructor account — {academy.Name} on Alef";
+            var safePass = System.Net.WebUtility.HtmlEncode(req.TempPassword);
+
+            var html = $@"
+<div style='font-family:Arial,sans-serif;line-height:1.6'>
+  <h2>Instructor account created</h2>
+  <p>Your organization admin created an instructor account for <b>{System.Net.WebUtility.HtmlEncode(academy.Name)}</b>.</p>
+  <p>
+    <b>Email:</b> {System.Net.WebUtility.HtmlEncode(email)}<br/>
+    <b>Temporary password:</b> {safePass}
+  </p>
+  <p><b>Important:</b> On your first login, you will be required to change your password.</p>
+  <p>
+    <a href='{loginUrl}' style='display:inline-block;padding:10px 16px;background:#0a0f1e;color:#fff;text-decoration:none;border-radius:10px'>
+      Sign in
+    </a>
+  </p>
+  <p style='color:#6b7280;font-size:12px'>If you didn’t expect this email, contact your organization admin.</p>
+</div>";
+
+            await _email.SendAsync(email, subject, html);
+        }
+
+        return Ok(new
+        {
+            id = user.Id,
+            email = user.Email,
+            displayName = user.DisplayName,
+            academyId = user.AcademyId,
+            academyName = academy.Name,
+            mustChangePassword = user.MustChangePassword,
+            message = "Instructor created successfully."
+        });
+    }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> GetMyOrg()
@@ -53,24 +164,42 @@ public class OrgController : ControllerBase
 
         var org = await _db.Organizations.AsNoTracking()
             .Where(o => o.Id == u.OrganizationId.Value)
-            .Select(o => new { o.Id, o.Name, o.Slug, o.Website, o.PrimaryColor, o.Description, o.LogoUrl, o.CreatedAt, o.IsActive })
+            .Select(o => new
+            {
+                o.Id,
+                o.Name,
+                o.Slug,
+                o.Website,
+                o.PrimaryColor,
+                o.Description,
+                o.LogoUrl,
+                o.CreatedAt,
+                o.IsActive
+            })
             .FirstOrDefaultAsync();
 
         if (org is null)
         {
             var user = await _users.FindByIdAsync(userId);
-            if (user != null) { user.OrganizationId = null; await _users.UpdateAsync(user); }
+            if (user != null)
+            {
+                user.OrganizationId = null;
+                await _users.UpdateAsync(user);
+            }
+
             return Ok(new { userId = u.Id, organization = (object?)null });
         }
 
         return Ok(new { userId = u.Id, organization = org });
     }
 
-    // =========================================================
-    // ORG ADMIN: CREATE ORG
-    // POST /api/orgs
-    // =========================================================
-    public record CreateOrgRequest(string Name, string? Website, string? Description, string? PrimaryColor, string? LogoUrl);
+    public record CreateOrgRequest(
+        string Name,
+        string? Website,
+        string? Description,
+        string? PrimaryColor,
+        string? LogoUrl
+    );
 
     [HttpPost]
     [Authorize(Roles = "OrgAdmin")]
@@ -90,7 +219,8 @@ public class OrgController : ControllerBase
         var org = new Organization
         {
             Id = Guid.NewGuid(),
-            Name = name, Slug = slug,
+            Name = name,
+            Slug = slug,
             Website = NullIfEmpty(req.Website),
             Description = NullIfEmpty(req.Description),
             LogoUrl = NullIfEmpty(req.LogoUrl),
@@ -105,14 +235,21 @@ public class OrgController : ControllerBase
         await _users.UpdateAsync(user);
         await _db.SaveChangesAsync();
 
-        return Ok(new { org.Id, org.Name, org.Slug, org.Website, org.PrimaryColor, org.Description, org.LogoUrl, org.InviteCode, org.CreatedAt, org.IsActive });
+        return Ok(new
+        {
+            org.Id,
+            org.Name,
+            org.Slug,
+            org.Website,
+            org.PrimaryColor,
+            org.Description,
+            org.LogoUrl,
+            org.InviteCode,
+            org.CreatedAt,
+            org.IsActive
+        });
     }
 
-    // =========================================================
-    // ORG ADMIN: ACADEMY MANAGEMENT
-    // =========================================================
-
-    // GET /api/orgs/academies  — list all academies belonging to my org
     [HttpGet("academies")]
     [Authorize(Roles = "OrgAdmin")]
     public async Task<IActionResult> ListAcademies()
@@ -129,30 +266,73 @@ public class OrgController : ControllerBase
             .OrderByDescending(a => a.CreatedAt)
             .Select(a => new
             {
-                a.Id, a.Name, a.Slug, a.Description, a.LogoUrl,
-                a.PrimaryColor, a.IsPublished, a.IsHidden,
-                a.CreatedAt, a.PublishedAt,
-                CourseCount  = _db.Courses.Count(c => c.AcademyId == a.Id),
-                InstructorCount = _db.Users.Count(u => u.AcademyId == a.Id)
+                a.Id,
+                a.Name,
+                a.Slug,
+                a.Description,
+                a.Website,
+                a.LogoUrl,
+                a.BannerUrl,
+                a.PrimaryColor,
+                a.FontKey,
+                a.BrandingJson,
+                a.LayoutJson,
+                a.IsPublished,
+                a.IsHidden,
+                a.HiddenReason,
+                a.HiddenAt,
+                a.CreatedAt,
+                a.PublishedAt,
+                CourseCount = _db.Courses.Count(c => c.AcademyId == a.Id),
+                InstructorCount = _db.Users.Count(u => u.AcademyId == a.Id && u.OrganizationId == a.OrganizationId)
             })
             .ToListAsync();
 
         return Ok(academies);
     }
 
-    // POST /api/orgs/academies  — org admin creates a new academy
-    public record CreateAcademyRequest(
+    public record CreateOrgAcademyRequest(
         string Name,
         string? Description,
         string? Website,
         string? PrimaryColor,
         string? LogoUrl,
-        string? FontKey
+        string? FontKey,
+        string? BrandingJson,
+        string? LayoutJson,
+        string? ThemeMode,
+        string? AccentStyle,
+        string? Tagline,
+        string? Category,
+        string? ContactEmail,
+        string? SupportLabel,
+        string? WelcomeTitle,
+        string? CtaPrimaryText,
+        string? CtaSecondaryText,
+        string? NavLabelPrimary,
+        string? NavLabelSecondary,
+        string? FooterText,
+        string? HeroLayout,
+        string? SurfaceStyle,
+        string? RadiusKey,
+        bool? ShowStats,
+        bool? ShowTestimonials
+    );
+
+    public record UpdateAcademyRequest(
+        string Name,
+        string Slug,
+        string? Description,
+        string? Website,
+        string? PrimaryColor,
+        string? FontKey,
+        string? BrandingJson,
+        string? LayoutJson
     );
 
     [HttpPost("academies")]
     [Authorize(Roles = "OrgAdmin")]
-    public async Task<IActionResult> CreateAcademy([FromBody] CreateAcademyRequest req)
+    public async Task<IActionResult> CreateAcademy([FromBody] CreateOrgAcademyRequest req)
     {
         var userId = UserId();
         if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
@@ -163,11 +343,14 @@ public class OrgController : ControllerBase
         var name = (req.Name ?? "").Trim();
         if (string.IsNullOrWhiteSpace(name)) return BadRequest("Academy name is required.");
 
-        // Slug must be unique globally across all academies
         var baseSlug = Slugify(name);
-        var slug = baseSlug; var i = 1;
+        var slug = baseSlug;
+        var i = 1;
         while (await _db.Academies.AnyAsync(a => a.Slug == slug))
             slug = $"{baseSlug}-{++i}";
+
+        var brandingJson = BuildBrandingJson(req);
+        var layoutJson = BuildLayoutJson(req);
 
         var academy = new Academy
         {
@@ -179,9 +362,16 @@ public class OrgController : ControllerBase
             Website = NullIfEmpty(req.Website),
             PrimaryColor = NullIfEmpty(req.PrimaryColor) ?? "#7c3aed",
             LogoUrl = NullIfEmpty(req.LogoUrl),
-            FontKey = NullIfEmpty(req.FontKey) ?? "system",
-            OwnerUserId = userId,        // org admin is the creator/owner
+            FontKey = NormalizeFontKey(req.FontKey),
+            BrandingJson = brandingJson,
+            LayoutJson = layoutJson,
+            OwnerUserId = userId,
             IsPublished = false,
+            PublishedAt = null,
+            IsHidden = false,
+            HiddenReason = null,
+            HiddenAt = null,
+            HiddenByUserId = null,
             CreatedAt = DateTimeOffset.UtcNow
         };
 
@@ -190,15 +380,26 @@ public class OrgController : ControllerBase
 
         return Ok(new
         {
-            academy.Id, academy.Name, academy.Slug, academy.OrganizationId,
-            academy.Description, academy.Website, academy.PrimaryColor,
-            academy.LogoUrl, academy.FontKey, academy.IsPublished, academy.CreatedAt,
-            // Share the instructor registration link slug so they can copy it
-            instructorRegisterPath = $"/#/register-instructor?academy={academy.Slug}"
+            academy.Id,
+            academy.Name,
+            academy.Slug,
+            academy.OrganizationId,
+            academy.Description,
+            academy.Website,
+            academy.PrimaryColor,
+            academy.LogoUrl,
+            academy.BannerUrl,
+            academy.FontKey,
+            academy.BrandingJson,
+            academy.LayoutJson,
+            academy.IsPublished,
+            academy.IsHidden,
+            academy.HiddenReason,
+            academy.HiddenAt,
+            academy.CreatedAt
         });
     }
 
-    // GET /api/orgs/academies/{academyId}  — get one academy (org admin)
     [HttpGet("academies/{academyId:guid}")]
     [Authorize(Roles = "OrgAdmin")]
     public async Task<IActionResult> GetAcademy(Guid academyId)
@@ -214,12 +415,25 @@ public class OrgController : ControllerBase
             .Where(x => x.Id == academyId && x.OrganizationId == orgId.Value)
             .Select(x => new
             {
-                x.Id, x.Name, x.Slug, x.Description, x.Website,
-                x.PrimaryColor, x.LogoUrl, x.BannerUrl, x.FontKey,
-                x.IsPublished, x.IsHidden, x.HiddenReason,
-                x.CreatedAt, x.PublishedAt,
+                x.Id,
+                x.Name,
+                x.Slug,
+                x.Description,
+                x.Website,
+                x.PrimaryColor,
+                x.LogoUrl,
+                x.BannerUrl,
+                x.FontKey,
+                x.BrandingJson,
+                x.LayoutJson,
+                x.IsPublished,
+                x.IsHidden,
+                x.HiddenReason,
+                x.HiddenAt,
+                x.CreatedAt,
+                x.PublishedAt,
                 CourseCount = _db.Courses.Count(c => c.AcademyId == x.Id),
-                InstructorCount = _db.Users.Count(u => u.AcademyId == x.Id)
+                InstructorCount = _db.Users.Count(u => u.AcademyId == x.Id && u.OrganizationId == x.OrganizationId)
             })
             .FirstOrDefaultAsync();
 
@@ -227,10 +441,81 @@ public class OrgController : ControllerBase
         return Ok(a);
     }
 
-    // =========================================================
-    // INVITE CODE (for instructor join — kept but now secondary
-    //              to the direct academy-slug-based register flow)
-    // =========================================================
+    [HttpPut("academies/{academyId:guid}")]
+    [Authorize(Roles = "OrgAdmin")]
+    public async Task<IActionResult> UpdateAcademy(Guid academyId, [FromBody] UpdateAcademyRequest req)
+    {
+        var userId = UserId();
+        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+
+        var orgId = await GetMyOrgId(userId);
+        if (orgId is null) return BadRequest("You don't have an organization.");
+
+        var academy = await _db.Academies
+            .FirstOrDefaultAsync(a => a.Id == academyId && a.OrganizationId == orgId.Value);
+
+        if (academy is null) return NotFound();
+
+        var name = (req.Name ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(name))
+            return BadRequest("Academy name is required.");
+
+        var slug = Slugify(req.Slug ?? "");
+        if (string.IsNullOrWhiteSpace(slug))
+            return BadRequest("Academy slug is required.");
+
+        var slugTaken = await _db.Academies
+            .AsNoTracking()
+            .AnyAsync(a => a.Id != academyId && a.Slug == slug);
+
+        if (slugTaken)
+            return BadRequest("This academy slug is already in use.");
+
+        academy.Name = name;
+        academy.Slug = slug;
+        academy.Description = NullIfEmpty(req.Description);
+        academy.Website = NullIfEmpty(req.Website);
+        academy.PrimaryColor = NullIfEmpty(req.PrimaryColor) ?? academy.PrimaryColor;
+        academy.FontKey = NormalizeFontKey(req.FontKey);
+
+        if (req.BrandingJson != null)
+            academy.BrandingJson = NormalizeJson(req.BrandingJson);
+
+        if (req.LayoutJson != null)
+            academy.LayoutJson = NormalizeJson(req.LayoutJson);
+
+        await _db.SaveChangesAsync();
+
+        var result = await _db.Academies
+            .AsNoTracking()
+            .Where(x => x.Id == academyId)
+            .Select(x => new
+            {
+                x.Id,
+                x.Name,
+                x.Slug,
+                x.Description,
+                x.Website,
+                x.PrimaryColor,
+                x.LogoUrl,
+                x.BannerUrl,
+                x.FontKey,
+                x.BrandingJson,
+                x.LayoutJson,
+                x.IsPublished,
+                x.IsHidden,
+                x.HiddenReason,
+                x.HiddenAt,
+                x.CreatedAt,
+                x.PublishedAt,
+                CourseCount = _db.Courses.Count(c => c.AcademyId == x.Id),
+                InstructorCount = _db.Users.Count(u => u.AcademyId == x.Id && u.OrganizationId == x.OrganizationId)
+            })
+            .FirstAsync();
+
+        return Ok(result);
+    }
+
     [HttpGet("invite-code")]
     [Authorize(Roles = "OrgAdmin")]
     public async Task<IActionResult> GetInviteCode()
@@ -269,10 +554,6 @@ public class OrgController : ControllerBase
         return Ok(new { organizationId = org.Id, inviteCode = org.InviteCode, isActive = org.IsActive });
     }
 
-    // =========================================================
-    // MEMBERS
-    // GET /api/orgs/members?role=Instructor&q=abc
-    // =========================================================
     [HttpGet("members")]
     [Authorize(Roles = "OrgAdmin")]
     public async Task<IActionResult> ListMembers([FromQuery] string? q = null, [FromQuery] string? role = null)
@@ -294,8 +575,18 @@ public class OrgController : ControllerBase
                 (u.DisplayName != null && u.DisplayName.ToLower().Contains(qq)));
         }
 
-        var users = await baseQuery.OrderBy(u => u.Email)
-            .Select(u => new { u.Id, u.Email, u.DisplayName, u.PhoneNumber, u.AcademyId, u.LockoutEnd })
+        var users = await baseQuery
+            .OrderBy(u => u.Email)
+            .Select(u => new
+            {
+                u.Id,
+                u.Email,
+                u.DisplayName,
+                u.PhoneNumber,
+                u.AcademyId,
+                u.LockoutEnd,
+                u.MustChangePassword
+            })
             .ToListAsync();
 
         var userIds = users.Select(x => x.Id).ToList();
@@ -312,7 +603,6 @@ public class OrgController : ControllerBase
             .GroupBy(x => x.UserId)
             .ToDictionary(g => g.Key, g => g.Select(x => x.RoleName!).Distinct().ToList());
 
-        // Load academy names for display
         var academyIds = users.Where(u => u.AcademyId.HasValue).Select(u => u.AcademyId!.Value).Distinct().ToList();
         var academyNames = await _db.Academies.AsNoTracking()
             .Where(a => academyIds.Contains(a.Id))
@@ -337,32 +627,139 @@ public class OrgController : ControllerBase
                 roles,
                 lockoutEnd = u.LockoutEnd,
                 academyId = u.AcademyId,
-                academyName = u.AcademyId.HasValue && academyNames.TryGetValue(u.AcademyId.Value, out var n) ? n : null
+                academyName = u.AcademyId.HasValue && academyNames.TryGetValue(u.AcademyId.Value, out var n) ? n : null,
+                mustChangePassword = u.MustChangePassword
             });
         }
 
         return Ok(new { items });
     }
 
-    // =========================================================
-    // LEAVE
-    // =========================================================
+    public record OrgPublishRequest(bool IsPublished);
+
+    [HttpPatch("academies/{academyId:guid}/publish")]
+    [Authorize(Roles = "OrgAdmin")]
+    public async Task<IActionResult> PublishAcademy(Guid academyId, [FromBody] OrgPublishRequest req)
+    {
+        var userId = UserId();
+        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+
+        var orgId = await GetMyOrgId(userId);
+        if (orgId is null) return BadRequest("No organization found.");
+
+        var academy = await _db.Academies
+            .FirstOrDefaultAsync(a => a.Id == academyId && a.OrganizationId == orgId.Value);
+
+        if (academy is null) return NotFound();
+        if (academy.IsHidden) return BadRequest("Academy is hidden by admin and cannot be published.");
+
+        academy.IsPublished = req.IsPublished;
+        if (req.IsPublished && academy.PublishedAt is null)
+            academy.PublishedAt = DateTimeOffset.UtcNow;
+        if (!req.IsPublished)
+            academy.PublishedAt = null;
+
+        await _db.SaveChangesAsync();
+        return Ok(new { academy.Id, academy.IsPublished, academy.PublishedAt });
+    }
+
+    [HttpDelete("academies/{academyId:guid}")]
+    [Authorize(Roles = "OrgAdmin")]
+    public async Task<IActionResult> DeleteAcademy(Guid academyId)
+    {
+        var userId = UserId();
+        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+
+        var orgId = await GetMyOrgId(userId);
+        if (orgId is null) return BadRequest("No organization found.");
+
+        var academy = await _db.Academies
+            .FirstOrDefaultAsync(a => a.Id == academyId && a.OrganizationId == orgId.Value);
+
+        if (academy is null) return NotFound();
+
+        _db.Academies.Remove(academy);
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
     [HttpPost("leave")]
     [Authorize]
     public async Task<IActionResult> Leave()
     {
         var userId = UserId();
         if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+
         var user = await _users.FindByIdAsync(userId);
         if (user is null) return Unauthorized();
+
         user.OrganizationId = null;
         await _users.UpdateAsync(user);
         return NoContent();
     }
 
-    // =========================================================
-    // HELPERS
-    // =========================================================
+    [HttpGet("public/{slug}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPublicOrgLanding(string slug)
+    {
+        slug = (slug ?? "").Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(slug)) return NotFound();
+
+        var org = await _db.Organizations
+            .AsNoTracking()
+            .Where(o => o.Slug == slug && o.IsActive)
+            .Select(o => new
+            {
+                o.Id,
+                o.Name,
+                o.Slug,
+                o.LogoUrl,
+                o.PrimaryColor,
+                o.Description,
+                o.Website
+            })
+            .FirstOrDefaultAsync();
+
+        if (org is null) return NotFound();
+
+        var academies = await _db.Academies
+            .AsNoTracking()
+            .Where(a =>
+                a.OrganizationId == org.Id &&
+                a.IsPublished &&
+                !a.IsHidden)
+            .OrderByDescending(a => a.PublishedAt ?? a.CreatedAt)
+            .ThenBy(a => a.Name)
+            .Take(3)
+            .Select(a => new
+            {
+                a.Id,
+                a.Name,
+                a.Slug,
+                a.Description,
+                a.LogoUrl,
+                a.BannerUrl,
+                a.PrimaryColor,
+                a.FontKey,
+                a.BrandingJson,
+                a.LayoutJson,
+                CourseCount = _db.Courses.Count(c => c.AcademyId == a.Id && !c.IsHidden)
+            })
+            .ToListAsync();
+
+        return Ok(new
+        {
+            org.Id,
+            org.Name,
+            org.Slug,
+            org.LogoUrl,
+            PrimaryColor = string.IsNullOrWhiteSpace(org.PrimaryColor) ? "#1a56db" : org.PrimaryColor,
+            org.Description,
+            org.Website,
+            academies
+        });
+    }
+
     private static string GenerateInviteCode(int length)
     {
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -375,11 +772,13 @@ public class OrgController : ControllerBase
     {
         input = input.Trim().ToLowerInvariant();
         var sb = new StringBuilder();
+
         foreach (var ch in input)
         {
             if (char.IsLetterOrDigit(ch)) sb.Append(ch);
             else if (char.IsWhiteSpace(ch) || ch == '-' || ch == '_') sb.Append('-');
         }
+
         var slug = sb.ToString();
         while (slug.Contains("--")) slug = slug.Replace("--", "-");
         return slug.Trim('-') is { Length: > 0 } s ? s : "org";
@@ -387,7 +786,8 @@ public class OrgController : ControllerBase
 
     private async Task<string> EnsureUniqueOrgSlug(string baseSlug)
     {
-        var slug = baseSlug; var i = 1;
+        var slug = baseSlug;
+        var i = 1;
         while (await _db.Organizations.AnyAsync(o => o.Slug == slug))
             slug = $"{baseSlug}-{++i}";
         return slug;
@@ -396,53 +796,63 @@ public class OrgController : ControllerBase
     private static string? NullIfEmpty(string? s) =>
         string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
+    private static string NormalizeFontKey(string? fontKey)
+    {
+        var fk = (fontKey ?? "system").Trim().ToLowerInvariant();
+        var allowed = new HashSet<string>
+        {
+            "system", "inter", "poppins", "cairo", "tajawal", "ibmplexar", "custom"
+        };
 
+        return allowed.Contains(fk) ? fk : "system";
+    }
 
-        // PATCH /api/orgs/academies/{academyId}/publish
-[HttpPatch("academies/{academyId:guid}/publish")]
-[Authorize(Roles = "OrgAdmin")]
-public async Task<IActionResult> PublishAcademy(Guid academyId, [FromBody] PublishRequest req)
-{
-    var userId = UserId();
-    if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+    private static string NormalizeJson(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return "{}";
 
-    var orgId = await GetMyOrgId(userId);
-    if (orgId is null) return BadRequest("No organization found.");
+        var trimmed = json.Trim();
+        return trimmed.Length == 0 ? "{}" : trimmed;
+    }
 
-    var academy = await _db.Academies
-        .FirstOrDefaultAsync(a => a.Id == academyId && a.OrganizationId == orgId.Value);
+    private static string BuildBrandingJson(CreateOrgAcademyRequest req)
+    {
+        if (!string.IsNullOrWhiteSpace(req.BrandingJson))
+            return NormalizeJson(req.BrandingJson);
 
-    if (academy is null) return NotFound();
-    if (academy.IsHidden) return BadRequest("Academy is hidden by admin and cannot be published.");
+        var payload = new Dictionary<string, object?>
+        {
+            ["themeMode"] = NullIfEmpty(req.ThemeMode) ?? "light",
+            ["accentStyle"] = NullIfEmpty(req.AccentStyle) ?? "solid",
+            ["tagline"] = NullIfEmpty(req.Tagline),
+            ["category"] = NullIfEmpty(req.Category) ?? "General",
+            ["contactEmail"] = NullIfEmpty(req.ContactEmail),
+            ["supportLabel"] = NullIfEmpty(req.SupportLabel) ?? "Contact us",
+            ["welcomeTitle"] = NullIfEmpty(req.WelcomeTitle),
+            ["ctaPrimaryText"] = NullIfEmpty(req.CtaPrimaryText) ?? "Browse courses",
+            ["ctaSecondaryText"] = NullIfEmpty(req.CtaSecondaryText) ?? "Contact",
+            ["navLabelPrimary"] = NullIfEmpty(req.NavLabelPrimary) ?? "Explore",
+            ["navLabelSecondary"] = NullIfEmpty(req.NavLabelSecondary) ?? "About",
+            ["footerText"] = NullIfEmpty(req.FooterText) ?? "Links · Contact · Terms",
+            ["showStats"] = req.ShowStats ?? true,
+            ["showTestimonials"] = req.ShowTestimonials ?? true
+        };
 
-    academy.IsPublished = req.IsPublished;
-    if (req.IsPublished && academy.PublishedAt is null)
-        academy.PublishedAt = DateTimeOffset.UtcNow;
+        return JsonSerializer.Serialize(payload);
+    }
 
-    await _db.SaveChangesAsync();
-    return Ok(new { academy.Id, academy.IsPublished, academy.PublishedAt });
-}
+    private static string BuildLayoutJson(CreateOrgAcademyRequest req)
+    {
+        if (!string.IsNullOrWhiteSpace(req.LayoutJson))
+            return NormalizeJson(req.LayoutJson);
 
-public record PublishRequest(bool IsPublished);
+        var payload = new Dictionary<string, object?>
+        {
+            ["heroLayout"] = NullIfEmpty(req.HeroLayout) ?? "split",
+            ["surfaceStyle"] = NullIfEmpty(req.SurfaceStyle) ?? "soft",
+            ["radiusKey"] = NullIfEmpty(req.RadiusKey) ?? "rounded"
+        };
 
-// DELETE /api/orgs/academies/{academyId}
-[HttpDelete("academies/{academyId:guid}")]
-[Authorize(Roles = "OrgAdmin")]
-public async Task<IActionResult> DeleteAcademy(Guid academyId)
-{
-    var userId = UserId();
-    if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
-
-    var orgId = await GetMyOrgId(userId);
-    if (orgId is null) return BadRequest("No organization found.");
-
-    var academy = await _db.Academies
-        .FirstOrDefaultAsync(a => a.Id == academyId && a.OrganizationId == orgId.Value);
-
-    if (academy is null) return NotFound();
-
-    _db.Academies.Remove(academy);
-    await _db.SaveChangesAsync();
-    return NoContent();
-}
+        return JsonSerializer.Serialize(payload);
+    }
 }

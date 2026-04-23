@@ -10,9 +10,10 @@ using LearningPlatform.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-
+using LearningPlatform.Application.Common.Interfaces;
 namespace LearningPlatform.Api.Controllers;
 
 [ApiController]
@@ -27,6 +28,7 @@ public class AuthController : ControllerBase
     private readonly IPasswordHasher<ApplicationUser> _passwordHasher;
     private readonly IConfiguration _config;
     private readonly IWebHostEnvironment _env;
+    private readonly IEmailSender _email;
 
     public AuthController(
         UserManager<ApplicationUser> userManager,
@@ -36,7 +38,8 @@ public class AuthController : ControllerBase
         SmsOptions smsOpt,
         IPasswordHasher<ApplicationUser> passwordHasher,
         IConfiguration config,
-        IWebHostEnvironment env)
+        IWebHostEnvironment env,
+        IEmailSender email)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -46,11 +49,9 @@ public class AuthController : ControllerBase
         _passwordHasher = passwordHasher;
         _config = config;
         _env = env;
+        _email = email;
     }
 
-    // =========================================================
-    // LOGIN
-    // =========================================================
     public record LoginRequest(string Email, string Password);
 
     [HttpPost("login")]
@@ -64,49 +65,231 @@ public class AuthController : ControllerBase
         var ok = await _signInManager.CheckPasswordSignInAsync(user, req.Password, lockoutOnFailure: false);
         if (!ok.Succeeded) return Unauthorized("Incorrect email or password.");
 
+        var isAdmin = await _userManager.IsInRoleAsync(user, "Admin");
+        var isOrgAdmin = await _userManager.IsInRoleAsync(user, "OrgAdmin");
+
+        if (!isAdmin && !isOrgAdmin)
+            return Unauthorized("This sign-in page is for admins and organizations only. Please use academy sign-in for students/instructors.");
+
+        if (isOrgAdmin)
+        {
+            if (!user.OrganizationId.HasValue)
+                return Unauthorized("This account is not linked to an organization.");
+
+            var orgIsActive = await _db.Organizations
+                .AsNoTracking()
+                .Where(o => o.Id == user.OrganizationId.Value)
+                .Select(o => o.IsActive)
+                .FirstOrDefaultAsync();
+
+            if (!orgIsActive)
+                return Unauthorized("Your organization is currently inactive. Please contact support.");
+        }
+
         var token = await CreateJwt(user);
         return Ok(new { accessToken = token });
     }
 
-    // =========================================================
-    // PUBLIC: ACADEMY INFO
-    // Used by the instructor registration page to show academy branding.
-    // GET /api/auth/academy-info?slug={slug}
-    // =========================================================
-    [HttpGet("academy-info")]
+    public record ForgotPasswordRequest(string Email, string? AcademySlug);
+
+    [HttpPost("forgot-password")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetAcademyInfo([FromQuery] string slug)
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordRequest req)
     {
-        if (string.IsNullOrWhiteSpace(slug))
-            return BadRequest("slug is required.");
+        var email = (req.Email ?? "").Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains("@"))
+            return BadRequest("Valid email is required.");
 
-        var academy = await _db.Academies
-            .AsNoTracking()
-            .Where(a => a.Slug == slug && !a.IsHidden)
-            .Select(a => new
-            {
-                a.Id,
-                a.Name,
-                a.Slug,
-                a.LogoUrl,
-                a.PrimaryColor,
-                a.Description,
-                a.IsPublished,
-                OrgName = a.Organization != null ? a.Organization.Name : null,
-                OrgIsActive = a.Organization != null && a.Organization.IsActive
-            })
-            .FirstOrDefaultAsync();
+        string? academyName = null;
+        string? academySlug = string.IsNullOrWhiteSpace(req.AcademySlug) ? null : req.AcademySlug.Trim();
 
-        if (academy is null) return NotFound("Academy not found.");
-        if (!academy.OrgIsActive) return BadRequest("This academy's organization is currently inactive.");
+        if (!string.IsNullOrWhiteSpace(academySlug))
+        {
+            var academy = await _db.Academies
+                .AsNoTracking()
+                .Where(a => a.Slug == academySlug && !a.IsHidden)
+                .Select(a => new
+                {
+                    a.Name,
+                    OrgIsActive = a.Organization != null && a.Organization.IsActive
+                })
+                .FirstOrDefaultAsync();
 
-        return Ok(academy);
+            if (academy != null && academy.OrgIsActive)
+                academyName = academy.Name;
+        }
+
+        var user = await _userManager.FindByEmailAsync(email);
+
+        if (user == null || !(await _userManager.IsEmailConfirmedAsync(user)))
+            return Ok(new { message = "If the email exists, a reset link has been sent." });
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var tokenBytes = Encoding.UTF8.GetBytes(token);
+        var tokenB64 = WebEncoders.Base64UrlEncode(tokenBytes);
+
+        var feBase = _config["Frontend:BaseUrl"] ?? "http://localhost:4201/#";
+
+        var qs = new Dictionary<string, string?>
+        {
+            ["email"] = email,
+            ["token"] = tokenB64,
+        };
+
+        if (!string.IsNullOrWhiteSpace(academySlug))
+            qs["academy"] = academySlug;
+
+        var query = string.Join("&", qs
+            .Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
+            .Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value!)}"));
+
+        var resetUrl = $"{feBase}/reset-password?{query}";
+
+        var subject = academyName != null
+            ? $"Reset your password — {academyName} on Alef"
+            : "Reset your password — Alef";
+
+        var html = $@"
+<div style='font-family:Arial,sans-serif;line-height:1.6'>
+  <h2>Password reset</h2>
+  <p>We received a request to reset your password{(academyName != null ? $" for <b>{academyName}</b>" : "")}.</p>
+  <p>
+    <a href='{resetUrl}' style='display:inline-block;padding:10px 16px;background:#0a0f1e;color:#fff;text-decoration:none;border-radius:10px'>
+      Reset password
+    </a>
+  </p>
+  <p>If you didn’t request this, you can ignore this email.</p>
+  <p style='color:#6b7280;font-size:12px'>This link may expire or be used once.</p>
+</div>";
+
+        await _email.SendAsync(email, subject, html);
+
+        return Ok(new { message = "If the email exists, a reset link has been sent." });
     }
 
-    // =========================================================
-    // ORGANIZATION REGISTER — Step 1: send OTP
-    // POST /api/auth/org-register-start
-    // =========================================================
+    public record ResetPasswordRequest(string Email, string Token, string NewPassword);
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword(ResetPasswordRequest req)
+    {
+        var email = (req.Email ?? "").Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains("@"))
+            return BadRequest("Valid email is required.");
+
+        if (string.IsNullOrWhiteSpace(req.Token))
+            return BadRequest("Token is required.");
+
+        if (string.IsNullOrWhiteSpace(req.NewPassword) || req.NewPassword.Length < 6)
+            return BadRequest("Password must be at least 6 characters.");
+
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+            return BadRequest("Invalid reset request.");
+
+        string decodedToken;
+        try
+        {
+            var bytes = WebEncoders.Base64UrlDecode(req.Token);
+            decodedToken = Encoding.UTF8.GetString(bytes);
+        }
+        catch
+        {
+            return BadRequest("Invalid token.");
+        }
+
+        var result = await _userManager.ResetPasswordAsync(user, decodedToken, req.NewPassword);
+        if (!result.Succeeded)
+            return BadRequest(string.Join(", ", result.Errors.Select(e => e.Description)));
+
+        if (user.MustChangePassword)
+        {
+            user.MustChangePassword = false;
+            await _userManager.UpdateAsync(user);
+        }
+
+        return Ok(new { message = "Password updated successfully. You can login now." });
+    }
+
+    public record FirstLoginChangePasswordRequest(string CurrentPassword, string NewPassword);
+
+    [HttpPost("first-login-change-password")]
+    [Authorize(Roles = "Instructor")]
+    public async Task<IActionResult> FirstLoginChangePassword(FirstLoginChangePasswordRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.CurrentPassword))
+            return BadRequest("Current password is required.");
+
+        if (string.IsNullOrWhiteSpace(req.NewPassword) || req.NewPassword.Length < 6)
+            return BadRequest("New password must be at least 6 characters.");
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null) return Unauthorized();
+
+        var change = await _userManager.ChangePasswordAsync(user, req.CurrentPassword, req.NewPassword);
+        if (!change.Succeeded)
+            return BadRequest(string.Join(", ", change.Errors.Select(e => e.Description)));
+
+        user.MustChangePassword = false;
+        await _userManager.UpdateAsync(user);
+
+        return Ok(new { message = "Password changed. Please sign in again." });
+    }
+
+    [HttpGet("academy-info")]
+[AllowAnonymous]
+public async Task<IActionResult> GetAcademyInfo([FromQuery] string slug)
+{
+    if (string.IsNullOrWhiteSpace(slug))
+        return BadRequest("slug is required.");
+
+    var academy = await _db.Academies
+        .AsNoTracking()
+        .Where(a => a.Slug == slug && !a.IsHidden)
+        .Select(a => new
+        {
+            a.Id,
+            a.Name,
+            a.Slug,
+            a.LogoUrl,
+            a.BannerUrl,
+            a.Website,
+            a.PrimaryColor,
+            a.Description,
+            a.FontKey,
+            a.BrandingJson,
+            a.LayoutJson,
+            a.IsPublished,
+            OrgName = a.Organization != null ? a.Organization.Name : null,
+            OrgIsActive = a.Organization != null && a.Organization.IsActive
+        })
+        .FirstOrDefaultAsync();
+
+    if (academy is null) return NotFound("Academy not found.");
+    if (!academy.OrgIsActive) return BadRequest("This academy's organization is currently inactive.");
+
+    return Ok(new
+    {
+        academy.Id,
+        academy.Name,
+        academy.Slug,
+        academy.LogoUrl,
+        academy.BannerUrl,
+        academy.Website,
+        academy.PrimaryColor,
+        academy.Description,
+        academy.FontKey,
+        BrandingJson = string.IsNullOrWhiteSpace(academy.BrandingJson) ? "{}" : academy.BrandingJson,
+        LayoutJson = string.IsNullOrWhiteSpace(academy.LayoutJson) ? "{}" : academy.LayoutJson,
+        academy.IsPublished,
+        academy.OrgName,
+        academy.OrgIsActive
+    });
+}
+
     public record OrgRegisterStartRequest(string Email, string Password, string Phone);
 
     [HttpPost("org-register-start")]
@@ -116,8 +299,6 @@ public class AuthController : ControllerBase
         return await StartPendingRegistration(req.Email, req.Password, req.Phone, "OrgAdmin");
     }
 
-    // ORGANIZATION REGISTER — Step 2: verify OTP + create user + create org
-    // POST /api/auth/org-register-confirm
     public record OrgRegisterConfirmRequest(
         string Email,
         string Code,
@@ -168,50 +349,125 @@ public class AuthController : ControllerBase
         });
     }
 
-    // =========================================================
-    // INSTRUCTOR REGISTER — Step 1: send OTP
-    // POST /api/auth/instructor-register-start
-    // =========================================================
-    public record InstructorRegisterStartRequest(
-        string Email,
-        string Password,
-        string Phone,
-        string AcademySlug
-    );
-
     [HttpPost("instructor-register-start")]
     [AllowAnonymous]
-    public async Task<IActionResult> InstructorRegisterStart(InstructorRegisterStartRequest req)
+    public IActionResult InstructorRegisterStartDisabled()
+        => BadRequest("Instructor self-registration is disabled. Ask your organization admin to create your instructor account.");
+
+    [HttpPost("instructor-register-confirm")]
+    [AllowAnonymous]
+    public IActionResult InstructorRegisterConfirmDisabled()
+        => BadRequest("Instructor self-registration is disabled. Ask your organization admin to create your instructor account.");
+
+    public record LoginInstructorRequest(string Email, string Password, string AcademySlug);
+
+    [HttpPost("login-instructor")]
+    [AllowAnonymous]
+    public async Task<IActionResult> LoginInstructor(LoginInstructorRequest req)
+    {
+        var academySlug = (req.AcademySlug ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(academySlug))
+            return BadRequest("academySlug is required.");
+
+        var academy = await GetActiveAcademy(academySlug);
+        if (academy is null) return BadRequest("Academy not found.");
+        if (!academy.OrgIsActive) return BadRequest("This academy's organization is currently inactive.");
+
+        var email = (req.Email ?? "").Trim().ToLowerInvariant();
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user is null) return Unauthorized("Incorrect email or password.");
+
+        var ok = await _signInManager.CheckPasswordSignInAsync(user, req.Password, lockoutOnFailure: false);
+        if (!ok.Succeeded) return Unauthorized("Incorrect email or password.");
+
+        var isInstructor = await _userManager.IsInRoleAsync(user, "Instructor");
+        if (!isInstructor) return Unauthorized("This account is not an instructor account.");
+
+        if (!user.AcademyId.HasValue || user.AcademyId.Value != academy.Id)
+            return Unauthorized("This instructor account is not linked to this academy.");
+
+        if (user.OrganizationId.HasValue && user.OrganizationId.Value != academy.OrganizationId)
+            return Unauthorized("This instructor account is not linked to this academy.");
+
+        var token = await CreateJwt(user);
+        return Ok(new { accessToken = token });
+    }
+
+    public record LoginStudentRequest(string Email, string Password, string AcademySlug);
+
+    [HttpPost("login-student")]
+    [AllowAnonymous]
+    public async Task<IActionResult> LoginStudent(LoginStudentRequest req)
+    {
+        var academySlug = (req.AcademySlug ?? "").Trim();
+        if (string.IsNullOrWhiteSpace(academySlug))
+            return BadRequest("academySlug is required.");
+
+        var academy = await GetActiveAcademy(academySlug);
+        if (academy is null) return BadRequest("Academy not found.");
+        if (!academy.OrgIsActive) return BadRequest("This academy's organization is currently inactive.");
+
+        var email = (req.Email ?? "").Trim().ToLowerInvariant();
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user is null) return Unauthorized("Incorrect email or password.");
+
+        var ok = await _signInManager.CheckPasswordSignInAsync(user, req.Password, lockoutOnFailure: false);
+        if (!ok.Succeeded) return Unauthorized("Incorrect email or password.");
+
+        var isStudent = await _userManager.IsInRoleAsync(user, "Student");
+        if (!isStudent) return Unauthorized("This account is not a student account.");
+
+        if (!user.AcademyId.HasValue || user.AcademyId.Value != academy.Id)
+            return Unauthorized("This student account is not linked to this academy.");
+
+        if (user.OrganizationId.HasValue && user.OrganizationId.Value != academy.OrganizationId)
+            return Unauthorized("This student account is not linked to this academy.");
+
+        var token = await CreateJwt(user);
+        return Ok(new { accessToken = token });
+    }
+
+    public record RegisterStartRequest(string Email, string Password, string Role, string Phone);
+
+    [HttpPost("register-start")]
+    [AllowAnonymous]
+    public IActionResult RegisterStart(RegisterStartRequest req)
+        => BadRequest("This endpoint is deprecated. Use /api/auth/student-register-start to register as a student for an academy.");
+
+    public record RegisterConfirmRequest(string Email, string Code);
+
+    [HttpPost("register-confirm")]
+    [AllowAnonymous]
+    public IActionResult RegisterConfirm(RegisterConfirmRequest req)
+        => BadRequest("This endpoint is deprecated. Use /api/auth/student-register-confirm to complete student registration for an academy.");
+
+    public record StudentRegisterStartRequest(string Email, string Password, string Phone, string AcademySlug);
+
+    [HttpPost("student-register-start")]
+    [AllowAnonymous]
+    public async Task<IActionResult> StudentRegisterStart(StudentRegisterStartRequest req)
     {
         var academy = await GetActiveAcademy(req.AcademySlug);
         if (academy is null) return BadRequest("Academy not found. Check your registration link.");
         if (!academy.OrgIsActive) return BadRequest("This academy's organization is currently inactive.");
 
-        return await StartPendingRegistration(req.Email, req.Password, req.Phone, "Instructor");
+        return await StartPendingRegistration(req.Email, req.Password, req.Phone, "Student");
     }
 
-    // INSTRUCTOR REGISTER — Step 2: verify OTP + create user + link to academy
-    // POST /api/auth/instructor-register-confirm
-    public record InstructorRegisterConfirmRequest(
-        string Email,
-        string Code,
-        string AcademySlug,
-        string? DisplayName
-    );
+    public record StudentRegisterConfirmRequest(string Email, string Code, string AcademySlug, string? DisplayName);
 
-    [HttpPost("instructor-register-confirm")]
+    [HttpPost("student-register-confirm")]
     [AllowAnonymous]
-    public async Task<IActionResult> InstructorRegisterConfirm(InstructorRegisterConfirmRequest req)
+    public async Task<IActionResult> StudentRegisterConfirm(StudentRegisterConfirmRequest req)
     {
         var academy = await GetActiveAcademy(req.AcademySlug);
         if (academy is null) return BadRequest("Academy not found.");
         if (!academy.OrgIsActive) return BadRequest("This academy's organization is currently inactive.");
 
         var email = (req.Email ?? "").Trim().ToLowerInvariant();
-        var (user, error) = await VerifyAndCreateUser(email, (req.Code ?? "").Trim(), "Instructor");
+        var (user, error) = await VerifyAndCreateUser(email, (req.Code ?? "").Trim(), "Student");
         if (error != null) return BadRequest(error);
 
-        // Link instructor → academy + org
         user!.AcademyId = academy.Id;
         user.OrganizationId = academy.OrganizationId;
 
@@ -220,54 +476,10 @@ public class AuthController : ControllerBase
 
         await _userManager.UpdateAsync(user);
 
-        return Ok(new { message = "Instructor account created. You can login now." });
+        return Ok(new { message = "Student account created. You can login now." });
     }
 
-    // =========================================================
-    // STUDENT REGISTER — Step 1
-    // POST /api/auth/register-start  (legacy — now only for students)
-    // =========================================================
-    public record RegisterStartRequest(string Email, string Password, string Role, string Phone);
-
-    [HttpPost("register-start")]
-    [AllowAnonymous]
-    public async Task<IActionResult> RegisterStart(RegisterStartRequest req)
-    {
-        var role = string.IsNullOrWhiteSpace(req.Role) ? "Student" : req.Role.Trim();
-
-        if (role is "OrgAdmin" or "Instructor")
-            return BadRequest(role == "OrgAdmin"
-                ? "Use /api/auth/org-register-start to register as an organization."
-                : "Use /api/auth/instructor-register-start to register as an instructor.");
-
-        if (role != "Student")
-            return BadRequest("Invalid role.");
-
-        return await StartPendingRegistration(req.Email, req.Password, req.Phone, role);
-    }
-
-    // STUDENT REGISTER — Step 2
-    public record RegisterConfirmRequest(string Email, string Code);
-
-    [HttpPost("register-confirm")]
-    [AllowAnonymous]
-    public async Task<IActionResult> RegisterConfirm(RegisterConfirmRequest req)
-    {
-        var (_, error) = await VerifyAndCreateUser(
-            (req.Email ?? "").Trim().ToLowerInvariant(),
-            (req.Code ?? "").Trim(),
-            null);
-
-        if (error != null) return BadRequest(error);
-        return Ok(new { message = "Account verified and created. You can login now." });
-    }
-
-    // =========================================================
-    // SHARED HELPERS
-    // =========================================================
-
-    private async Task<IActionResult> StartPendingRegistration(
-        string rawEmail, string password, string phone, string role)
+    private async Task<IActionResult> StartPendingRegistration(string rawEmail, string password, string phone, string role)
     {
         var email = (rawEmail ?? "").Trim().ToLowerInvariant();
 
@@ -289,27 +501,34 @@ public class AuthController : ControllerBase
         if (pending?.LastSentAt != null && pending.LastSentAt > DateTimeOffset.UtcNow.AddSeconds(-30))
             return BadRequest("Please wait 30 seconds before requesting a new code.");
 
-        var code   = GenerateCode(6);
+        var code = GenerateCode(6);
         var secret = _config["Otp:Secret"] ?? throw new Exception("Otp:Secret missing");
-        var hash   = HashCode(code, email, secret);
+        var hash = HashCode(code, email, secret);
         var tempUser = new ApplicationUser { Email = email, UserName = email };
 
         if (pending == null)
         {
             _db.PendingRegistrations.Add(new PendingRegistration
             {
-                Email = email, Role = role, Phone = normalizedPhone,
+                Email = email,
+                Role = role,
+                Phone = normalizedPhone,
                 PasswordHash = _passwordHasher.HashPassword(tempUser, password),
-                CodeHash = hash, ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(10),
-                Attempts = 0, LastSentAt = DateTimeOffset.UtcNow
+                CodeHash = hash,
+                ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(10),
+                Attempts = 0,
+                LastSentAt = DateTimeOffset.UtcNow
             });
         }
         else
         {
-            pending.Role = role; pending.Phone = normalizedPhone;
+            pending.Role = role;
+            pending.Phone = normalizedPhone;
             pending.PasswordHash = _passwordHasher.HashPassword(tempUser, password);
-            pending.CodeHash = hash; pending.ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(10);
-            pending.Attempts = 0; pending.LastSentAt = DateTimeOffset.UtcNow;
+            pending.CodeHash = hash;
+            pending.ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(10);
+            pending.Attempts = 0;
+            pending.LastSentAt = DateTimeOffset.UtcNow;
         }
 
         await _db.SaveChangesAsync();
@@ -329,9 +548,7 @@ public class AuthController : ControllerBase
         }
     }
 
-    /// <summary>Verify OTP, create Identity user, add role, remove pending record.</summary>
-    private async Task<(ApplicationUser? user, string? error)> VerifyAndCreateUser(
-        string email, string code, string? expectedRole)
+    private async Task<(ApplicationUser? user, string? error)> VerifyAndCreateUser(string email, string code, string? expectedRole)
     {
         var pending = await _db.PendingRegistrations.FirstOrDefaultAsync(x => x.Email == email);
         if (pending == null) return (null, "No pending registration. Please request a new code.");
@@ -355,8 +572,10 @@ public class AuthController : ControllerBase
 
         var user = new ApplicationUser
         {
-            Email = email, UserName = email,
-            EmailConfirmed = true, PhoneNumber = pending.Phone,
+            Email = email,
+            UserName = email,
+            EmailConfirmed = true,
+            PhoneNumber = pending.Phone,
             PasswordHash = pending.PasswordHash
         };
 
@@ -388,8 +607,8 @@ public class AuthController : ControllerBase
 
     private async Task<string> CreateJwt(ApplicationUser user)
     {
-        var jwtKey      = _config["Jwt:Key"]      ?? throw new Exception("Jwt:Key missing");
-        var jwtIssuer   = _config["Jwt:Issuer"]   ?? "LearningPlatform";
+        var jwtKey = _config["Jwt:Key"] ?? throw new Exception("Jwt:Key missing");
+        var jwtIssuer = _config["Jwt:Issuer"] ?? "LearningPlatform";
         var jwtAudience = _config["Jwt:Audience"] ?? "LearningPlatform";
 
         var roles = await _userManager.GetRolesAsync(user);
@@ -399,23 +618,28 @@ public class AuthController : ControllerBase
             new(JwtRegisteredClaimNames.Sub, user.Id),
             new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
             new(ClaimTypes.NameIdentifier, user.Id),
-            new(ClaimTypes.Name, user.Email ?? "")
+            new(ClaimTypes.Name, user.Email ?? ""),
+            new(ClaimTypes.Email, user.Email ?? "")
         };
 
         foreach (var r in roles)
             claims.Add(new Claim(ClaimTypes.Role, r));
 
-        // Embed academy + org IDs so frontend doesn't need an extra call
         if (user.AcademyId.HasValue)
             claims.Add(new Claim("academyId", user.AcademyId.Value.ToString()));
+
         if (user.OrganizationId.HasValue)
             claims.Add(new Claim("organizationId", user.OrganizationId.Value.ToString()));
 
-        var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+        claims.Add(new Claim("mustChangePassword", user.MustChangePassword ? "true" : "false"));
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
-            issuer: jwtIssuer, audience: jwtAudience, claims: claims,
+            issuer: jwtIssuer,
+            audience: jwtAudience,
+            claims: claims,
             expires: DateTime.UtcNow.AddHours(6),
             signingCredentials: creds);
 
@@ -425,10 +649,8 @@ public class AuthController : ControllerBase
     private static string GenerateCode(int length, string? charset = null)
     {
         if (charset == null)
-        {
-            // numeric OTP
             return RandomNumberGenerator.GetInt32(100000, 999999).ToString();
-        }
+
         var bytes = new byte[length];
         RandomNumberGenerator.Fill(bytes);
         return new string(bytes.Select(b => charset[b % charset.Length]).ToArray());
@@ -457,7 +679,8 @@ public class AuthController : ControllerBase
 
     private async Task<string> EnsureUniqueOrgSlug(string baseSlug)
     {
-        var slug = baseSlug; var i = 1;
+        var slug = baseSlug;
+        var i = 1;
         while (await _db.Organizations.AnyAsync(o => o.Slug == slug))
             slug = $"{baseSlug}-{++i}";
         return slug;
@@ -474,10 +697,10 @@ public class AuthController : ControllerBase
             return p;
         }
         if (p.StartsWith("05") && p.Length >= 9) return "+966" + p[1..];
-        if (p.StartsWith("5")  && p.Length is >= 8 and <= 10) return "+966" + p;
+        if (p.StartsWith("5") && p.Length is >= 8 and <= 10) return "+966" + p;
         if (p.StartsWith("966") && p.Length >= 11) return p.StartsWith("9660") ? "+966" + p[4..] : "+" + p;
         if (p.StartsWith("353") && p.Length >= 11) return "+" + p;
-        if (p.StartsWith("08")  && p.Length >= 9)  return "+353" + p[1..];
+        if (p.StartsWith("08") && p.Length >= 9) return "+353" + p[1..];
         return "";
     }
 
@@ -492,60 +715,9 @@ public class AuthController : ControllerBase
             await _sms.SendAsync(to, "Alef SMS test ✅");
             return Ok("sent");
         }
-        catch (Exception ex) { return BadRequest("SMS failed: " + ex.Message); }
+        catch (Exception ex)
+        {
+            return BadRequest("SMS failed: " + ex.Message);
+        }
     }
-
-    public record StudentRegisterStartRequest(
-    string Email,
-    string Password,
-    string Phone,
-    string AcademySlug  // used to validate the academy exists
-);
-
-[HttpPost("student-register-start")]
-[AllowAnonymous]
-public async Task<IActionResult> StudentRegisterStart(StudentRegisterStartRequest req)
-{
-    // Validate academy exists and is active
-    var academy = await GetActiveAcademy(req.AcademySlug);
-    if (academy is null) return BadRequest("Academy not found. Check your registration link.");
-    if (!academy.OrgIsActive) return BadRequest("This academy's organization is currently inactive.");
-
-    return await StartPendingRegistration(req.Email, req.Password, req.Phone, "Student");
-}
-
-// =========================================================
-// STUDENT REGISTER — Step 2: verify OTP + create user + link to academy
-// POST /api/auth/student-register-confirm
-// =========================================================
-public record StudentRegisterConfirmRequest(
-    string Email,
-    string Code,
-    string AcademySlug,
-    string? DisplayName
-);
-
-[HttpPost("student-register-confirm")]
-[AllowAnonymous]
-public async Task<IActionResult> StudentRegisterConfirm(StudentRegisterConfirmRequest req)
-{
-    var academy = await GetActiveAcademy(req.AcademySlug);
-    if (academy is null) return BadRequest("Academy not found.");
-    if (!academy.OrgIsActive) return BadRequest("This academy's organization is currently inactive.");
-
-    var email = (req.Email ?? "").Trim().ToLowerInvariant();
-    var (user, error) = await VerifyAndCreateUser(email, (req.Code ?? "").Trim(), "Student");
-    if (error != null) return BadRequest(error);
-
-    // Link student → academy + org (same pattern as instructor)
-    user!.AcademyId = academy.Id;
-    user.OrganizationId = academy.OrganizationId;
-
-    if (!string.IsNullOrWhiteSpace(req.DisplayName))
-        user.DisplayName = req.DisplayName.Trim();
-
-    await _userManager.UpdateAsync(user);
-
-    return Ok(new { message = "Student account created. You can login now." });
-}
 }

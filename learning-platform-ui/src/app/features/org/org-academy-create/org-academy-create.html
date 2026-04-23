@@ -1,21 +1,22 @@
 <main class="create-page">
 
-  <!-- ── PAGE HERO ── -->
   <div class="page-hero">
     <div class="hero-left">
       <div class="eyebrow">
         <div class="eyebrow-dot"></div>
         <span class="eyebrow-text">Org panel</span>
       </div>
-      <h1 class="page-title">New <em>Academy</em></h1>
-      <p class="page-desc">Set up your branded learning space and share it with your instructors.</p>
+      <h1 class="page-title">Design your <em>Academy</em></h1>
+      <p class="page-desc">
+        Build a branded learning space that feels like your own website — customize identity,
+        visuals, calls-to-action, and live page preview before publishing.
+      </p>
     </div>
     <div class="hero-right">
       <button class="btn btn-ghost" type="button" (click)="done()">← Academies</button>
     </div>
   </div>
 
-  <!-- ── ERROR ── -->
   <div class="alert-error" *ngIf="error">
     <div class="err-icon">⚠</div>
     <div class="err-body">
@@ -24,7 +25,6 @@
     </div>
   </div>
 
-  <!-- ── SUCCESS STATE ── -->
   <div class="success-card" *ngIf="created">
     <div class="success-header">
       <div class="success-icon-wrap">✅</div>
@@ -33,39 +33,67 @@
         <div class="success-title">"{{ created.name }}" is ready</div>
       </div>
     </div>
+
     <p class="success-desc">
-      Share this instructor registration link with your team so they can join this academy.
+      Your academy is ready. Share its public landing page so students and instructors can enter through the academy home experience.
     </p>
+
+    <div class="success-note">
+      <strong>Note:</strong> the extra website design controls on this builder are currently preview-based.
+      Your current API saves the core academy data and branding fields.
+    </div>
+
     <div class="link-box">
-      <div class="link-label">Instructor registration link</div>
+      <div class="link-label">Academy landing page</div>
       <div class="link-row">
-        <input class="link-input" type="text" [value]="instructorLink" readonly />
+        <input class="link-input" type="text" [value]="academyPublicLink" readonly />
         <button class="btn btn-primary btn-sm" type="button" (click)="copyLink()">
           {{ copied ? '✓ Copied!' : '📋 Copy link' }}
         </button>
       </div>
     </div>
+
+    <div class="link-box">
+      <div class="link-label">Student sign in</div>
+      <div class="link-row">
+        <input class="link-input" type="text" [value]="studentLoginLink" readonly />
+      </div>
+    </div>
+
+    <div class="link-box">
+      <div class="link-label">Student sign up</div>
+      <div class="link-row">
+        <input class="link-input" type="text" [value]="studentSignupLink" readonly />
+      </div>
+    </div>
+
+    <div class="link-box">
+      <div class="link-label">Instructor sign in</div>
+      <div class="link-row">
+        <input class="link-input" type="text" [value]="instructorLoginLink" readonly />
+      </div>
+    </div>
+
     <div class="success-actions">
       <button class="btn btn-primary" type="button" (click)="done()">View All Academies</button>
       <button class="btn btn-ghost" type="button" (click)="copyLink()">
-        {{ copied ? '✓ Copied!' : 'Copy instructor link' }}
+        {{ copied ? '✓ Copied!' : 'Copy academy link' }}
       </button>
     </div>
   </div>
 
-  <!-- ── 3-COLUMN EDITOR ── -->
   <section class="editor" *ngIf="!created">
 
-    <!-- ── LEFT: Stepper ── -->
     <aside class="stepper" aria-label="Academy creation steps">
-
       <div class="stepper-head">
         <div class="stepper-eyebrow">Progress</div>
-        <div class="stepper-title">Setup steps</div>
+        <div class="stepper-title">Website builder</div>
       </div>
 
       <div class="steps-list">
-        <button type="button" class="step"
+        <button
+          type="button"
+          class="step"
           [class.active]="step === 'details'"
           [class.done]="isStepDone('details')"
           (click)="goStep('details')">
@@ -75,11 +103,13 @@
           </div>
           <div class="step-meta">
             <div class="step-title">Details</div>
-            <div class="step-sub">Name, description, website</div>
+            <div class="step-sub">Name, message, links, contact</div>
           </div>
         </button>
 
-        <button type="button" class="step"
+        <button
+          type="button"
+          class="step"
           [class.active]="step === 'branding'"
           [class.done]="isStepDone('branding')"
           (click)="goStep('branding')">
@@ -89,83 +119,291 @@
           </div>
           <div class="step-meta">
             <div class="step-title">Branding</div>
-            <div class="step-sub">Color &amp; font</div>
+            <div class="step-sub">Theme, hero, visuals, style</div>
           </div>
         </button>
 
-        <button type="button" class="step"
+        <button
+          type="button"
+          class="step"
           [class.active]="step === 'review'"
           (click)="goStep('review')">
           <div class="step-dot"><span>3</span></div>
           <div class="step-meta">
             <div class="step-title">Review</div>
-            <div class="step-sub">Check and create</div>
+            <div class="step-sub">Check everything and create</div>
           </div>
         </button>
       </div>
 
       <div class="stepper-foot">
-        <div class="foot-label">Academy name</div>
-        <div class="foot-url">{{ name || '—' }}</div>
+        <div class="foot-label">Preview URL</div>
+        <div class="foot-url">/academy-home/{{ academySlugPreview }}</div>
       </div>
     </aside>
 
-    <!-- ── MIDDLE: Form panel ── -->
     <section class="panel">
       <form class="form" (ngSubmit)="submit()" novalidate>
 
-        <!-- STEP 1: DETAILS -->
         <section class="card" *ngIf="step === 'details'">
           <div class="card-top">
             <div>
               <div class="card-eyebrow">Step 1 of 3</div>
-              <div class="card-title">Details</div>
-              <div class="card-sub">Name, description, and website for your academy.</div>
+              <div class="card-title">Details & content</div>
+              <div class="card-sub">
+                Define how your academy introduces itself, what learners see first, and where they can contact you.
+              </div>
             </div>
           </div>
 
           <div class="grid">
             <div class="field full">
               <label>Academy Name <span class="req">*</span></label>
-              <input class="input" type="text" [(ngModel)]="name" name="name"
-                placeholder="e.g. Alef Academy" autocomplete="organization" />
+              <input
+                class="input"
+                type="text"
+                [(ngModel)]="name"
+                name="name"
+                placeholder="e.g. Alef Academy"
+                autocomplete="organization" />
+            </div>
+
+            <div class="field full">
+              <label>Tagline</label>
+              <input
+                class="input"
+                type="text"
+                [(ngModel)]="tagline"
+                name="tagline"
+                placeholder="e.g. Learn practical Arabic, coding, and digital skills" />
+              <div class="help muted">Shown under the academy name in the page header and hero.</div>
+            </div>
+
+            <div class="field">
+              <label>Category</label>
+              <select class="input select-input" [(ngModel)]="category" name="category">
+                <option value="General">General</option>
+                <option value="Technology">Technology</option>
+                <option value="Business">Business</option>
+                <option value="Languages">Languages</option>
+                <option value="Design">Design</option>
+                <option value="K-12">K-12</option>
+                <option value="Exam Prep">Exam Prep</option>
+                <option value="Professional Training">Professional Training</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Support email</label>
+              <input
+                class="input"
+                type="email"
+                [(ngModel)]="contactEmail"
+                name="contactEmail"
+                placeholder="support@example.com"
+                inputmode="email" />
+            </div>
+
+            <div class="field full">
+              <label>Hero headline</label>
+              <input
+                class="input"
+                type="text"
+                [(ngModel)]="welcomeTitle"
+                name="welcomeTitle"
+                placeholder="e.g. Learn with expert instructors and modern courses" />
             </div>
 
             <div class="field full">
               <label>Description</label>
-              <textarea class="input" [(ngModel)]="description" name="description"
-                rows="4" placeholder="What do you teach? Who is it for?"></textarea>
-              <div class="help muted">Optional. Shown on your public academy page.</div>
+              <textarea
+                class="input"
+                [(ngModel)]="description"
+                name="description"
+                rows="4"
+                placeholder="What do you teach? Who is it for? What makes your academy different?"></textarea>
+              <div class="help muted">Shown on your public academy page.</div>
             </div>
 
-            <div class="field full">
+            <div class="field">
               <label>Website</label>
-              <input class="input" type="url" [(ngModel)]="website" name="website"
-                placeholder="https://example.com" inputmode="url" />
-              <div class="help muted">Optional.</div>
+              <input
+                class="input"
+                type="url"
+                [(ngModel)]="website"
+                name="website"
+                placeholder="https://example.com"
+                inputmode="url" />
+            </div>
+
+            <div class="field">
+              <label>Support label</label>
+              <input
+                class="input"
+                type="text"
+                [(ngModel)]="supportLabel"
+                name="supportLabel"
+                placeholder="e.g. Contact us" />
+            </div>
+
+            <div class="field">
+              <label>Primary CTA text</label>
+              <input
+                class="input"
+                type="text"
+                [(ngModel)]="ctaPrimaryText"
+                name="ctaPrimaryText"
+                placeholder="Browse courses" />
+            </div>
+
+            <div class="field">
+              <label>Secondary CTA text</label>
+              <input
+                class="input"
+                type="text"
+                [(ngModel)]="ctaSecondaryText"
+                name="ctaSecondaryText"
+                placeholder="Contact" />
+            </div>
+
+            <div class="field">
+              <label>Nav label 1</label>
+              <input
+                class="input"
+                type="text"
+                [(ngModel)]="navLabelPrimary"
+                name="navLabelPrimary"
+                placeholder="Explore" />
+            </div>
+
+            <div class="field">
+              <label>Nav label 2</label>
+              <input
+                class="input"
+                type="text"
+                [(ngModel)]="navLabelSecondary"
+                name="navLabelSecondary"
+                placeholder="About" />
             </div>
           </div>
 
           <div class="navrow">
-            <div class="hint muted">Next: choose branding.</div>
-            <button class="btn btn-primary" type="button"
-              (click)="nextStep()" [disabled]="!name.trim()">
+            <div class="hint muted">Next: visual identity, page style, hero layout, and design controls.</div>
+            <button class="btn btn-primary" type="button" (click)="nextStep()" [disabled]="!name.trim()">
               Continue →
             </button>
           </div>
         </section>
 
-        <!-- STEP 2: BRANDING -->
         <section class="card" *ngIf="step === 'branding'">
           <div class="card-top">
             <div>
               <div class="card-eyebrow">Step 2 of 3</div>
-              <div class="card-title">Branding</div>
-              <div class="card-sub">Choose color and typography for your academy.</div>
+              <div class="card-title">Branding & website style</div>
+              <div class="card-sub">
+                Shape the academy like a mini website with theme, hero structure, colors, typography, and visual style.
+              </div>
             </div>
           </div>
 
           <div class="grid">
+
+            <div class="field full">
+              <label>Logo</label>
+              <div
+                class="drop"
+                (drop)="onDropLogo($event)"
+                (dragover)="onDragOver($event)"
+                (dragenter)="dragLogo = true"
+                (dragleave)="dragLogo = false"
+                [class.has]="!!logoPreview"
+                [class.drag]="dragLogo">
+                <div class="drop-left">
+                  <div class="logo-avatar" [style.background]="primaryColor">
+                    <img *ngIf="logoPreview" [src]="logoPreview" alt="Logo preview" />
+                    <span *ngIf="!logoPreview">{{ (name || 'A').slice(0,1).toUpperCase() }}</span>
+                  </div>
+                  <div class="drop-text">
+                    <div class="drop-title">
+                      <span *ngIf="!logoPreview">Drop or choose a logo</span>
+                      <span *ngIf="logoPreview">Logo ready</span>
+                    </div>
+                    <div class="drop-sub">
+                      PNG / JPG / WEBP · up to 5 MB
+                      <span class="file-name" *ngIf="logoFile">· {{ logoFile.name }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="drop-actions">
+                  <label class="btn btn-primary btn-sm">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      (change)="onLogoSelected($event)"
+                      hidden />
+                    {{ logoPreview ? 'Replace' : 'Choose' }}
+                  </label>
+                  <button
+                    class="btn btn-ghost btn-sm"
+                    type="button"
+                    (click)="removeLogo()"
+                    [disabled]="!logoPreview || loading">
+                    Remove
+                  </button>
+                </div>
+              </div>
+              <div class="help muted">Recommended: 512×512 px.</div>
+            </div>
+
+            <div class="field full">
+              <label>Banner</label>
+              <div
+                class="bannerbox"
+                [class.has]="!!bannerPreview"
+                [class.drag]="dragBanner"
+                (drop)="onDropBanner($event)"
+                (dragover)="onDragOver($event)"
+                (dragenter)="dragBanner = true"
+                (dragleave)="dragBanner = false">
+                <div class="banner-head">
+                  <div class="banner-state">
+                    <span class="banner-state-dot" [class.on]="!!bannerPreview"></span>
+                    <span>{{ bannerPreview ? 'Banner selected' : 'No banner selected yet' }}</span>
+                  </div>
+                  <div class="banner-dim">1600 × 400 recommended</div>
+                </div>
+                <div
+                  class="banner-prev"
+                  *ngIf="bannerPreview"
+                  [style.backgroundImage]="'url(' + bannerPreview + ')'">
+                  <div class="banner-prev-badge">Live banner preview</div>
+                </div>
+                <div class="banner-empty" *ngIf="!bannerPreview">
+                  <div class="banner-empty-icon">🖼️</div>
+                  <div>Recommended: 1600×400 px</div>
+                  <div class="banner-empty-sub">Drop here or choose a file</div>
+                </div>
+                <div class="banner-actions">
+                  <label class="btn btn-primary btn-sm">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      (change)="onBannerSelected($event)"
+                      hidden />
+                    {{ bannerPreview ? 'Replace' : 'Choose' }}
+                  </label>
+                  <button
+                    class="btn btn-ghost btn-sm"
+                    type="button"
+                    (click)="removeBanner()"
+                    [disabled]="!bannerPreview || loading">
+                    Remove
+                  </button>
+                </div>
+              </div>
+              <div class="help muted">Shows on your public academy page hero/header area.</div>
+            </div>
+
             <div class="field">
               <label>Primary color</label>
               <div class="colorline">
@@ -173,15 +411,59 @@
                 <div class="color-hex">{{ primaryColor }}</div>
               </div>
               <div class="palette">
-                <button type="button" class="swatch" title="Purple"  style="background:#7c3aed" (click)="primaryColor='#7c3aed'"></button>
-                <button type="button" class="swatch" title="Blue"    style="background:#2563eb" (click)="primaryColor='#2563eb'"></button>
-                <button type="button" class="swatch" title="Sky"     style="background:#0ea5e9" (click)="primaryColor='#0ea5e9'"></button>
+                <button type="button" class="swatch" title="Purple" style="background:#7c3aed" (click)="primaryColor='#7c3aed'"></button>
+                <button type="button" class="swatch" title="Blue" style="background:#2563eb" (click)="primaryColor='#2563eb'"></button>
+                <button type="button" class="swatch" title="Sky" style="background:#0ea5e9" (click)="primaryColor='#0ea5e9'"></button>
                 <button type="button" class="swatch" title="Emerald" style="background:#10b981" (click)="primaryColor='#10b981'"></button>
-                <button type="button" class="swatch" title="Amber"   style="background:#f59e0b" (click)="primaryColor='#f59e0b'"></button>
-                <button type="button" class="swatch" title="Red"     style="background:#ef4444" (click)="primaryColor='#ef4444'"></button>
-                <button type="button" class="swatch" title="Dark"    style="background:#111827" (click)="primaryColor='#111827'"></button>
+                <button type="button" class="swatch" title="Amber" style="background:#f59e0b" (click)="primaryColor='#f59e0b'"></button>
+                <button type="button" class="swatch" title="Red" style="background:#ef4444" (click)="primaryColor='#ef4444'"></button>
+                <button type="button" class="swatch" title="Dark" style="background:#111827" (click)="primaryColor='#111827'"></button>
               </div>
               <div class="help muted">Used for buttons and accents across your academy.</div>
+            </div>
+
+            <div class="field">
+              <label>Accent style</label>
+              <div class="segmented">
+                <button type="button" class="seg-btn" [class.active]="accentStyle === 'solid'" (click)="accentStyle = 'solid'">Solid</button>
+                <button type="button" class="seg-btn" [class.active]="accentStyle === 'gradient'" (click)="accentStyle = 'gradient'">Gradient</button>
+              </div>
+              <div class="help muted">Controls the look of primary buttons and highlight sections in preview.</div>
+            </div>
+
+            <div class="field">
+              <label>Theme mode</label>
+              <div class="segmented">
+                <button type="button" class="seg-btn" [class.active]="themeMode === 'light'" (click)="themeMode = 'light'">Light</button>
+                <button type="button" class="seg-btn" [class.active]="themeMode === 'warm'" (click)="themeMode = 'warm'">Warm</button>
+                <button type="button" class="seg-btn" [class.active]="themeMode === 'dark'" (click)="themeMode = 'dark'">Dark</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Hero layout</label>
+              <div class="segmented">
+                <button type="button" class="seg-btn" [class.active]="heroLayout === 'split'" (click)="heroLayout = 'split'">Split</button>
+                <button type="button" class="seg-btn" [class.active]="heroLayout === 'centered'" (click)="heroLayout = 'centered'">Centered</button>
+                <button type="button" class="seg-btn" [class.active]="heroLayout === 'immersive'" (click)="heroLayout = 'immersive'">Immersive</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Surface style</label>
+              <div class="segmented">
+                <button type="button" class="seg-btn" [class.active]="surfaceStyle === 'soft'" (click)="surfaceStyle = 'soft'">Soft</button>
+                <button type="button" class="seg-btn" [class.active]="surfaceStyle === 'outline'" (click)="surfaceStyle = 'outline'">Outline</button>
+                <button type="button" class="seg-btn" [class.active]="surfaceStyle === 'glass'" (click)="surfaceStyle = 'glass'">Glass</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Corner style</label>
+              <div class="segmented">
+                <button type="button" class="seg-btn" [class.active]="radiusKey === 'rounded'" (click)="radiusKey = 'rounded'">Rounded</button>
+                <button type="button" class="seg-btn" [class.active]="radiusKey === 'sharp'" (click)="radiusKey = 'sharp'">Sharp</button>
+              </div>
             </div>
 
             <div class="field">
@@ -190,10 +472,16 @@
                 <div class="pm-top">
                   <div class="pm-badge" [style.borderColor]="primaryColor">
                     <span class="pm-dot" [style.background]="primaryColor"></span>
-                    Accent color
+                    Brand accent
                   </div>
                 </div>
-                <button class="pm-btn" type="button" [style.background]="primaryColor" disabled>
+                <button
+                  class="pm-btn"
+                  type="button"
+                  [class.gradient-btn]="accentStyle === 'gradient'"
+                  [style.background]="accentStyle === 'solid' ? primaryColor : null"
+                  [style.backgroundImage]="accentStyle === 'gradient' ? primaryGradient : null"
+                  disabled>
                   Primary button
                 </button>
               </div>
@@ -202,23 +490,48 @@
             <div class="field full">
               <label>Font</label>
               <select class="input select-input" [(ngModel)]="fontKey" name="fontKey">
-                <option value="system">System (Default)</option>
-                <option value="inter">Inter</option>
-                <option value="poppins">Poppins</option>
-                <option value="cairo">Cairo (Arabic)</option>
-                <option value="tajawal">Tajawal (Arabic)</option>
-                <option value="ibmplexar">IBM Plex Sans Arabic</option>
+                <option *ngFor="let f of fontOptions" [value]="f.key">{{ f.label }}</option>
               </select>
-              <div class="help muted">Typography for your academy pages.</div>
+              <div class="help muted">Typography for your academy pages. Changes instantly in the live preview.</div>
+            </div>
+
+            <div class="field full">
+              <label>Footer text</label>
+              <input
+                class="input"
+                type="text"
+                [(ngModel)]="footerText"
+                name="footerText"
+                placeholder="Links · Contact · Terms" />
+            </div>
+
+            <div class="field full">
+              <label>Visibility blocks</label>
+              <div class="toggle-grid">
+                <label class="toggle-card">
+                  <input type="checkbox" [(ngModel)]="showStats" name="showStats" />
+                  <span>
+                    <strong>Show stats bar</strong>
+                    <small>Learners, courses, and rating strip in preview</small>
+                  </span>
+                </label>
+                <label class="toggle-card">
+                  <input type="checkbox" [(ngModel)]="showTestimonials" name="showTestimonials" />
+                  <span>
+                    <strong>Show testimonial block</strong>
+                    <small>Social proof area under the hero section</small>
+                  </span>
+                </label>
+              </div>
             </div>
 
             <div class="field full">
               <label>Font preview</label>
-              <div class="fontbox">
+              <div class="fontbox" [style.fontFamily]="fontFamilyPreview">
                 <div class="font-sample">
                   <div class="fs-heading">{{ name || 'Academy Name' }}</div>
                   <div class="fs-arabic">أكاديمية ألف</div>
-                  <div class="fs-meta">Headings · Buttons · Body</div>
+                  <div class="fs-meta">Headings · Buttons · Body · Navigation · {{ currentFontLabel }}</div>
                 </div>
               </div>
             </div>
@@ -230,29 +543,22 @@
           </div>
         </section>
 
-        <!-- STEP 3: REVIEW -->
         <section class="card" *ngIf="step === 'review'">
           <div class="card-top">
             <div>
               <div class="card-eyebrow">Step 3 of 3</div>
-              <div class="card-title">Review</div>
-              <div class="card-sub">Confirm everything before creating.</div>
+              <div class="card-title">Review & create</div>
+              <div class="card-sub">Check your content, branding, and website-style preview before creating.</div>
             </div>
           </div>
 
           <div class="review">
-            <div class="rrow">
-              <div class="rt">Name</div>
-              <div class="rv">{{ name.trim() || '—' }}</div>
-            </div>
-            <div class="rrow">
-              <div class="rt">Description</div>
-              <div class="rv">{{ description.trim() || '—' }}</div>
-            </div>
-            <div class="rrow">
-              <div class="rt">Website</div>
-              <div class="rv"><span class="mono-inline">{{ website.trim() || '—' }}</span></div>
-            </div>
+            <div class="rrow"><div class="rt">Name</div><div class="rv">{{ name.trim() || '—' }}</div></div>
+            <div class="rrow"><div class="rt">Tagline</div><div class="rv">{{ tagline.trim() || '—' }}</div></div>
+            <div class="rrow"><div class="rt">Hero headline</div><div class="rv">{{ welcomeTitle.trim() || '—' }}</div></div>
+            <div class="rrow"><div class="rt">Description</div><div class="rv">{{ description.trim() || '—' }}</div></div>
+            <div class="rrow"><div class="rt">Website</div><div class="rv"><span class="mono-inline">{{ website.trim() || '—' }}</span></div></div>
+            <div class="rrow"><div class="rt">Support email</div><div class="rv">{{ contactEmail.trim() || '—' }}</div></div>
             <div class="rrow">
               <div class="rt">Primary color</div>
               <div class="rv">
@@ -262,9 +568,27 @@
                 </span>
               </div>
             </div>
+            <div class="rrow"><div class="rt">Accent style</div><div class="rv">{{ accentStyle }}</div></div>
+            <div class="rrow"><div class="rt">Theme mode</div><div class="rv">{{ themeMode }}</div></div>
+            <div class="rrow"><div class="rt">Hero layout</div><div class="rv">{{ heroLayout }}</div></div>
+            <div class="rrow"><div class="rt">Surface style</div><div class="rv">{{ surfaceStyle }}</div></div>
+            <div class="rrow"><div class="rt">Corner style</div><div class="rv">{{ radiusKey }}</div></div>
+            <div class="rrow"><div class="rt">Font</div><div class="rv">{{ currentFontLabel }}</div></div>
+            <div class="rrow"><div class="rt">Primary CTA</div><div class="rv">{{ ctaPrimaryText.trim() || '—' }}</div></div>
+            <div class="rrow"><div class="rt">Secondary CTA</div><div class="rv">{{ ctaSecondaryText.trim() || '—' }}</div></div>
+            <div class="rrow"><div class="rt">Logo</div><div class="rv">{{ logoFile?.name || (logoPreview ? 'Selected' : 'None') }}</div></div>
+            <div class="rrow"><div class="rt">Banner</div><div class="rv">{{ bannerFile?.name || (bannerPreview ? 'Selected' : 'None') }}</div></div>
             <div class="rrow">
-              <div class="rt">Font</div>
-              <div class="rv">{{ fontKey }}</div>
+              <div class="rt">Preview blocks</div>
+              <div class="rv">Stats: {{ showStats ? 'On' : 'Off' }} · Testimonials: {{ showTestimonials ? 'On' : 'Off' }}</div>
+            </div>
+
+            <div class="save-scope">
+              <div class="save-scope-title">What will be saved right now</div>
+              <div class="save-scope-text">
+                Your current backend saves the core academy information and branding fields.
+                The extra website-builder settings on this page currently enhance the live preview and editor experience.
+              </div>
             </div>
 
             <div class="valsum">
@@ -291,8 +615,13 @@
       </form>
     </section>
 
-    <!-- ── RIGHT: Live Preview ── -->
-    <section class="preview" [style.--brand]="primaryColor">
+    <section
+      class="preview"
+      [style.--brand]="primaryColor"
+      [style.--brand-gradient]="primaryGradient"
+      [ngClass]="previewClasses"
+      [style.fontFamily]="fontFamilyPreview">
+
       <header class="pv-top">
         <div class="pv-inner">
           <div class="pv-left">
@@ -302,61 +631,134 @@
             </div>
             <nav class="pv-nav">
               <span class="pv-link active">Home</span>
-              <span class="pv-link">Explore</span>
+              <span class="pv-link">{{ navLabelPrimary || 'Explore' }}</span>
+              <span class="pv-link">{{ navLabelSecondary || 'About' }}</span>
             </nav>
           </div>
           <div class="pv-right">
             <button class="btn btn-ghost btn-sm" type="button" disabled>Sign in</button>
-            <button class="btn btn-primary btn-sm" type="button" disabled
-              [style.background]="primaryColor">Create account</button>
+            <button
+              class="btn btn-primary btn-sm preview-action-btn"
+              type="button"
+              disabled
+              [class.gradient-btn]="accentStyle === 'gradient'"
+              [style.background]="accentStyle === 'solid' ? primaryColor : null"
+              [style.backgroundImage]="accentStyle === 'gradient' ? primaryGradient : null">
+              Create account
+            </button>
           </div>
         </div>
       </header>
 
       <div class="preview-canvas">
         <div class="site">
+
           <div class="site-header">
             <div class="pbrand">
               <div class="pbrand-logo" [style.background]="primaryColor">
-                {{ (name || 'A').slice(0,1).toUpperCase() }}
+                <img *ngIf="logoPreview" [src]="logoPreview" alt="logo" />
+                <span *ngIf="!logoPreview">{{ (name || 'A').slice(0,1).toUpperCase() }}</span>
               </div>
               <div class="pbrand-text">
-                <div class="b1">{{ name || 'Academy Name' }}</div>
-                <div class="b2">/academy/{{ name ? name.toLowerCase().replace(' ', '-') : 'your-academy' }}</div>
+                <div class="b1">{{ displayNamePreview }}</div>
+                <div class="b2">/academy-home/{{ academySlugPreview }}</div>
               </div>
             </div>
             <div class="site-actions">
               <button class="btn btn-ghost btn-sm" type="button" disabled>Login</button>
-              <button class="btn btn-primary btn-sm" type="button" disabled
-                [style.background]="primaryColor">View academy</button>
+              <button
+                class="btn btn-primary btn-sm preview-action-btn"
+                type="button"
+                disabled
+                [class.gradient-btn]="accentStyle === 'gradient'"
+                [style.background]="accentStyle === 'solid' ? primaryColor : null"
+                [style.backgroundImage]="accentStyle === 'gradient' ? primaryGradient : null">
+                View academy
+              </button>
             </div>
           </div>
 
-          <div class="site-hero">
-            <div class="site-hero-title">Latest courses</div>
+          <div
+            class="site-banner"
+            *ngIf="bannerPreview"
+            [style.backgroundImage]="'url(' + bannerPreview + ')'">
+            <div class="site-banner-frame"></div>
+            <div class="site-banner-badge">Academy banner</div>
+            <div class="site-banner-overlay" *ngIf="heroLayout === 'immersive'"></div>
+          </div>
+
+          <div class="site-hero" [class.with-banner]="!!bannerPreview">
+            <div class="hero-chip-row">
+              <span class="hero-chip">{{ category || 'General' }}</span>
+              <span class="hero-chip subtle" *ngIf="tagline.trim()">{{ tagline }}</span>
+            </div>
+            <div class="site-hero-title">{{ welcomeTitle.trim() || displayNamePreview }}</div>
             <div class="site-hero-sub">
-              {{ description || 'Add a short description to introduce your academy.' }}
+              {{ description.trim() || 'Add a short description to introduce your academy and explain what learners can expect.' }}
             </div>
             <div class="hero-cta">
-              <button class="btn btn-primary btn-sm" type="button" disabled
-                [style.background]="primaryColor">Browse courses</button>
-              <button class="btn btn-ghost btn-sm" type="button" disabled>Contact</button>
+              <button
+                class="btn btn-primary btn-sm preview-action-btn"
+                type="button"
+                disabled
+                [class.gradient-btn]="accentStyle === 'gradient'"
+                [style.background]="accentStyle === 'solid' ? primaryColor : null"
+                [style.backgroundImage]="accentStyle === 'gradient' ? primaryGradient : null">
+                {{ ctaPrimaryText.trim() || 'Browse courses' }}
+              </button>
+              <button class="btn btn-ghost btn-sm" type="button" disabled>
+                {{ ctaSecondaryText.trim() || 'Contact' }}
+              </button>
             </div>
+            <div class="hero-contact" *ngIf="contactEmail.trim() || website.trim()">
+              <span *ngIf="contactEmail.trim()">✉ {{ contactEmail }}</span>
+              <span *ngIf="website.trim()">🌐 {{ website }}</span>
+            </div>
+          </div>
+
+          <div class="stats-bar" *ngIf="showStats">
+            <div class="stat"><strong>24+</strong><span>Courses</span></div>
+            <div class="stat"><strong>1.2k</strong><span>Learners</span></div>
+            <div class="stat"><strong>4.9</strong><span>Average rating</span></div>
+          </div>
+
+          <div class="site-section">
+            <div class="section-head">
+              <div class="section-title">Featured learning</div>
+              <div class="section-link">{{ navLabelPrimary || 'Explore' }}</div>
+            </div>
+            <div class="course-grid">
+              <div class="course-card" *ngFor="let c of exampleCourses">
+                <div
+                  class="course-thumb"
+                  [style.backgroundImage]="'linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.01)), ' + primaryGradient"></div>
+                <div class="course-body">
+                  <div class="course-kicker">{{ c.level }}</div>
+                  <div class="course-title">{{ c.title }}</div>
+                  <div class="course-meta">{{ c.meta }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="testimonial-block" *ngIf="showTestimonials">
+            <div class="testimonial-quote">"A clean academy experience that feels branded, modern, and easy to trust."</div>
+            <div class="testimonial-meta">— Sample learner review</div>
           </div>
 
           <div class="site-empty">
             <div class="site-empty-icon">👜</div>
-            <div class="site-empty-title">No courses yet</div>
+            <div class="site-empty-title">Your academy is ready for courses</div>
             <div class="site-empty-sub">Instructors can start building and publishing courses right away.</div>
           </div>
 
-          <div class="site-footer">Links · Contact · Terms</div>
+          <div class="site-footer">{{ footerText.trim() || 'Links · Contact · Terms' }}</div>
         </div>
       </div>
 
       <div class="preview-label">
         <span class="preview-label-dot"></span>
-        Live preview
+        Live preview · {{ currentFontLabel }}
       </div>
     </section>
 

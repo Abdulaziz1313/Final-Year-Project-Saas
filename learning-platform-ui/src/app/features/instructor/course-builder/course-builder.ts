@@ -26,11 +26,9 @@ export class CourseBuilderComponent {
   private reload$ = new BehaviorSubject<void>(undefined);
   state$: Observable<LoadState<any>>;
 
-  // forms
   moduleForm: any;
   private lessonForms = new Map<string, any>();
 
-  // UI states
   collapsedModules = new Set<string>();
   uploadingVideoIds = new Set<string>();
   uploadingFileIds = new Set<string>();
@@ -77,7 +75,6 @@ export class CourseBuilderComponent {
     this.reload$.next();
   }
 
-  // ---------- Helpers ----------
   n(v: any): number {
     return Number(v);
   }
@@ -106,7 +103,6 @@ export class CourseBuilderComponent {
     }
   }
 
-  // lesson type helpers used by HTML
   lessonTypeLabel(t: any): string {
     const n = this.n(t);
     if (n === 0) return 'Video';
@@ -116,18 +112,24 @@ export class CourseBuilderComponent {
     return 'Other';
   }
 
-  // Only these types have file uploads
   isUploadType(t: any): boolean {
     const n = this.n(t);
     return n === 0 || n === 1;
   }
 
-  // open quiz editor route
+  supportsFlashcards(t: any): boolean {
+    const n = this.n(t);
+    return n === 0 || n === 1 || n === 2;
+  }
+
   openQuizEditor(lessonId: string) {
     this.router.navigate(['/instructor/lessons', lessonId, 'quiz']);
   }
 
-  // ---------- Collapse ----------
+  openFlashcardsEditor(lessonId: string) {
+    this.router.navigate(['/instructor/lessons', lessonId, 'flashcards']);
+  }
+
   isCollapsed(moduleId: string): boolean {
     return this.collapsedModules.has(moduleId);
   }
@@ -147,14 +149,13 @@ export class CourseBuilderComponent {
     this.toast.success('Collapsed.');
   }
 
-  // ---------- Lesson form ----------
   ensureLessonForm(moduleId: string) {
     const existing = this.lessonForms.get(moduleId);
     if (existing) return existing;
 
     const fg = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(2)]],
-      type: [2, [Validators.required]], // 2=Text by default
+      type: [2, [Validators.required]],
       htmlContent: [''],
       isPreviewFree: [false],
       isDownloadable: [false],
@@ -164,7 +165,6 @@ export class CourseBuilderComponent {
     return fg;
   }
 
-  // ---------- Add module ----------
   addModule() {
     if (this.moduleForm.invalid) {
       this.moduleForm.markAllAsTouched();
@@ -186,7 +186,6 @@ export class CourseBuilderComponent {
     });
   }
 
-  // ---------- Add lesson ----------
   addLesson(moduleId: string) {
     const form = this.ensureLessonForm(moduleId);
 
@@ -220,7 +219,6 @@ export class CourseBuilderComponent {
     });
   }
 
-  // ---------- Uploads ----------
   uploadVideo(lessonId: string, ev: Event) {
     const input = ev.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -269,7 +267,6 @@ export class CourseBuilderComponent {
     return this.uploadingVideoIds.has(lessonId) || this.uploadingFileIds.has(lessonId);
   }
 
-  // ---------- Delete lesson ----------
   async deleteLesson(lessonId: string, title: string) {
     if (this.deletingLessonIds.has(lessonId)) return;
 
@@ -298,7 +295,6 @@ export class CourseBuilderComponent {
     });
   }
 
-  // ---------- Reorder modules ----------
   moveModule(mods: any[], index: number, dir: -1 | 1) {
     if (this.reordering) return;
     if (!mods || mods.length < 2) return;
@@ -324,7 +320,6 @@ export class CourseBuilderComponent {
     });
   }
 
-  // ---------- Reorder lessons ----------
   moveLesson(moduleId: string, lessons: any[], index: number, dir: -1 | 1) {
     if (this.reordering) return;
     if (!lessons || lessons.length < 2) return;
@@ -350,7 +345,6 @@ export class CourseBuilderComponent {
     });
   }
 
-  // ---------- Delete module ----------
   async deleteModule(moduleId: string, lessonCount: number) {
     if (lessonCount > 0) {
       this.toast.error('This module has lessons. Delete the lessons first.');
@@ -378,7 +372,6 @@ export class CourseBuilderComponent {
     });
   }
 
-  // ---------- Publish ----------
   publishCourse(courseId: string) {
     if (this.publishing) return;
     this.publishing = true;
@@ -396,7 +389,6 @@ export class CourseBuilderComponent {
     });
   }
 
-  // ---------- Draft inputs ----------
   resetDrafts() {
     this.moduleForm.reset({ title: '' });
     this.lessonForms.clear();

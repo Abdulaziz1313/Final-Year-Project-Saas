@@ -8,6 +8,8 @@ import { InstructorApi, AcademyDto } from '../../../core/services/instructor-api
 import { ProfileApi, ProfileDto } from '../../../core/services/profile-api';
 import { Auth } from '../../../core/services/auth';
 import { environment } from '../../../../environments/environment';
+import { TranslatePipe } from '../../../shared/pipes/translate-pipe';
+import { LanguageService } from '../../../core/services/language-services';
 
 type LoadState<T> = { loading: boolean; data: T | null; error: string | null };
 
@@ -49,7 +51,7 @@ type DashboardVm = {
 @Component({
   selector: 'app-instructor-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TranslatePipe],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
@@ -68,7 +70,8 @@ export class DashboardComponent {
     private api: InstructorApi,
     private profileApi: ProfileApi,
     private auth: Auth,
-    private router: Router
+    private router: Router,
+    public lang: LanguageService
   ) {
     this.state$ = this.reload$.pipe(
       tap(() => (this.avatarBust = Date.now())),

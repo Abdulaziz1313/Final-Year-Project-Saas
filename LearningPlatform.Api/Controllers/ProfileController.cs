@@ -1,9 +1,13 @@
 using System.Security.Claims;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using LearningPlatform.Infrastructure.Identity;
 using LearningPlatform.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using LearningPlatform.Api.Dto;
 
 namespace LearningPlatform.Api.Controllers;
 
@@ -15,15 +19,21 @@ public class ProfileController : ControllerBase
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IWebHostEnvironment _env;
     private readonly AppDbContext _db;
+    private readonly BlobServiceClient _blobServiceClient;
+    private readonly StorageOptions _storage;
 
     public ProfileController(
         UserManager<ApplicationUser> userManager,
         IWebHostEnvironment env,
-        AppDbContext db)
+        AppDbContext db,
+        BlobServiceClient blobServiceClient,
+        IOptions<StorageOptions> storage)
     {
         _userManager = userManager;
         _env = env;
         _db = db;
+        _blobServiceClient = blobServiceClient;
+        _storage = storage.Value;
     }
 
     [HttpGet]
@@ -44,8 +54,6 @@ public class ProfileController : ControllerBase
             roles,
             displayName = user.DisplayName,
             profileImageUrl = user.ProfileImageUrl,
-
-            // ✅ Phone number from Identity (what user registered with)
             phoneNumber = user.PhoneNumber
         });
     }
@@ -66,9 +74,12 @@ public class ProfileController : ControllerBase
     }
 
     [HttpPost("photo")]
-    [RequestSizeLimit(5 * 1024 * 1024)] // 5MB
-    public async Task<IActionResult> UploadPhoto([FromForm] IFormFile file)
+    [RequestSizeLimit(5 * 1024 * 1024)]
+    public async Task<IActionResult> UploadPhoto([FromForm] UploadImageRequest request)
     {
+
+         var file = request.File;
+         
         if (file is null || file.Length == 0) return BadRequest("No file uploaded.");
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -95,32 +106,51 @@ public class ProfileController : ControllerBase
             _ => ".img"
         };
 
-        // ✅ Correct place for static served files
-        var webRoot = _env.WebRootPath;
-        if (string.IsNullOrWhiteSpace(webRoot))
+        if (_storage.UseBlob)
         {
-            // fallback (rare)
-            webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
+            var container = _blobServiceClient.GetBlobContainerClient(_storage.UserAvatarsContainer);
+            await container.CreateIfNotExistsAsync();
+
+            // delete old blob if same container/blob url
+            await TryDeleteOldAvatarBlobAsync(user.ProfileImageUrl);
+
+            var blobName = $"{userId}_{DateTime.UtcNow:yyyyMMddHHmmssfff}{ext}";
+            var blob = container.GetBlobClient(blobName);
+
+            await using var stream = file.OpenReadStream();
+           await blob.UploadAsync(
+    stream,
+    new BlobUploadOptions
+    {
+        HttpHeaders = new BlobHttpHeaders
+        {
+            ContentType = file.ContentType
+        }
+    });
+
+            user.ProfileImageUrl = blob.Uri.ToString();
+        }
+        else
+        {
+            var webRoot = _env.WebRootPath;
+            if (string.IsNullOrWhiteSpace(webRoot))
+                webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
+
+            var dir = Path.Combine(webRoot, "uploads", "users");
+            Directory.CreateDirectory(dir);
+
+            TryDeleteOldAvatarFile(user.ProfileImageUrl, webRoot);
+
+            var filename = $"{userId}_{DateTime.UtcNow:yyyyMMddHHmmssfff}{ext}";
+            var fullPath = Path.Combine(dir, filename);
+
+            await using (var stream = System.IO.File.Create(fullPath))
+                await file.CopyToAsync(stream);
+
+            user.ProfileImageUrl = $"/uploads/users/{filename}";
         }
 
-        var dir = Path.Combine(webRoot, "uploads", "users");
-        Directory.CreateDirectory(dir);
-
-        // ✅ Delete previous avatar file if it exists (optional but good)
-        TryDeleteOldAvatarFile(user.ProfileImageUrl, webRoot);
-
-        // ✅ Unique file name prevents caching issues
-        var filename = $"{userId}_{DateTime.UtcNow:yyyyMMddHHmmssfff}{ext}";
-        var fullPath = Path.Combine(dir, filename);
-
-        await using (var stream = System.IO.File.Create(fullPath))
-        {
-            await file.CopyToAsync(stream);
-        }
-
-        user.ProfileImageUrl = $"/uploads/users/{filename}";
         await _userManager.UpdateAsync(user);
-
         return Ok(new { profileImageUrl = user.ProfileImageUrl });
     }
 
@@ -164,17 +194,16 @@ public class ProfileController : ControllerBase
         var ok = await _userManager.CheckPasswordAsync(user, req.Password);
         if (!ok) return BadRequest("Incorrect password.");
 
-        // ✅ Optional: delete avatar file
-        var webRoot = _env.WebRootPath;
-        if (string.IsNullOrWhiteSpace(webRoot))
-            webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
+        if (_storage.UseBlob)
+            await TryDeleteOldAvatarBlobAsync(user.ProfileImageUrl);
+        else
+        {
+            var webRoot = _env.WebRootPath;
+            if (string.IsNullOrWhiteSpace(webRoot))
+                webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
 
-        TryDeleteOldAvatarFile(user.ProfileImageUrl, webRoot);
-
-        // ✅ IMPORTANT:
-        // Do NOT hard-code deletions of tables that might not exist in your project,
-        // otherwise the API won't compile. Prefer cascade deletes in DB.
-        // If you need manual cleanup, add it here based on your real DbSets.
+            TryDeleteOldAvatarFile(user.ProfileImageUrl, webRoot);
+        }
 
         var result = await _userManager.DeleteAsync(user);
         if (!result.Succeeded)
@@ -191,8 +220,8 @@ public class ProfileController : ControllerBase
         try
         {
             if (string.IsNullOrWhiteSpace(profileImageUrl)) return;
+            if (profileImageUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase)) return;
 
-            // profileImageUrl example: "/uploads/users/xxx.webp"
             var relative = profileImageUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
             var full = Path.Combine(webRoot, relative);
 
@@ -201,7 +230,28 @@ public class ProfileController : ControllerBase
         }
         catch
         {
-            // ignore file delete failures
+        }
+    }
+
+    private async Task TryDeleteOldAvatarBlobAsync(string? profileImageUrl)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(profileImageUrl)) return;
+            if (!Uri.TryCreate(profileImageUrl, UriKind.Absolute, out var uri)) return;
+
+            var container = _blobServiceClient.GetBlobContainerClient(_storage.UserAvatarsContainer);
+            var blobName = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/'));
+
+            var expectedPrefix = $"{container.Name}/";
+            if (!blobName.StartsWith(expectedPrefix, StringComparison.OrdinalIgnoreCase)) return;
+
+            blobName = blobName.Substring(expectedPrefix.Length);
+            var blob = container.GetBlobClient(blobName);
+            await blob.DeleteIfExistsAsync();
+        }
+        catch
+        {
         }
     }
 

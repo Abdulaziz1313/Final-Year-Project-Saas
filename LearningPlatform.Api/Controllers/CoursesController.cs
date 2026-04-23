@@ -1,13 +1,14 @@
-// CoursesController.cs
-
 using System.Security.Claims;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using LearningPlatform.Api.Services;
 using LearningPlatform.Domain.Entities;
-using LearningPlatform.Infrastructure.Identity;
 using LearningPlatform.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using LearningPlatform.Api.Dto;
 
 namespace LearningPlatform.Api.Controllers;
 
@@ -17,11 +18,22 @@ public class CoursesController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly NotificationWriter _notifs;
+    private readonly BlobServiceClient _blobServiceClient;
+    private readonly StorageOptions _storage;
+    private readonly IWebHostEnvironment _env;
 
-    public CoursesController(AppDbContext db, NotificationWriter notifs)
+    public CoursesController(
+        AppDbContext db,
+        NotificationWriter notifs,
+        BlobServiceClient blobServiceClient,
+        IOptions<StorageOptions> storage,
+        IWebHostEnvironment env)
     {
         _db = db;
         _notifs = notifs;
+        _blobServiceClient = blobServiceClient;
+        _storage = storage.Value;
+        _env = env;
     }
 
     public record CreateCourseRequest(
@@ -36,6 +48,17 @@ public class CoursesController : ControllerBase
         string TagsJson
     );
 
+    public record UpdateCourseRequest(
+        string? Title,
+        string? ShortDescription,
+        string? FullDescription,
+        bool? IsFree,
+        decimal? Price,
+        string? Currency,
+        string? Category,
+        string? TagsJson
+    );
+
     public record CreateModuleRequest(string Title);
 
     public record CreateLessonRequest(
@@ -47,34 +70,23 @@ public class CoursesController : ControllerBase
         bool IsDownloadable
     );
 
+    public record UpdateStatusRequest(CourseStatus Status);
+
+    public record ReorderRequest(List<Guid> OrderedIds);
+
     private static string? UserId(ClaimsPrincipal user) =>
         user.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    // ✅ NEW: instructor is allowed if they are assigned to this academy
-    // Supports both JWT claim check (fast) and DB fallback (safe)
-    private bool IsAssignedToAcademy(Guid academyId)
-    {
-        var claim = User.FindFirstValue("academyId");
-        if (!string.IsNullOrEmpty(claim) && Guid.TryParse(claim, out var claimAcademyId))
-            return claimAcademyId == academyId;
-        return false;
-    }
-
-    // DB-level check: used when we already have the course/module loaded
     private async Task<bool> IsAssignedToAcademyAsync(Guid academyId, string userId)
     {
-        // Check JWT claim first (fast path)
         var claim = User.FindFirstValue("academyId");
-        if (!string.IsNullOrEmpty(claim) && Guid.TryParse(claim, out var claimAcademyId))
+        if (!string.IsNullOrWhiteSpace(claim) && Guid.TryParse(claim, out var claimAcademyId))
             return claimAcademyId == academyId;
 
-        // Fallback: check DB
         return await _db.Users
             .AsNoTracking()
             .AnyAsync(u => u.Id == userId && u.AcademyId == academyId);
     }
-
-    // -------------------- Courses CRUD --------------------
 
     [HttpPost]
     [Authorize(Roles = "Instructor")]
@@ -94,20 +106,21 @@ public class CoursesController : ControllerBase
 
         var course = new Course
         {
-            AcademyId        = req.AcademyId,
-            Title            = req.Title.Trim(),
-            ShortDescription = req.ShortDescription,
-            FullDescription  = req.FullDescription,
-            IsFree           = req.IsFree,
-            Price            = req.IsFree ? null : req.Price,
-            Currency         = string.IsNullOrWhiteSpace(req.Currency) ? "EUR" : req.Currency.Trim().ToUpperInvariant(),
-            Category         = req.Category,
-            TagsJson         = string.IsNullOrWhiteSpace(req.TagsJson) ? "[]" : req.TagsJson,
-            Status           = CourseStatus.Draft,
-            IsHidden         = false,
-            HiddenReason     = null,
-            HiddenAt         = null,
-            HiddenByUserId   = null
+            AcademyId = req.AcademyId,
+            InstructorUserId = userId,
+            Title = req.Title.Trim(),
+            ShortDescription = string.IsNullOrWhiteSpace(req.ShortDescription) ? null : req.ShortDescription.Trim(),
+            FullDescription = string.IsNullOrWhiteSpace(req.FullDescription) ? null : req.FullDescription.Trim(),
+            IsFree = req.IsFree,
+            Price = req.IsFree ? null : req.Price,
+            Currency = string.IsNullOrWhiteSpace(req.Currency) ? "EUR" : req.Currency.Trim().ToUpperInvariant(),
+            Category = string.IsNullOrWhiteSpace(req.Category) ? null : req.Category.Trim(),
+            TagsJson = string.IsNullOrWhiteSpace(req.TagsJson) ? "[]" : req.TagsJson.Trim(),
+            Status = CourseStatus.Draft,
+            IsHidden = false,
+            HiddenReason = null,
+            HiddenAt = null,
+            HiddenByUserId = null
         };
 
         _db.Courses.Add(course);
@@ -124,8 +137,8 @@ public class CoursesController : ControllerBase
         if (userId is null) return Unauthorized();
 
         var course = await _db.Courses
-            .Include(c => c.Modules.OrderBy(m => m.SortOrder))
-                .ThenInclude(m => m.Lessons.OrderBy(l => l.SortOrder))
+            .Include(c => c.Modules)
+                .ThenInclude(m => m.Lessons)
             .FirstOrDefaultAsync(c => c.Id == id);
 
         if (course is null) return NotFound();
@@ -133,10 +146,17 @@ public class CoursesController : ControllerBase
         if (!await IsAssignedToAcademyAsync(course.AcademyId, userId))
             return StatusCode(403, "You are not assigned to this academy.");
 
+        if (string.IsNullOrWhiteSpace(course.InstructorUserId))
+        {
+            course.InstructorUserId = userId;
+            await _db.SaveChangesAsync();
+        }
+
         var dto = new
         {
             course.Id,
             course.AcademyId,
+            course.InstructorUserId,
             course.Title,
             course.ShortDescription,
             course.FullDescription,
@@ -178,6 +198,107 @@ public class CoursesController : ControllerBase
         return Ok(dto);
     }
 
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Instructor")]
+    public async Task<IActionResult> UpdateCourse(Guid id, [FromBody] UpdateCourseRequest req)
+    {
+        var userId = UserId(User);
+        if (userId is null) return Unauthorized();
+
+        var course = await _db.Courses.FirstOrDefaultAsync(c => c.Id == id);
+        if (course is null) return NotFound();
+
+        if (!await IsAssignedToAcademyAsync(course.AcademyId, userId))
+            return StatusCode(403, "You are not assigned to this academy.");
+
+        if (string.IsNullOrWhiteSpace(course.InstructorUserId))
+            course.InstructorUserId = userId;
+
+        if (req.Title is not null)
+        {
+            var title = req.Title.Trim();
+            if (string.IsNullOrWhiteSpace(title))
+                return BadRequest("Title is required.");
+
+            course.Title = title;
+        }
+
+        if (req.ShortDescription is not null)
+            course.ShortDescription = string.IsNullOrWhiteSpace(req.ShortDescription) ? null : req.ShortDescription.Trim();
+
+        if (req.FullDescription is not null)
+            course.FullDescription = string.IsNullOrWhiteSpace(req.FullDescription) ? null : req.FullDescription.Trim();
+
+        if (req.Category is not null)
+            course.Category = string.IsNullOrWhiteSpace(req.Category) ? null : req.Category.Trim();
+
+        if (req.TagsJson is not null)
+            course.TagsJson = string.IsNullOrWhiteSpace(req.TagsJson) ? "[]" : req.TagsJson.Trim();
+
+        if (req.IsFree.HasValue)
+            course.IsFree = req.IsFree.Value;
+
+        if (course.IsFree)
+        {
+            course.Price = null;
+            if (!string.IsNullOrWhiteSpace(req.Currency))
+                course.Currency = req.Currency.Trim().ToUpperInvariant();
+        }
+        else
+        {
+            if (req.Price.HasValue)
+                course.Price = req.Price.Value;
+
+            if (course.Price is null || course.Price <= 0)
+                return BadRequest("Paid courses must have a price > 0.");
+
+            if (req.Currency is not null)
+                course.Currency = string.IsNullOrWhiteSpace(req.Currency) ? "EUR" : req.Currency.Trim().ToUpperInvariant();
+
+            if (string.IsNullOrWhiteSpace(course.Currency))
+                course.Currency = "EUR";
+        }
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            course.Id,
+            course.InstructorUserId,
+            course.Title,
+            course.ShortDescription,
+            course.FullDescription,
+            course.IsFree,
+            course.Price,
+            course.Currency,
+            course.Category,
+            course.TagsJson
+        });
+    }
+
+    [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Instructor")]
+    public async Task<IActionResult> DeleteCourse(Guid id)
+    {
+        var userId = UserId(User);
+        if (userId is null) return Unauthorized();
+
+        var course = await _db.Courses.FirstOrDefaultAsync(c => c.Id == id);
+        if (course is null) return NotFound();
+
+        if (!await IsAssignedToAcademyAsync(course.AcademyId, userId))
+            return StatusCode(403, "You are not assigned to this academy.");
+
+        var hasPayments = await _db.Payments.AnyAsync(p => p.CourseId == id && p.Status == PaymentStatus.Paid);
+        if (hasPayments)
+            return BadRequest("Cannot delete a course that has completed payments.");
+
+        _db.Courses.Remove(course);
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
     [HttpPost("{courseId:guid}/modules")]
     [Authorize(Roles = "Instructor")]
     public async Task<IActionResult> AddModule(Guid courseId, CreateModuleRequest req)
@@ -194,14 +315,20 @@ public class CoursesController : ControllerBase
         if (!await IsAssignedToAcademyAsync(course.AcademyId, userId))
             return StatusCode(403, "You are not assigned to this academy.");
 
+        if (string.IsNullOrWhiteSpace(course.InstructorUserId))
+        {
+            course.InstructorUserId = userId;
+            await _db.SaveChangesAsync();
+        }
+
         var maxSort = await _db.Modules
             .Where(m => m.CourseId == courseId)
             .MaxAsync(m => (int?)m.SortOrder) ?? 0;
 
         var module = new Module
         {
-            CourseId  = courseId,
-            Title     = req.Title.Trim(),
+            CourseId = courseId,
+            Title = req.Title.Trim(),
             SortOrder = maxSort + 1
         };
 
@@ -209,6 +336,32 @@ public class CoursesController : ControllerBase
         await _db.SaveChangesAsync();
 
         return Ok(new { module.Id });
+    }
+
+    [HttpDelete("modules/{moduleId:guid}")]
+    [Authorize(Roles = "Instructor")]
+    public async Task<IActionResult> DeleteModule(Guid moduleId)
+    {
+        var userId = UserId(User);
+        if (userId is null) return Unauthorized();
+
+        var module = await _db.Modules
+            .Include(m => m.Course)
+            .FirstOrDefaultAsync(m => m.Id == moduleId);
+
+        if (module is null) return NotFound();
+
+        if (!await IsAssignedToAcademyAsync(module.Course.AcademyId, userId))
+            return StatusCode(403, "You are not assigned to this academy.");
+
+        var hasLessons = await _db.Lessons.AnyAsync(l => l.ModuleId == moduleId);
+        if (hasLessons)
+            return BadRequest("Cannot delete a module that has lessons. Delete lessons first.");
+
+        _db.Modules.Remove(module);
+        await _db.SaveChangesAsync();
+
+        return NoContent();
     }
 
     [HttpPost("modules/{moduleId:guid}/lessons")]
@@ -230,19 +383,25 @@ public class CoursesController : ControllerBase
         if (!await IsAssignedToAcademyAsync(module.Course.AcademyId, userId))
             return StatusCode(403, "You are not assigned to this academy.");
 
+        if (string.IsNullOrWhiteSpace(module.Course.InstructorUserId))
+        {
+            module.Course.InstructorUserId = userId;
+            await _db.SaveChangesAsync();
+        }
+
         var maxSort = await _db.Lessons
             .Where(l => l.ModuleId == moduleId)
             .MaxAsync(l => (int?)l.SortOrder) ?? 0;
 
         var lesson = new Lesson
         {
-            ModuleId       = moduleId,
-            Title          = req.Title.Trim(),
-            Type           = req.Type,
-            ContentUrl     = req.ContentUrl,
-            HtmlContent    = req.HtmlContent,
-            SortOrder      = maxSort + 1,
-            IsPreviewFree  = req.IsPreviewFree,
+            ModuleId = moduleId,
+            Title = req.Title.Trim(),
+            Type = req.Type,
+            ContentUrl = req.ContentUrl,
+            HtmlContent = req.HtmlContent,
+            SortOrder = maxSort + 1,
+            IsPreviewFree = req.IsPreviewFree,
             IsDownloadable = req.IsDownloadable
         };
 
@@ -252,7 +411,99 @@ public class CoursesController : ControllerBase
         return Ok(new { lesson.Id });
     }
 
-    // -------------------- Publish + Status --------------------
+    [HttpDelete("lessons/{lessonId:guid}")]
+    [Authorize(Roles = "Instructor")]
+    public async Task<IActionResult> DeleteLesson(Guid lessonId)
+    {
+        var userId = UserId(User);
+        if (userId is null) return Unauthorized();
+
+        var lesson = await _db.Lessons
+            .Include(l => l.Module)
+            .ThenInclude(m => m.Course)
+            .FirstOrDefaultAsync(l => l.Id == lessonId);
+
+        if (lesson is null) return NotFound();
+
+        if (!await IsAssignedToAcademyAsync(lesson.Module.Course.AcademyId, userId))
+            return StatusCode(403, "You are not assigned to this academy.");
+
+        _db.LessonProgress.RemoveRange(_db.LessonProgress.Where(p => p.LessonId == lessonId));
+        _db.Lessons.Remove(lesson);
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    [HttpPut("{courseId:guid}/modules/reorder")]
+    [Authorize(Roles = "Instructor")]
+    public async Task<IActionResult> ReorderModules(Guid courseId, ReorderRequest req)
+    {
+        var userId = UserId(User);
+        if (userId is null) return Unauthorized();
+
+        var course = await _db.Courses.FirstOrDefaultAsync(c => c.Id == courseId);
+        if (course is null) return NotFound();
+
+        if (!await IsAssignedToAcademyAsync(course.AcademyId, userId))
+            return StatusCode(403, "You are not assigned to this academy.");
+
+        if (string.IsNullOrWhiteSpace(course.InstructorUserId))
+            course.InstructorUserId = userId;
+
+        if (req.OrderedIds is null || req.OrderedIds.Count == 0)
+            return BadRequest("orderedIds is required.");
+
+        var modules = await _db.Modules.Where(m => m.CourseId == courseId).ToListAsync();
+        var moduleIds = modules.Select(m => m.Id).ToHashSet();
+
+        if (req.OrderedIds.Count != moduleIds.Count || req.OrderedIds.Any(id => !moduleIds.Contains(id)))
+            return BadRequest("orderedIds must include all modules for this course.");
+
+        for (int i = 0; i < req.OrderedIds.Count; i++)
+            modules.First(m => m.Id == req.OrderedIds[i]).SortOrder = i + 1;
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpPut("modules/{moduleId:guid}/lessons/reorder")]
+    [Authorize(Roles = "Instructor")]
+    public async Task<IActionResult> ReorderLessons(Guid moduleId, ReorderRequest req)
+    {
+        var userId = UserId(User);
+        if (userId is null) return Unauthorized();
+
+        var module = await _db.Modules
+            .Include(m => m.Course)
+            .FirstOrDefaultAsync(m => m.Id == moduleId);
+
+        if (module is null) return NotFound();
+
+        if (!await IsAssignedToAcademyAsync(module.Course.AcademyId, userId))
+            return StatusCode(403, "You are not assigned to this academy.");
+
+        if (string.IsNullOrWhiteSpace(module.Course.InstructorUserId))
+        {
+            module.Course.InstructorUserId = userId;
+            await _db.SaveChangesAsync();
+        }
+
+        if (req.OrderedIds is null || req.OrderedIds.Count == 0)
+            return BadRequest("orderedIds is required.");
+
+        var lessons = await _db.Lessons.Where(l => l.ModuleId == moduleId).ToListAsync();
+        var lessonIds = lessons.Select(l => l.Id).ToHashSet();
+
+        if (req.OrderedIds.Count != lessonIds.Count || req.OrderedIds.Any(id => !lessonIds.Contains(id)))
+            return BadRequest("orderedIds must include all lessons for this module.");
+
+        for (int i = 0; i < req.OrderedIds.Count; i++)
+            lessons.First(l => l.Id == req.OrderedIds[i]).SortOrder = i + 1;
+
+        await _db.SaveChangesAsync();
+        return NoContent();
+    }
 
     [HttpPost("{id:guid}/publish")]
     [Authorize(Roles = "Instructor")]
@@ -267,13 +518,20 @@ public class CoursesController : ControllerBase
         if (!await IsAssignedToAcademyAsync(course.AcademyId, userId))
             return StatusCode(403, "You are not assigned to this academy.");
 
+        if (string.IsNullOrWhiteSpace(course.InstructorUserId))
+            course.InstructorUserId = userId;
+
         if (course.IsHidden)
             return BadRequest($"Course is hidden by admin. Reason: {course.HiddenReason ?? "Policy violation"}");
 
         var academy = await _db.Academies.AsNoTracking()
             .FirstOrDefaultAsync(a => a.Id == course.AcademyId);
+
         if (academy != null && academy.IsHidden)
             return BadRequest("Academy is hidden by admin. You cannot publish courses under it.");
+
+        if (!course.IsFree && (course.Price is null || course.Price <= 0))
+            return BadRequest("Paid courses must have a valid price before publishing.");
 
         course.Status = CourseStatus.Published;
         await _db.SaveChangesAsync();
@@ -289,8 +547,6 @@ public class CoursesController : ControllerBase
         return Ok();
     }
 
-    public record UpdateStatusRequest(CourseStatus Status);
-
     [HttpPut("{id:guid}/status")]
     [Authorize(Roles = "Instructor")]
     public async Task<IActionResult> UpdateStatus(Guid id, UpdateStatusRequest req)
@@ -304,6 +560,9 @@ public class CoursesController : ControllerBase
         if (!await IsAssignedToAcademyAsync(course.AcademyId, userId))
             return StatusCode(403, "You are not assigned to this academy.");
 
+        if (string.IsNullOrWhiteSpace(course.InstructorUserId))
+            course.InstructorUserId = userId;
+
         if (course.IsHidden && req.Status == CourseStatus.Published)
             return BadRequest($"Course is hidden by admin. Reason: {course.HiddenReason ?? "Policy violation"}");
 
@@ -311,8 +570,12 @@ public class CoursesController : ControllerBase
         {
             var academy = await _db.Academies.AsNoTracking()
                 .FirstOrDefaultAsync(a => a.Id == course.AcademyId);
+
             if (academy != null && academy.IsHidden)
                 return BadRequest("Academy is hidden by admin. You cannot publish courses under it.");
+
+            if (!course.IsFree && (course.Price is null || course.Price <= 0))
+                return BadRequest("Paid courses must have a valid price before publishing.");
         }
 
         course.Status = req.Status;
@@ -320,8 +583,6 @@ public class CoursesController : ControllerBase
 
         return Ok(new { course.Id, course.Status });
     }
-
-    // -------------------- List courses --------------------
 
     [HttpGet("academy/{academyId:guid}")]
     [Authorize(Roles = "Instructor")]
@@ -343,6 +604,7 @@ public class CoursesController : ControllerBase
                 (c, es) => new
                 {
                     c.Id,
+                    c.InstructorUserId,
                     c.Title,
                     c.Status,
                     c.IsFree,
@@ -362,119 +624,6 @@ public class CoursesController : ControllerBase
 
         return Ok(list);
     }
-
-    // -------------------- Delete course --------------------
-
-    [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Instructor")]
-    public async Task<IActionResult> DeleteCourse(Guid id)
-    {
-        var userId = UserId(User);
-        if (userId is null) return Unauthorized();
-
-        var course = await _db.Courses.FirstOrDefaultAsync(c => c.Id == id);
-        if (course is null) return NotFound();
-
-        if (!await IsAssignedToAcademyAsync(course.AcademyId, userId))
-            return StatusCode(403, "You are not assigned to this academy.");
-
-        _db.Courses.Remove(course);
-        await _db.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    // -------------------- Update course metadata --------------------
-
-public record UpdateCourseRequest(
-    string? Title,
-    string? ShortDescription,
-    string? FullDescription,
-    bool? IsFree,
-    decimal? Price,
-    string? Currency,
-    string? Category,
-    string? TagsJson
-);
-
-[HttpPut("{id:guid}")]
-[Authorize(Roles = "Instructor")]
-public async Task<IActionResult> UpdateCourse(Guid id, [FromBody] UpdateCourseRequest req)
-{
-    var userId = UserId(User);
-    if (userId is null) return Unauthorized();
-
-    var course = await _db.Courses.FirstOrDefaultAsync(c => c.Id == id);
-    if (course is null) return NotFound();
-
-    if (!await IsAssignedToAcademyAsync(course.AcademyId, userId))
-        return StatusCode(403, "You are not assigned to this academy.");
-
-    // Title
-    if (req.Title is not null)
-    {
-        var t = req.Title.Trim();
-        if (string.IsNullOrWhiteSpace(t)) return BadRequest("Title is required.");
-        course.Title = t;
-    }
-
-    // Descriptions
-    if (req.ShortDescription is not null)
-        course.ShortDescription = string.IsNullOrWhiteSpace(req.ShortDescription) ? null : req.ShortDescription.Trim();
-
-    if (req.FullDescription is not null)
-        course.FullDescription = string.IsNullOrWhiteSpace(req.FullDescription) ? null : req.FullDescription.Trim();
-
-    // Category
-    if (req.Category is not null)
-        course.Category = string.IsNullOrWhiteSpace(req.Category) ? null : req.Category.Trim();
-
-    // TagsJson (keep it simple: store string; frontend validates JSON array)
-    if (req.TagsJson is not null)
-        course.TagsJson = string.IsNullOrWhiteSpace(req.TagsJson) ? "[]" : req.TagsJson.Trim();
-
-    // Pricing
-    if (req.IsFree.HasValue)
-        course.IsFree = req.IsFree.Value;
-
-    if (!course.IsFree)
-    {
-        // paid
-        if (req.Price.HasValue)
-            course.Price = req.Price.Value;
-
-        if (course.Price is null || course.Price <= 0)
-            return BadRequest("Paid courses must have a price > 0.");
-
-        course.Currency = string.IsNullOrWhiteSpace(req.Currency)
-            ? (string.IsNullOrWhiteSpace(course.Currency) ? "EUR" : course.Currency)
-            : req.Currency.Trim().ToUpperInvariant();
-    }
-    else
-    {
-        // free
-        course.Price = null;
-        if (!string.IsNullOrWhiteSpace(req.Currency))
-            course.Currency = req.Currency.Trim().ToUpperInvariant(); // optional; harmless
-    }
-
-    await _db.SaveChangesAsync();
-
-    return Ok(new
-    {
-        course.Id,
-        course.Title,
-        course.ShortDescription,
-        course.FullDescription,
-        course.IsFree,
-        course.Price,
-        course.Currency,
-        course.Category,
-        course.TagsJson
-    });
-}
-
-    // -------------------- Enrollment analytics --------------------
 
     [HttpGet("{courseId:guid}/enrollments")]
     [Authorize(Roles = "Instructor")]
@@ -533,9 +682,9 @@ public async Task<IActionResult> UpdateCourse(Guid id, [FromBody] UpdateCourseRe
             {
                 student = new
                 {
-                    id             = e.StudentUserId,
-                    email          = u?.Email,
-                    displayName    = u?.DisplayName,
+                    id = e.StudentUserId,
+                    email = u?.Email,
+                    displayName = u?.DisplayName,
                     profileImageUrl = u?.ProfileImageUrl
                 },
                 e.EnrolledAt,
@@ -548,60 +697,93 @@ public async Task<IActionResult> UpdateCourse(Guid id, [FromBody] UpdateCourseRe
 
         return Ok(new
         {
-            course          = new { course.Id, course.Title },
+            course = new { course.Id, course.Title },
             totalLessons,
-            enrolledCount   = enrollments.Count,
+            enrolledCount = enrollments.Count,
             students
         });
     }
 
-    // -------------------- Uploads --------------------
-
     [HttpPost("lessons/{lessonId:guid}/upload-video")]
-    [Authorize(Roles = "Instructor")]
-    [RequestSizeLimit(250 * 1024 * 1024)]
-    public async Task<IActionResult> UploadLessonVideo(Guid lessonId, [FromForm] IFormFile file)
+[Authorize(Roles = "Instructor")]
+[Consumes("multipart/form-data")]
+[RequestSizeLimit(250 * 1024 * 1024)]
+public async Task<IActionResult> UploadLessonVideo(Guid lessonId, [FromForm] UploadFileRequest request)
+{
+    var file = request.File;
+
+    if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+
+    var userId = UserId(User);
+    if (userId is null) return Unauthorized();
+
+    var lesson = await _db.Lessons
+        .Include(l => l.Module)
+        .ThenInclude(m => m.Course)
+        .FirstOrDefaultAsync(l => l.Id == lessonId);
+
+    if (lesson is null) return NotFound();
+
+    if (!await IsAssignedToAcademyAsync(lesson.Module.Course.AcademyId, userId))
+        return StatusCode(403, "You are not assigned to this academy.");
+
+    if (string.IsNullOrWhiteSpace(lesson.Module.Course.InstructorUserId))
     {
-        if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+        lesson.Module.Course.InstructorUserId = userId;
+        await _db.SaveChangesAsync();
+    }
 
-        var userId = UserId(User);
-        if (userId is null) return Unauthorized();
+    if (lesson.Module.Course.IsHidden)
+        return BadRequest($"Course is hidden by admin. Reason: {lesson.Module.Course.HiddenReason ?? "Policy violation"}");
 
-        var lesson = await _db.Lessons
-            .Include(l => l.Module)
-            .ThenInclude(m => m.Course)
-            .FirstOrDefaultAsync(l => l.Id == lessonId);
+    var academy = await _db.Academies.AsNoTracking()
+        .FirstOrDefaultAsync(a => a.Id == lesson.Module.Course.AcademyId);
 
-        if (lesson is null) return NotFound();
+    if (academy != null && academy.IsHidden)
+        return BadRequest("Academy is hidden by admin. Uploads are disabled.");
 
-        if (!await IsAssignedToAcademyAsync(lesson.Module.Course.AcademyId, userId))
-            return StatusCode(403, "You are not assigned to this academy.");
+    var allowed = new[] { "video/mp4", "video/webm", "video/quicktime" };
+    if (!allowed.Contains(file.ContentType))
+        return BadRequest("Only MP4, WebM or MOV allowed.");
 
-        if (lesson.Module.Course.IsHidden)
-            return BadRequest($"Course is hidden by admin. Reason: {lesson.Module.Course.HiddenReason ?? "Policy violation"}");
+    var ext = file.ContentType switch
+    {
+        "video/mp4" => ".mp4",
+        "video/webm" => ".webm",
+        "video/quicktime" => ".mov",
+        _ => ".bin"
+    };
 
-        var academy = await _db.Academies.AsNoTracking()
-            .FirstOrDefaultAsync(a => a.Id == lesson.Module.Course.AcademyId);
-        if (academy != null && academy.IsHidden)
-            return BadRequest("Academy is hidden by admin. Uploads are disabled.");
+    string url;
 
-        var allowed = new[] { "video/mp4", "video/webm", "video/quicktime" };
-        if (!allowed.Contains(file.ContentType))
-            return BadRequest("Only MP4, WebM or MOV allowed.");
+    if (_storage.UseBlob)
+    {
+        var container = _blobServiceClient.GetBlobContainerClient(_storage.LessonFilesContainer);
+        await container.CreateIfNotExistsAsync();
 
-        var ext = file.ContentType switch
-        {
-            "video/mp4"       => ".mp4",
-            "video/webm"      => ".webm",
-            "video/quicktime" => ".mov",
-            _                 => ".bin"
-        };
+        var blobName = $"lessons/{lessonId:N}/{Guid.NewGuid():N}{ext}";
+        var blob = container.GetBlobClient(blobName);
 
-        var wwwroot = Path.Combine(AppContext.BaseDirectory, "wwwroot");
-        if (!Directory.Exists(wwwroot))
-            wwwroot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+        await using var stream = file.OpenReadStream();
+        await blob.UploadAsync(
+            stream,
+            new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = file.ContentType
+                }
+            });
 
-        var dir = Path.Combine(wwwroot, "uploads", "lessons", lessonId.ToString("N"));
+        url = blob.Uri.ToString();
+    }
+    else
+    {
+        var webRoot = _env.WebRootPath;
+        if (string.IsNullOrWhiteSpace(webRoot))
+            webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
+
+        var dir = Path.Combine(webRoot, "uploads", "lessons", lessonId.ToString("N"));
         Directory.CreateDirectory(dir);
 
         var filename = $"{Guid.NewGuid():N}{ext}";
@@ -610,58 +792,95 @@ public async Task<IActionResult> UpdateCourse(Guid id, [FromBody] UpdateCourseRe
         await using (var stream = System.IO.File.Create(fullPath))
             await file.CopyToAsync(stream);
 
-        var url = $"/uploads/lessons/{lessonId:N}/{filename}";
-        lesson.ContentUrl = url;
-        await _db.SaveChangesAsync();
-
-        return Ok(new { contentUrl = url });
+        url = $"/uploads/lessons/{lessonId:N}/{filename}";
     }
+
+    lesson.ContentUrl = url;
+    await _db.SaveChangesAsync();
+
+    return Ok(new { contentUrl = url });
+}
 
     [HttpPost("lessons/{lessonId:guid}/upload-file")]
-    [Authorize(Roles = "Instructor")]
-    [RequestSizeLimit(50 * 1024 * 1024)]
-    public async Task<IActionResult> UploadLessonFile(Guid lessonId, [FromForm] IFormFile file)
+[Authorize(Roles = "Instructor")]
+[Consumes("multipart/form-data")]
+[RequestSizeLimit(50 * 1024 * 1024)]
+public async Task<IActionResult> UploadLessonFile(Guid lessonId, [FromForm] UploadFileRequest request)
+{
+    var file = request.File;
+
+    if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+
+    var userId = UserId(User);
+    if (userId is null) return Unauthorized();
+
+    var lesson = await _db.Lessons
+        .Include(l => l.Module)
+        .ThenInclude(m => m.Course)
+        .FirstOrDefaultAsync(l => l.Id == lessonId);
+
+    if (lesson is null) return NotFound();
+
+    if (!await IsAssignedToAcademyAsync(lesson.Module.Course.AcademyId, userId))
+        return StatusCode(403, "You are not assigned to this academy.");
+
+    if (string.IsNullOrWhiteSpace(lesson.Module.Course.InstructorUserId))
     {
-        if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
+        lesson.Module.Course.InstructorUserId = userId;
+        await _db.SaveChangesAsync();
+    }
 
-        var userId = UserId(User);
-        if (userId is null) return Unauthorized();
+    if (lesson.Module.Course.IsHidden)
+        return BadRequest($"Course is hidden by admin. Reason: {lesson.Module.Course.HiddenReason ?? "Policy violation"}");
 
-        var lesson = await _db.Lessons
-            .Include(l => l.Module)
-            .ThenInclude(m => m.Course)
-            .FirstOrDefaultAsync(l => l.Id == lessonId);
+    var academy = await _db.Academies.AsNoTracking()
+        .FirstOrDefaultAsync(a => a.Id == lesson.Module.Course.AcademyId);
 
-        if (lesson is null) return NotFound();
+    if (academy != null && academy.IsHidden)
+        return BadRequest("Academy is hidden by admin. Uploads are disabled.");
 
-        if (!await IsAssignedToAcademyAsync(lesson.Module.Course.AcademyId, userId))
-            return StatusCode(403, "You are not assigned to this academy.");
+    if (lesson.Type != LessonType.Document)
+        return BadRequest("This lesson is not a Document lesson.");
 
-        if (lesson.Module.Course.IsHidden)
-            return BadRequest($"Course is hidden by admin. Reason: {lesson.Module.Course.HiddenReason ?? "Policy violation"}");
+    var ext = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+    var contentType = (file.ContentType ?? "").ToLowerInvariant();
+    var looksLikePdf = contentType == "application/pdf" || ext == ".pdf";
 
-        var academy = await _db.Academies.AsNoTracking()
-            .FirstOrDefaultAsync(a => a.Id == lesson.Module.Course.AcademyId);
-        if (academy != null && academy.IsHidden)
-            return BadRequest("Academy is hidden by admin. Uploads are disabled.");
+    if (!looksLikePdf)
+        return BadRequest("Only PDF files are allowed.");
 
-        if (lesson.Type != LessonType.Document)
-            return BadRequest("This lesson is not a Document lesson.");
+    ext = ".pdf";
 
-        var ext         = Path.GetExtension(file.FileName)?.ToLowerInvariant();
-        var contentType = (file.ContentType ?? "").ToLowerInvariant();
-        var looksLikePdf = contentType == "application/pdf" || ext == ".pdf";
+    string url;
 
-        if (!looksLikePdf)
-            return BadRequest("Only PDF files are allowed.");
+    if (_storage.UseBlob)
+    {
+        var container = _blobServiceClient.GetBlobContainerClient(_storage.LessonFilesContainer);
+        await container.CreateIfNotExistsAsync();
 
-        ext = ".pdf";
+        var blobName = $"lessons/{lessonId:N}/{Guid.NewGuid():N}{ext}";
+        var blob = container.GetBlobClient(blobName);
 
-        var wwwroot = Path.Combine(AppContext.BaseDirectory, "wwwroot");
-        if (!Directory.Exists(wwwroot))
-            wwwroot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+        await using var stream = file.OpenReadStream();
+        await blob.UploadAsync(
+            stream,
+            new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = file.ContentType
+                }
+            });
 
-        var dir = Path.Combine(wwwroot, "uploads", "lessons", lessonId.ToString("N"));
+        url = blob.Uri.ToString();
+    }
+    else
+    {
+        var webRoot = _env.WebRootPath;
+        if (string.IsNullOrWhiteSpace(webRoot))
+            webRoot = Path.Combine(_env.ContentRootPath, "wwwroot");
+
+        var dir = Path.Combine(webRoot, "uploads", "lessons", lessonId.ToString("N"));
         Directory.CreateDirectory(dir);
 
         var filename = $"{Guid.NewGuid():N}{ext}";
@@ -670,126 +889,12 @@ public async Task<IActionResult> UpdateCourse(Guid id, [FromBody] UpdateCourseRe
         await using (var stream = System.IO.File.Create(fullPath))
             await file.CopyToAsync(stream);
 
-        var url = $"/uploads/lessons/{lessonId:N}/{filename}";
-        lesson.ContentUrl = url;
-        await _db.SaveChangesAsync();
-
-        return Ok(new { contentUrl = url });
+        url = $"/uploads/lessons/{lessonId:N}/{filename}";
     }
 
-    // -------------------- Delete Module / Lesson --------------------
+    lesson.ContentUrl = url;
+    await _db.SaveChangesAsync();
 
-    [HttpDelete("modules/{moduleId:guid}")]
-    [Authorize(Roles = "Instructor")]
-    public async Task<IActionResult> DeleteModule(Guid moduleId)
-    {
-        var userId = UserId(User);
-        if (userId is null) return Unauthorized();
-
-        var module = await _db.Modules
-            .Include(m => m.Course)
-            .FirstOrDefaultAsync(m => m.Id == moduleId);
-
-        if (module is null) return NotFound();
-
-        if (!await IsAssignedToAcademyAsync(module.Course.AcademyId, userId))
-            return StatusCode(403, "You are not assigned to this academy.");
-
-        var hasLessons = await _db.Lessons.AnyAsync(l => l.ModuleId == moduleId);
-        if (hasLessons)
-            return BadRequest("Cannot delete a module that has lessons. Delete lessons first.");
-
-        _db.Modules.Remove(module);
-        await _db.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    public record ReorderRequest(List<Guid> OrderedIds);
-
-    [HttpDelete("lessons/{lessonId:guid}")]
-    [Authorize(Roles = "Instructor")]
-    public async Task<IActionResult> DeleteLesson(Guid lessonId)
-    {
-        var userId = UserId(User);
-        if (userId is null) return Unauthorized();
-
-        var lesson = await _db.Lessons
-            .Include(l => l.Module)
-            .ThenInclude(m => m.Course)
-            .FirstOrDefaultAsync(l => l.Id == lessonId);
-
-        if (lesson is null) return NotFound();
-
-        if (!await IsAssignedToAcademyAsync(lesson.Module.Course.AcademyId, userId))
-            return StatusCode(403, "You are not assigned to this academy.");
-
-        _db.LessonProgress.RemoveRange(_db.LessonProgress.Where(p => p.LessonId == lessonId));
-        _db.Lessons.Remove(lesson);
-        await _db.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    [HttpPut("{courseId:guid}/modules/reorder")]
-    [Authorize(Roles = "Instructor")]
-    public async Task<IActionResult> ReorderModules(Guid courseId, ReorderRequest req)
-    {
-        var userId = UserId(User);
-        if (userId is null) return Unauthorized();
-
-        var course = await _db.Courses.AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Id == courseId);
-        if (course is null) return NotFound();
-
-        if (!await IsAssignedToAcademyAsync(course.AcademyId, userId))
-            return StatusCode(403, "You are not assigned to this academy.");
-
-        if (req.OrderedIds is null || req.OrderedIds.Count == 0)
-            return BadRequest("orderedIds is required.");
-
-        var modules   = await _db.Modules.Where(m => m.CourseId == courseId).ToListAsync();
-        var moduleIds = modules.Select(m => m.Id).ToHashSet();
-
-        if (req.OrderedIds.Count != moduleIds.Count || req.OrderedIds.Any(id => !moduleIds.Contains(id)))
-            return BadRequest("orderedIds must include all modules for this course.");
-
-        for (int i = 0; i < req.OrderedIds.Count; i++)
-            modules.First(m => m.Id == req.OrderedIds[i]).SortOrder = i + 1;
-
-        await _db.SaveChangesAsync();
-        return NoContent();
-    }
-
-    [HttpPut("modules/{moduleId:guid}/lessons/reorder")]
-    [Authorize(Roles = "Instructor")]
-    public async Task<IActionResult> ReorderLessons(Guid moduleId, ReorderRequest req)
-    {
-        var userId = UserId(User);
-        if (userId is null) return Unauthorized();
-
-        var module = await _db.Modules
-            .Include(m => m.Course)
-            .FirstOrDefaultAsync(m => m.Id == moduleId);
-
-        if (module is null) return NotFound();
-
-        if (!await IsAssignedToAcademyAsync(module.Course.AcademyId, userId))
-            return StatusCode(403, "You are not assigned to this academy.");
-
-        if (req.OrderedIds is null || req.OrderedIds.Count == 0)
-            return BadRequest("orderedIds is required.");
-
-        var lessons   = await _db.Lessons.Where(l => l.ModuleId == moduleId).ToListAsync();
-        var lessonIds = lessons.Select(l => l.Id).ToHashSet();
-
-        if (req.OrderedIds.Count != lessonIds.Count || req.OrderedIds.Any(id => !lessonIds.Contains(id)))
-            return BadRequest("orderedIds must include all lessons for this module.");
-
-        for (int i = 0; i < req.OrderedIds.Count; i++)
-            lessons.First(l => l.Id == req.OrderedIds[i]).SortOrder = i + 1;
-
-        await _db.SaveChangesAsync();
-        return NoContent();
-    }
+    return Ok(new { contentUrl = url });
+}
 }

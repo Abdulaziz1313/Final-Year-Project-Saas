@@ -176,6 +176,50 @@ public class LearningController : ControllerBase
         return Ok(result);
     }
 
+    // GET /api/learning/me/academy
+    // Returns the academy the student belongs to (from their enrollments).
+    // Used by the app shell to show the academy logo and name in the topbar/sidebar.
+    [HttpGet("me/academy")]
+    public async Task<IActionResult> MyAcademy()
+    {
+        var userId = UserId();
+        if (userId is null) return Unauthorized();
+
+        // Walk: Enrollments → Courses → Academies
+        // Take the academy from the student's earliest enrollment.
+        var academy = await _db.Enrollments.AsNoTracking()
+            .Where(e => e.StudentUserId == userId)
+            .OrderBy(e => e.EnrolledAt)
+            .Join(
+                _db.Courses.AsNoTracking(),
+                e => e.CourseId,
+                c => c.Id,
+                (e, c) => c
+            )
+            .Join(
+                _db.Academies.AsNoTracking(),
+                c => c.AcademyId,
+                a => a.Id,
+                (c, a) => a
+            )
+            .Select(a => new
+            {
+                id           = a.Id,
+                name         = a.Name,
+                slug         = a.Slug,
+                logoUrl      = a.LogoUrl,
+                bannerUrl    = a.BannerUrl,
+                primaryColor = a.PrimaryColor,
+                description  = a.Description,
+                isPublished  = a.IsPublished,
+            })
+            .FirstOrDefaultAsync();
+
+        if (academy is null) return NotFound();
+
+        return Ok(academy);
+    }
+
     // GET /api/learning/me/courses/{courseId}/content (enrolled only)
     [HttpGet("me/courses/{courseId:guid}/content")]
     public async Task<IActionResult> CourseContent(Guid courseId)
@@ -340,7 +384,6 @@ public class LearningController : ControllerBase
     }
 
     // GET /api/learning/me/courses/{courseId}/certificate/status
-    // Handy for UI: show "Generate" or "Download"
     [HttpGet("me/courses/{courseId:guid}/certificate/status")]
     public async Task<IActionResult> CertificateStatus(Guid courseId)
     {

@@ -1,22 +1,40 @@
-<div class="shell" [class.collapsed]="collapsed">
+<div class="shell" [class.collapsed]="collapsed" [class.rtl]="lang.isRtl" [dir]="lang.isRtl ? 'rtl' : 'ltr'">
 
-  <!-- ── SIDEBAR ── -->
   <aside class="side" [class.is-collapsed]="collapsed">
 
-    <!-- Brand -->
     <div class="sidebar-brand">
-      <div class="logo-mark"><span>الف</span></div>
+      <ng-container *ngIf="profileState$ | async as ps">
+        <ng-container *ngIf="(isInstructor(ps.data) || isStudent(ps.data)) && academyName; else alefSidebarBrand">
+          <div class="logo-mark academy-shell-mark" [style.background]="academyLogoUrl() ? null : academyAccent()">
+            <img *ngIf="academyLogoUrl()" [src]="academyLogoUrl()!" alt="Academy logo" class="academy-shell-img" />
+            <span *ngIf="!academyLogoUrl()" class="academy-shell-initial">{{ academyInitial() }}</span>
+          </div>
+        </ng-container>
 
-      <div class="sidebar-brand-text" *ngIf="!collapsed">
-        <div class="sidebar-name">Alef</div>
-        <div class="sidebar-tagline">Learning Commerce</div>
+        <ng-template #alefSidebarBrand>
+          <div class="logo-mark alef-logo-mark">
+            <img src="/branding/alef-logo.svg" alt="Alef logo" class="alef-logo-img" />
+          </div>
+        </ng-template>
+      </ng-container>
+
+      <div class="sidebar-brand-text" *ngIf="!collapsed && (profileState$ | async) as ps">
+        <ng-container *ngIf="(isInstructor(ps.data) || isStudent(ps.data)) && academyName; else alefSidebarText">
+          <div class="sidebar-name">{{ academyName }}</div>
+          <div class="sidebar-tagline">Learning Academy</div>
+        </ng-container>
+
+        <ng-template #alefSidebarText>
+          <div class="sidebar-name">Alef</div>
+          <div class="sidebar-tagline">Learning Commerce</div>
+        </ng-template>
       </div>
 
       <button
         class="collapse-btn"
         type="button"
         (click)="toggleSidebar()"
-        [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        [attr.aria-label]="collapsed ? ('show' | translate) : ('hide' | translate)"
       >
         <svg viewBox="0 0 24 24" class="ico" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M14.5 6.5 9 12l5.5 5.5"/>
@@ -24,87 +42,114 @@
       </button>
     </div>
 
-    <!-- Nav sections -->
     <div class="sidebar-nav" *ngIf="profileState$ | async as ps">
 
-      <!-- ── ADMIN ── -->
       <div class="nav-group" *ngIf="isAdmin(ps.data)">
-        <div class="nav-group-label" *ngIf="!collapsed">Admin</div>
+        <div class="nav-group-label" *ngIf="!collapsed">{{ 'adminPanel' | translate }}</div>
         <nav>
           <a class="nav-item" routerLink="/admin" routerLinkActive="active"
              [routerLinkActiveOptions]="{ exact: true }"
-             [attr.data-tip]="collapsed ? 'Admin Panel' : null">
+             [attr.data-tip]="collapsed ? ('adminPanel' | translate) : null">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
               <path d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4Z"/>
               <path d="M9 12l2 2 4-5" stroke-linecap="round"/>
             </svg>
-            <span class="nav-label" *ngIf="!collapsed">Admin Panel</span>
+            <span class="nav-label" *ngIf="!collapsed">{{ 'adminPanel' | translate }}</span>
           </a>
         </nav>
       </div>
 
-      <!-- ── ORG ADMIN ── -->
       <div class="nav-group" *ngIf="isOrgAdmin(ps.data)">
-        <div class="nav-group-label" *ngIf="!collapsed">Organization</div>
+        <div class="nav-group-label" *ngIf="!collapsed">{{ 'orgPanel' | translate }}</div>
         <nav>
-          <!-- Academies -->
           <a class="nav-item" routerLink="/org/academies" routerLinkActive="active"
-             [attr.data-tip]="collapsed ? 'Academies' : null">
+             [attr.data-tip]="collapsed ? ('academies' | translate) : null">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
               <path d="M3 21V9l9-6 9 6v12"/>
               <path d="M9 21V12h6v9"/>
               <path d="M3 9h18" stroke-linecap="round"/>
             </svg>
-            <span class="nav-label" *ngIf="!collapsed">Academies</span>
+            <span class="nav-label" *ngIf="!collapsed">{{ 'academies' | translate }}</span>
           </a>
 
-          <!-- Members -->
           <a class="nav-item" routerLink="/org/members" routerLinkActive="active"
-             [attr.data-tip]="collapsed ? 'Members' : null">
+             [attr.data-tip]="collapsed ? ('members' | translate) : null">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
               <path d="M16 11c1.66 0 3-1.57 3-3.5S17.66 4 16 4s-3 1.57-3 3.5S14.34 11 16 11Z"/>
               <path d="M8 11c1.66 0 3-1.57 3-3.5S9.66 4 8 4 5 5.57 5 7.5 6.34 11 8 11Z"/>
               <path d="M8 13c-2.67 0-8 1.34-8 4v3h10"/>
               <path d="M24 20v-3c0-2.66-5.33-4-8-4"/>
             </svg>
-            <span class="nav-label" *ngIf="!collapsed">Members</span>
+            <span class="nav-label" *ngIf="!collapsed">{{ 'members' | translate }}</span>
+          </a>
+
+          <a class="nav-item" *ngIf="orgPayoutsLink" [routerLink]="orgPayoutsLink" routerLinkActive="active"
+             [attr.data-tip]="collapsed ? ('payouts' | translate) : null">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2"/>
+              <path d="M2 10h20"/>
+            </svg>
+            <span class="nav-label" *ngIf="!collapsed">{{ 'payouts' | translate }}</span>
+          </a>
+
+          <a class="nav-item" *ngIf="orgPayoutSettingsLink" [routerLink]="orgPayoutSettingsLink" routerLinkActive="active"
+             [attr.data-tip]="collapsed ? ('payoutSettings' | translate) : null">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01A1.65 1.65 0 0 0 10.44 3.1V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
+            </svg>
+            <span class="nav-label" *ngIf="!collapsed">{{ 'payoutSettings' | translate }}</span>
           </a>
         </nav>
       </div>
 
-      <!-- ── INSTRUCTOR ── -->
       <div class="nav-group" *ngIf="isInstructor(ps.data)">
-        <div class="nav-group-label" *ngIf="!collapsed">Instructor</div>
+        <div class="nav-group-label" *ngIf="!collapsed">{{ 'instructors' | translate }}</div>
         <nav>
-          <!-- Dashboard -->
           <a class="nav-item" routerLink="/instructor" routerLinkActive="active"
              [routerLinkActiveOptions]="{ exact: true }"
-             [attr.data-tip]="collapsed ? 'Dashboard' : null">
+             [attr.data-tip]="collapsed ? ('dashboard' | translate) : null">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
               <path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1v-10.5Z"/>
             </svg>
-            <span class="nav-label" *ngIf="!collapsed">Dashboard</span>
+            <span class="nav-label" *ngIf="!collapsed">{{ 'dashboard' | translate }}</span>
           </a>
 
-          <!-- My Academy (view/manage only — no create) -->
           <a class="nav-item" routerLink="/instructor/academies" routerLinkActive="active"
-             [attr.data-tip]="collapsed ? 'My Academy' : null">
+             [attr.data-tip]="collapsed ? ('myAcademy' | translate) : null">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
               <path d="M3 21V9l9-6 9 6v12"/>
               <path d="M9 21V12h6v9"/>
               <path d="M3 9h18" stroke-linecap="round"/>
             </svg>
-            <span class="nav-label" *ngIf="!collapsed">My Academy</span>
+            <span class="nav-label" *ngIf="!collapsed">{{ 'myAcademy' | translate }}</span>
           </a>
 
-          <!-- Notifications -->
-          <div class="nav-item-notif" [attr.data-tip]="collapsed ? 'Notifications' : null">
+          <a class="nav-item" *ngIf="instructorRevenueLink" [routerLink]="instructorRevenueLink" routerLinkActive="active"
+             [attr.data-tip]="collapsed ? ('revenue' | translate) : null">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v18h18"/>
+              <path d="M7 15l3-3 3 2 4-5"/>
+            </svg>
+            <span class="nav-label" *ngIf="!collapsed">{{ 'revenue' | translate }}</span>
+          </a>
+
+          <a class="nav-item" *ngIf="instructorEarningsLink" [routerLink]="instructorEarningsLink" routerLinkActive="active"
+             [attr.data-tip]="collapsed ? ('earnings' | translate) : null">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1v22"/>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+            <span class="nav-label" *ngIf="!collapsed">{{ 'earnings' | translate }}</span>
+          </a>
+
+          <div class="nav-item-notif" [attr.data-tip]="collapsed ? ('notifications' | translate) : null">
             <button class="nav-item nav-item-btn" type="button" (click)="toggleNotif(!notifOpen)">
               <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
                 <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke-linecap="round"/>
               </svg>
-              <span class="nav-label" *ngIf="!collapsed">Notifications</span>
+              <span class="nav-label" *ngIf="!collapsed">{{ 'notifications' | translate }}</span>
               <ng-container *ngIf="unreadCount$ | async as uc">
                 <span class="badge-dot" *ngIf="(uc.data || 0) > 0">{{ uc.data }}</span>
               </ng-container>
@@ -113,70 +158,75 @@
         </nav>
       </div>
 
-      <!-- ── STUDENT ── -->
       <div class="nav-group" *ngIf="isStudent(ps.data)">
-        <div class="nav-group-label" *ngIf="!collapsed">Student</div>
+        <div class="nav-group-label" *ngIf="!collapsed">{{ 'students' | translate }}</div>
         <nav>
           <a class="nav-item" routerLink="/my-learning" routerLinkActive="active"
              [routerLinkActiveOptions]="{ exact: true }"
-             [attr.data-tip]="collapsed ? 'My Learning' : null">
+             [attr.data-tip]="collapsed ? ('myLearning' | translate) : null">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
               <path d="M4 19V6a2 2 0 0 1 2-2h12v15"/>
               <path d="M8 8h8M8 12h8" stroke-linecap="round"/>
             </svg>
-            <span class="nav-label" *ngIf="!collapsed">My Learning</span>
+            <span class="nav-label" *ngIf="!collapsed">{{ 'myLearning' | translate }}</span>
+          </a>
+
+          <a class="nav-item" routerLink="/purchases" routerLinkActive="active"
+             [routerLinkActiveOptions]="{ exact: true }"
+             [attr.data-tip]="collapsed ? ('purchases' | translate) : null">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2"/>
+              <path d="M2 10h20"/>
+            </svg>
+            <span class="nav-label" *ngIf="!collapsed">{{ 'purchases' | translate }}</span>
           </a>
 
           <a class="nav-item" routerLink="/academies" routerLinkActive="active"
-             [attr.data-tip]="collapsed ? 'Explore' : null">
+             [attr.data-tip]="collapsed ? ('explore' | translate) : null">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
               <path d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
-            <span class="nav-label" *ngIf="!collapsed">Explore</span>
+            <span class="nav-label" *ngIf="!collapsed">{{ 'explore' | translate }}</span>
           </a>
         </nav>
       </div>
 
-      <!-- ── ACCOUNT (always shown) ── -->
       <div class="nav-group">
-        <div class="nav-group-label" *ngIf="!collapsed">Account</div>
+        <div class="nav-group-label" *ngIf="!collapsed">{{ 'account' | translate }}</div>
         <nav>
           <a class="nav-item" routerLink="/me" routerLinkActive="active"
              [routerLinkActiveOptions]="{ exact: true }"
-             [attr.data-tip]="collapsed ? 'My Account' : null">
+             [attr.data-tip]="collapsed ? ('account' | translate) : null">
             <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
               <path d="M20 21a8 8 0 0 0-16 0" stroke-linecap="round"/>
               <circle cx="12" cy="8" r="4" stroke-linejoin="round"/>
             </svg>
-            <span class="nav-label" *ngIf="!collapsed">My Account</span>
+            <span class="nav-label" *ngIf="!collapsed">{{ 'account' | translate }}</span>
           </a>
         </nav>
       </div>
 
     </div>
 
-    <!-- Profile footer -->
     <div class="sidebar-profile" *ngIf="!collapsed && (profileState$ | async) as ps">
       <div class="sp-avatar">
         <img *ngIf="avatarUrl(ps.data)" [src]="avatarUrl(ps.data)!" alt="avatar" />
         <span *ngIf="!avatarUrl(ps.data)">{{ initial(ps.data) }}</span>
       </div>
       <div class="sp-text">
-        <div class="sp-name">{{ ps.data?.email || 'Loading…' }}</div>
-        <div class="sp-role">{{ ps.data?.roles?.[0] || 'User' }}</div>
+        <div class="sp-name">{{ ps.data?.email || ('loading' | translate) }}</div>
+        <div class="sp-role">{{ ps.data?.roles?.[0] || ('user' | translate) }}</div>
       </div>
     </div>
 
   </aside>
 
-  <!-- ── MAIN ── -->
   <div class="main">
 
-    <!-- Topbar -->
     <header class="topbar">
       <div class="topbar-left">
         <button class="icon-btn" type="button" (click)="toggleSidebar()"
-                [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
+                [attr.aria-label]="collapsed ? ('show' | translate) : ('hide' | translate)">
           <svg viewBox="0 0 24 24" class="ico" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M4 7h16M4 12h16M4 17h16"/>
           </svg>
@@ -184,13 +234,28 @@
 
         <div class="topbar-context">
           <div class="topbar-title">
-            <span class="topbar-alef">Alef</span>
             <ng-container *ngIf="profileState$ | async as ps">
-              <span class="topbar-sep">·</span>
-              <span class="topbar-role" *ngIf="isAdmin(ps.data)">Admin</span>
-              <span class="topbar-role" *ngIf="isOrgAdmin(ps.data)">Organization</span>
-              <span class="topbar-role" *ngIf="isInstructor(ps.data)">Instructor</span>
-              <span class="topbar-role" *ngIf="isStudent(ps.data)">Student</span>
+
+              <ng-container *ngIf="(isInstructor(ps.data) || isStudent(ps.data)) && academyName; else defaultTopbarBrand">
+                <div class="topbar-academy-mark" [style.background]="academyLogoUrl() ? null : academyAccent()">
+                  <img *ngIf="academyLogoUrl()" [src]="academyLogoUrl()!" alt="Academy logo" class="topbar-academy-img" />
+                  <span *ngIf="!academyLogoUrl()" class="topbar-academy-initial">{{ academyInitial() }}</span>
+                </div>
+                <span class="topbar-alef">{{ academyName }}</span>
+                <span class="topbar-sep">·</span>
+                <span class="topbar-role" *ngIf="isInstructor(ps.data)">{{ 'instructor' | translate }}</span>
+                <span class="topbar-role" *ngIf="isStudent(ps.data)">{{ 'student' | translate }}</span>
+              </ng-container>
+
+              <ng-template #defaultTopbarBrand>
+                <img src="/branding/alef-logo.svg" alt="Alef logo" class="topbar-alef-logo" />
+                <span class="topbar-sep">·</span>
+                <span class="topbar-role" *ngIf="isAdmin(ps.data)">{{ 'adminPanel' | translate }}</span>
+                <span class="topbar-role" *ngIf="isOrgAdmin(ps.data)">{{ 'organization' | translate }}</span>
+                <span class="topbar-role" *ngIf="isInstructor(ps.data)">{{ 'instructor' | translate }}</span>
+                <span class="topbar-role" *ngIf="isStudent(ps.data)">{{ 'student' | translate }}</span>
+              </ng-template>
+
             </ng-container>
           </div>
         </div>
@@ -200,19 +265,27 @@
         <ng-container *ngIf="profileState$ | async as ps">
 
           <a class="top-pill" routerLink="/academies">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" width="14" height="14">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" width="13" height="13">
               <path d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
-            Explore
+            {{ 'explore' | translate }}
           </a>
 
-          <a class="top-pill" *ngIf="isAdmin(ps.data)" routerLink="/admin">Admin</a>
-          <a class="top-pill" *ngIf="isOrgAdmin(ps.data)" routerLink="/org/academies">Academies</a>
-          <a class="top-pill" *ngIf="isStudent(ps.data)" routerLink="/my-learning">My Learning</a>
+          <a class="top-pill" *ngIf="isAdmin(ps.data)" routerLink="/admin">{{ 'adminPanel' | translate }}</a>
 
-          <!-- Notifications dropdown (instructors) -->
+          <a class="top-pill" *ngIf="isOrgAdmin(ps.data)" routerLink="/org/academies">{{ 'academies' | translate }}</a>
+
+          <a class="top-pill" *ngIf="isOrgAdmin(ps.data) && orgPayoutsLink" [routerLink]="orgPayoutsLink">{{ 'payouts' | translate }}</a>
+          <a class="top-pill" *ngIf="isOrgAdmin(ps.data) && orgPayoutSettingsLink" [routerLink]="orgPayoutSettingsLink">{{ 'payoutSettings' | translate }}</a>
+
+          <a class="top-pill" *ngIf="isStudent(ps.data)" routerLink="/my-learning">{{ 'myLearning' | translate }}</a>
+          <a class="top-pill" *ngIf="isStudent(ps.data)" routerLink="/purchases">{{ 'purchases' | translate }}</a>
+
+          <a class="top-pill" *ngIf="isInstructor(ps.data) && instructorRevenueLink" [routerLink]="instructorRevenueLink">{{ 'revenue' | translate }}</a>
+          <a class="top-pill" *ngIf="isInstructor(ps.data) && instructorEarningsLink" [routerLink]="instructorEarningsLink">{{ 'earnings' | translate }}</a>
+
           <div class="notif-wrap" *ngIf="isInstructor(ps.data)">
-            <button class="icon-btn" type="button" (click)="toggleNotif(!notifOpen)" aria-label="Notifications">
+            <button class="icon-btn" type="button" (click)="toggleNotif(!notifOpen)" [attr.aria-label]="'notifications' | translate">
               <svg viewBox="0 0 24 24" class="ico" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
                 <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7"/>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0" stroke-linecap="round"/>
@@ -224,11 +297,11 @@
 
             <div class="notif-panel" *ngIf="notifOpen">
               <div class="notif-head">
-                <div class="notif-title">Notifications</div>
+                <div class="notif-title">{{ 'notifications' | translate }}</div>
                 <div class="notif-head-actions">
-                  <button class="top-pill" type="button" (click)="markAllRead()">Mark all read</button>
-                  <button class="icon-btn sm" type="button" (click)="toggleNotif(false)" aria-label="Close">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14">
+                  <button class="top-pill" type="button" (click)="markAllRead()">{{ 'markAllRead' | translate }}</button>
+                  <button class="icon-btn sm" type="button" (click)="toggleNotif(false)" [attr.aria-label]="'close' | translate">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="13" height="13">
                       <path d="M18 6L6 18M6 6l12 12"/>
                     </svg>
                   </button>
@@ -236,8 +309,8 @@
               </div>
 
               <ng-container *ngIf="notifList$ | async as nl">
-                <div class="notif-empty" *ngIf="nl.loading">Loading…</div>
-                <div class="notif-empty" *ngIf="!nl.loading && (nl.data?.length || 0) === 0">No notifications yet.</div>
+                <div class="notif-empty" *ngIf="nl.loading">{{ 'loading' | translate }}</div>
+                <div class="notif-empty" *ngIf="!nl.loading && (nl.data?.length || 0) === 0">{{ 'noNotificationsYet' | translate }}</div>
 
                 <div class="notif-list" *ngIf="!nl.loading && (nl.data?.length || 0) > 0">
                   <button class="notif-item" type="button" *ngFor="let n of nl.data" (click)="openNotification(n)">
@@ -253,21 +326,20 @@
                 </div>
 
                 <div class="notif-foot">
-                  <button class="top-pill" type="button" (click)="refreshNotifs()">Refresh</button>
+                  <button class="top-pill" type="button" (click)="refreshNotifs()">{{ 'refresh' | translate }}</button>
                 </div>
               </ng-container>
             </div>
           </div>
 
-          <!-- Profile chip -->
           <div class="profile-chip">
             <div class="chip-avatar">
               <img *ngIf="avatarUrl(ps.data)" [src]="avatarUrl(ps.data)!" alt="avatar" />
               <span *ngIf="!avatarUrl(ps.data)">{{ initial(ps.data) }}</span>
             </div>
-            <div class="chip-text" *ngIf="!collapsed">
-              <div class="chip-name">{{ ps.data?.email || 'Loading…' }}</div>
-              <div class="chip-role">{{ ps.data?.roles?.[0] || 'User' }}</div>
+            <div class="chip-text">
+              <div class="chip-name">{{ ps.data?.email || ('loading' | translate) }}</div>
+              <div class="chip-role">{{ ps.data?.roles?.[0] || ('user' | translate) }}</div>
             </div>
           </div>
 
@@ -275,7 +347,6 @@
       </div>
     </header>
 
-    <!-- Page content -->
     <div class="content">
       <router-outlet></router-outlet>
     </div>

@@ -8,7 +8,10 @@ import {
   UntypedFormBuilder,
   UntypedFormGroup,
 } from '@angular/forms';
-import { InstructorApi } from '../../../core/services/instructor-api';
+import {
+  InstructorApi,
+  AiQuizDraftDto,
+} from '../../../core/services/instructor-api';
 import { ToastService } from '../../../shared/ui/toast.service';
 
 type QuizDto = {
@@ -16,7 +19,7 @@ type QuizDto = {
   title: string;
   questions: Array<{
     id: string;
-    type: number; // 0 mcq, 1 tf, 2 short
+    type: number;
     prompt: string;
     points: number;
     choices?: Array<{ id: string; text: string; isCorrect: boolean }>;
@@ -36,10 +39,13 @@ export class QuizEditorComponent {
   lessonId = '';
   loading = false;
   saving = false;
+  aiGenerating = false;
+  aiModalOpen = false;
 
   quiz: QuizDto | null = null;
 
   form: UntypedFormGroup;
+  aiForm: UntypedFormGroup;
 
   constructor(
     private route: ActivatedRoute,
@@ -53,13 +59,19 @@ export class QuizEditorComponent {
       title: ['Quiz', [Validators.required, Validators.minLength(2)]],
       questions: this.fb.array([]),
     });
+
+    this.aiForm = this.fb.group({
+      topic: ['', [Validators.required, Validators.minLength(2)]],
+      instructions: [''],
+      questionCount: [5, [Validators.required, Validators.min(1), Validators.max(20)]],
+      difficulty: ['Beginner', Validators.required],
+    });
   }
 
   ngOnInit() {
     this.load();
   }
 
-  // ---------- Template-safe getters (no ?. needed) ----------
   get questions(): UntypedFormArray {
     return this.form.get('questions') as UntypedFormArray;
   }
@@ -78,7 +90,6 @@ export class QuizEditorComponent {
     return this.questions.at(i).get('choices') as UntypedFormArray;
   }
 
-  // ---------- Builders ----------
   private makeChoice(text = '', isCorrect = false): UntypedFormGroup {
     return this.fb.group({
       id: [null],
@@ -98,10 +109,8 @@ export class QuizEditorComponent {
       matchType: [0],
     });
 
-    // seed defaults based on type
     this.seedByType(fg, type);
 
-    // react to type changes
     fg.get('type')!.valueChanges.subscribe((t: number) => {
       this.seedByType(fg, Number(t));
     });
@@ -109,20 +118,17 @@ export class QuizEditorComponent {
     return fg;
   }
 
-  // Ensure the question's inner structure matches the selected type
   private seedByType(qFg: UntypedFormGroup, type: number) {
     const choices = qFg.get('choices') as UntypedFormArray;
 
-    // Short answer => no choices
     if (type === 2) {
       choices.clear();
-      // keep correctAnswerText/matchType available
-      if (qFg.get('matchType')?.value == null) qFg.get('matchType')?.setValue(0, { emitEvent: false });
+      if (qFg.get('matchType')?.value == null) {
+        qFg.get('matchType')?.setValue(0, { emitEvent: false });
+      }
       return;
     }
 
-    // MCQ / TF => must have choices
-    // If switching from short => create minimal choices
     if (choices.length === 0) {
       if (type === 1) {
         choices.push(this.makeChoice('True', true));
@@ -134,9 +140,7 @@ export class QuizEditorComponent {
       return;
     }
 
-    // If switching to TF, enforce exactly True/False
     if (type === 1) {
-      // Replace choices with True/False, but try to preserve correct if possible
       const anyCorrect = choices.controls.some(c => !!c.value?.isCorrect);
       choices.clear();
       choices.push(this.makeChoice('True', anyCorrect ? true : true));
@@ -145,7 +149,6 @@ export class QuizEditorComponent {
       return;
     }
 
-    // If switching to MCQ, ensure at least 2 choices and one correct
     if (type === 0) {
       while (choices.length < 2) {
         choices.push(this.makeChoice(`Option ${choices.length + 1}`, false));
@@ -157,13 +160,11 @@ export class QuizEditorComponent {
   private ensureExactlyOneCorrect(arr: UntypedFormArray) {
     if (arr.length === 0) return;
 
-    // If none correct, set first correct
     const anyCorrect = arr.controls.some((c) => !!c.value?.isCorrect);
     if (!anyCorrect) {
       arr.at(0).patchValue({ isCorrect: true }, { emitEvent: false });
     }
 
-    // If multiple correct, keep first only
     let found = false;
     for (let i = 0; i < arr.length; i++) {
       const isCorrect = !!arr.at(i).value?.isCorrect;
@@ -177,7 +178,6 @@ export class QuizEditorComponent {
     }
   }
 
-  // ---------- Load ----------
   load() {
     this.loading = true;
 
@@ -185,7 +185,6 @@ export class QuizEditorComponent {
       next: (q: any) => {
         this.loading = false;
 
-        // API returns null if not created yet
         if (!q) {
           this.quiz = null;
           this.questions.clear();
@@ -211,7 +210,6 @@ export class QuizEditorComponent {
 
           const choicesArr = fg.get('choices') as UntypedFormArray;
 
-          // hydrate choices
           for (const c of qq.choices ?? []) {
             choicesArr.push(
               this.fb.group({
@@ -222,10 +220,8 @@ export class QuizEditorComponent {
             );
           }
 
-          // normalize by type (ensures TF has 2, MCQ has at least 2, short clears)
           this.seedByType(fg, Number(qq.type ?? 0));
 
-          // subscribe to type changes after initial seed
           fg.get('type')!.valueChanges.subscribe((t: number) => {
             this.seedByType(fg, Number(t));
           });
@@ -240,7 +236,6 @@ export class QuizEditorComponent {
     });
   }
 
-  // ---------- UI actions ----------
   addQuestion(type: number) {
     this.questions.push(this.makeQuestion(type));
   }
@@ -261,7 +256,6 @@ export class QuizEditorComponent {
     this.ensureExactlyOneCorrect(arr);
   }
 
-  // make sure MCQ/TF has exactly one correct (simple UX)
   markCorrect(qIndex: number, cIndex: number) {
     const arr = this.qChoices(qIndex);
     for (let i = 0; i < arr.length; i++) {
@@ -269,7 +263,80 @@ export class QuizEditorComponent {
     }
   }
 
-  // ---------- Save ----------
+  openAiModal() {
+    this.aiModalOpen = true;
+  }
+
+  closeAiModal() {
+    if (this.aiGenerating) return;
+    this.aiModalOpen = false;
+  }
+
+  private appendAiQuestions(items: AiQuizDraftDto[]) {
+    for (const item of items ?? []) {
+      const type = Number(item.type ?? 0);
+
+      const fg = this.fb.group({
+        id: [null],
+        type: [type, Validators.required],
+        prompt: [item.prompt ?? '', [Validators.required, Validators.minLength(2)]],
+        points: [item.points ?? 1, [Validators.required, Validators.min(1)]],
+        choices: this.fb.array([]),
+        correctAnswerText: [item.correctAnswerText ?? ''],
+        matchType: [item.matchType ?? 0],
+      });
+
+      const choicesArr = fg.get('choices') as UntypedFormArray;
+
+      if (type !== 2) {
+        for (const c of item.choices ?? []) {
+          choicesArr.push(this.makeChoice(c.text ?? '', !!c.isCorrect));
+        }
+      }
+
+      this.seedByType(fg, type);
+
+      fg.get('type')!.valueChanges.subscribe((t: number) => {
+        this.seedByType(fg, Number(t));
+      });
+
+      this.questions.push(fg);
+    }
+  }
+
+  generateQuizWithAi() {
+    if (this.aiForm.invalid) {
+      this.aiForm.markAllAsTouched();
+      this.toast.error('Please complete the AI quiz form.');
+      return;
+    }
+
+    this.aiGenerating = true;
+
+    this.api.generateLessonQuizWithAi(this.lessonId, this.aiForm.value).subscribe({
+      next: (items: AiQuizDraftDto[]) => {
+        this.aiGenerating = false;
+
+        if (!items || items.length === 0) {
+          this.toast.error('AI did not return any questions.');
+          return;
+        }
+
+        this.appendAiQuestions(items);
+        this.aiModalOpen = false;
+        this.toast.success('AI quiz draft added.');
+      },
+      error: (err) => {
+        this.aiGenerating = false;
+        this.toast.error(
+          typeof err?.error === 'string'
+            ? err.error
+            : 'Failed to generate quiz with AI.'
+        );
+      }
+    });
+  }
+
   save() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -279,7 +346,6 @@ export class QuizEditorComponent {
 
     const v: any = this.form.value;
 
-    // extra safety: normalize before save
     for (let i = 0; i < this.questions.length; i++) {
       const qFg = this.questions.at(i) as UntypedFormGroup;
       this.seedByType(qFg, Number(qFg.get('type')!.value));

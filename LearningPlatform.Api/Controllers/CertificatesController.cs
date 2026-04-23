@@ -13,16 +13,55 @@ public class CertificatesController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly ICertificatePdfService _pdf;
+    private readonly IWebHostEnvironment _env;
+    private readonly ILogger<CertificatesController> _logger;
 
-    public CertificatesController(AppDbContext db, ICertificatePdfService pdf)
+    public CertificatesController(
+        AppDbContext db,
+        ICertificatePdfService pdf,
+        IWebHostEnvironment env,
+        ILogger<CertificatesController> logger)
     {
         _db = db;
         _pdf = pdf;
+        _env = env;
+        _logger = logger;
     }
 
     private string? UserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    // GET /api/certificates/me
+    private string? ResolveAcademyLogoAbsolutePath(string? logoUrl)
+    {
+        if (string.IsNullOrWhiteSpace(logoUrl))
+            return null;
+
+        var value = logoUrl.Trim().Replace('\\', '/');
+
+        // If stored as full URL, convert to path part
+        if (Uri.TryCreate(value, UriKind.Absolute, out var absoluteUri))
+            value = absoluteUri.AbsolutePath;
+
+        value = value.TrimStart('~');
+
+        if (value.StartsWith("/"))
+            value = value[1..];
+
+        // If DB accidentally stores "wwwroot/uploads/..."
+        if (value.StartsWith("wwwroot/", StringComparison.OrdinalIgnoreCase))
+            value = value["wwwroot/".Length..];
+
+        var webRoot = _env.WebRootPath ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(webRoot))
+            return null;
+
+        var fullPath = Path.Combine(
+            webRoot,
+            value.Replace('/', Path.DirectorySeparatorChar)
+        );
+
+        return System.IO.File.Exists(fullPath) ? fullPath : null;
+    }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> MyCertificates()
@@ -48,7 +87,6 @@ public class CertificatesController : ControllerBase
         return Ok(items);
     }
 
-    // GET /api/certificates/{id}
     [HttpGet("{id:guid}")]
     [Authorize]
     public async Task<IActionResult> GetOne(Guid id)
@@ -77,7 +115,6 @@ public class CertificatesController : ControllerBase
         });
     }
 
-    // GET /api/certificates/{id}/pdf
     [HttpGet("{id:guid}/pdf")]
     [Authorize]
     public async Task<IActionResult> DownloadPdf(Guid id)
@@ -91,21 +128,64 @@ public class CertificatesController : ControllerBase
         if (cert is null) return NotFound();
         if (cert.UserId != userId) return Forbid();
 
-        // Use CompletedAt as "issuedAt" for the PDF
+        var course = await _db.Courses.AsNoTracking()
+            .Where(x => x.Id == cert.CourseId)
+            .Select(x => new
+            {
+                x.Id,
+                x.Title,
+                x.AcademyId
+            })
+            .FirstOrDefaultAsync();
+
+        string academyName = cert.AcademyName;
+        string? academyLogoPath = null;
+        string? rawLogoUrl = null;
+
+        if (course?.AcademyId != null)
+        {
+            var academy = await _db.Academies.AsNoTracking()
+                .Where(a => a.Id == course.AcademyId)
+                .Select(a => new
+                {
+                    a.Name,
+                    a.LogoUrl
+                })
+                .FirstOrDefaultAsync();
+
+            if (academy != null)
+            {
+                academyName = string.IsNullOrWhiteSpace(academy.Name)
+                    ? cert.AcademyName
+                    : academy.Name;
+
+                rawLogoUrl = academy.LogoUrl;
+                academyLogoPath = ResolveAcademyLogoAbsolutePath(academy.LogoUrl);
+            }
+        }
+
+        _logger.LogInformation(
+            "Certificate PDF generation. CertId={CertId}, CourseId={CourseId}, RawLogoUrl={RawLogoUrl}, ResolvedLogoPath={ResolvedLogoPath}, FileExists={FileExists}",
+            cert.Id,
+            cert.CourseId,
+            rawLogoUrl,
+            academyLogoPath,
+            !string.IsNullOrWhiteSpace(academyLogoPath) && System.IO.File.Exists(academyLogoPath)
+        );
+
         var pdf = _pdf.Generate(
             cert.CertificateNumber,
             cert.StudentName,
             cert.CourseTitle,
-            cert.AcademyName,
-            cert.CompletedAt
+            academyName,
+            cert.CompletedAt,
+            academyLogoPath
         );
 
         var fileName = $"certificate-{cert.CertificateNumber}.pdf";
         return File(pdf, "application/pdf", fileName);
     }
 
-    // Optional public verification endpoint:
-    // GET /api/certificates/verify/{certificateNumber}
     [HttpGet("verify/{certificateNumber}")]
     [AllowAnonymous]
     public async Task<IActionResult> Verify(string certificateNumber)

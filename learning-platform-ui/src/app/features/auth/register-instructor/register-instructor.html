@@ -12,8 +12,9 @@
       </a>
       <nav class="nav">
         <a class="nav-link" routerLink="/academies">Explore</a>
+        <a class="nav-link" routerLink="/home">Home</a>
         <div class="nav-sep"></div>
-        <a class="nav-link" routerLink="/login">Sign in</a>
+        <a class="btn btn-primary btn-sm" [routerLink]="['/login-instructor']" [queryParams]="{ academy: academySlug }">Sign in</a>
       </nav>
     </div>
   </header>
@@ -95,7 +96,9 @@
             <div class="tip-icon">💡</div>
             <div class="tip-text">
               <div class="tip-title">Already have an account?</div>
-              <div class="tip-desc"><a routerLink="/login" class="tip-link">Sign in here →</a></div>
+              <a [routerLink]="['/login-instructor']" [queryParams]="{academy: academySlug}" class="tip-link">
+                  Sign in here →
+                </a>
             </div>
           </div>
 

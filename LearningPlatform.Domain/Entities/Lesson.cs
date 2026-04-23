@@ -17,4 +17,6 @@ public class Lesson
 
     public bool IsPreviewFree { get; set; } = false;
     public bool IsDownloadable { get; set; } = false;
+
+    public ICollection<LessonAiFlashcard> AiFlashcards { get; set; } = new List<LessonAiFlashcard>();
 }

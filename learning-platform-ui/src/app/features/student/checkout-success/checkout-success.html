@@ -1,0 +1,87 @@
+<div class="checkout-page">
+  <ng-container *ngIf="state$ | async as st">
+
+    <div class="checkout-card checkout-card--loading" *ngIf="st.loading">
+      <div class="checkout-icon spinner"></div>
+      <h1>{{ st.title }}</h1>
+      <p>{{ st.message }}</p>
+    </div>
+
+    <div class="checkout-card checkout-card--success" *ngIf="!st.loading && st.ok">
+      <div class="checkout-icon success">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+      </div>
+
+      <div class="eyebrow">Alef checkout</div>
+      <h1>{{ st.title }}</h1>
+      <p>{{ st.message }}</p>
+
+      <div class="checkout-summary">
+        <div class="summary-row" *ngIf="st.courseTitle">
+          <span>Course</span>
+          <strong>{{ st.courseTitle }}</strong>
+        </div>
+        <div class="summary-row" *ngIf="st.amountLabel">
+          <span>Amount</span>
+          <strong>{{ st.amountLabel }}</strong>
+        </div>
+      </div>
+
+      <div class="checkout-actions">
+        <button class="btn btn-primary" type="button" (click)="goMyLearning()">Go to My Learning</button>
+        <button class="btn btn-ghost" type="button" (click)="goCourse(st.courseId)">Back to course</button>
+      </div>
+    </div>
+
+    <div class="checkout-card checkout-card--pending" *ngIf="!st.loading && !st.ok && st.pending">
+      <div class="checkout-icon pending">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M12 7v5l3 2"/>
+        </svg>
+      </div>
+
+      <div class="eyebrow">Alef checkout</div>
+      <h1>{{ st.title }}</h1>
+      <p>{{ st.message }}</p>
+
+      <div class="checkout-summary">
+        <div class="summary-row" *ngIf="st.courseTitle">
+          <span>Course</span>
+          <strong>{{ st.courseTitle }}</strong>
+        </div>
+        <div class="summary-row" *ngIf="st.amountLabel">
+          <span>Amount</span>
+          <strong>{{ st.amountLabel }}</strong>
+        </div>
+      </div>
+
+      <div class="checkout-actions">
+        <button class="btn btn-primary" type="button" (click)="goMyLearning()">Open My Learning</button>
+        <button class="btn btn-ghost" type="button" (click)="goCourse(st.courseId)">Back to course</button>
+      </div>
+    </div>
+
+    <div class="checkout-card checkout-card--neutral" *ngIf="!st.loading && !st.ok && !st.pending">
+      <div class="checkout-icon neutral">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 8v4"/>
+          <path d="M12 16h.01"/>
+        </svg>
+      </div>
+
+      <div class="eyebrow">Alef checkout</div>
+      <h1>{{ st.title }}</h1>
+      <p>{{ st.message }}</p>
+
+      <div class="checkout-actions">
+        <button class="btn btn-primary" type="button" (click)="goMyLearning()">Go to My Learning</button>
+        <button class="btn btn-ghost" type="button" (click)="goCourse(st.courseId)">Back to course</button>
+      </div>
+    </div>
+
+  </ng-container>
+</div>

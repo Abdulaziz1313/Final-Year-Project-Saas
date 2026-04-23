@@ -1,3 +1,4 @@
+<!-- courses.html — Elevated to match org-academies aesthetics -->
 <main class="courses-page">
 
   <!-- ── PAGE HERO ── -->
@@ -13,9 +14,7 @@
 
     <div class="hero-right">
       <div class="action-group">
-        <button class="btn btn-ghost" type="button" (click)="reload()">
-          Refresh
-        </button>
+        <button class="btn btn-ghost" type="button" (click)="reload()">Refresh</button>
         <a class="btn btn-primary" [routerLink]="['/instructor/course/create', academyId]">
           + Create course
         </a>
@@ -33,9 +32,9 @@
         </span>
         <div class="academy-actions">
           <a class="btn btn-ghost btn-sm" *ngIf="aSt.data.isPublished"
-            [routerLink]="['/academy', aSt.data.slug]">View public</a>
+             [routerLink]="['/academy', aSt.data.slug]">View public</a>
           <button class="btn btn-ghost btn-sm" type="button"
-            *ngIf="aSt.data.isPublished" (click)="copyAcademyLink(aSt.data.slug)">
+                  *ngIf="aSt.data.isPublished" (click)="copyAcademyLink(aSt.data.slug)">
             Copy link
           </button>
         </div>
@@ -47,7 +46,9 @@
             <img [src]="img(aSt.data.logoUrl)!" alt="logo" />
           </div>
           <ng-template #academyLetter>
-            <div class="academy-logo fallback">{{ (aSt.data.name || 'A').slice(0,1).toUpperCase() }}</div>
+            <div class="academy-logo fallback">
+              {{ (aSt.data.name || 'A').slice(0,1).toUpperCase() }}
+            </div>
           </ng-template>
 
           <div class="academy-text">
@@ -61,8 +62,8 @@
         </div>
 
         <div class="academy-banner"
-          *ngIf="img(aSt.data.bannerUrl) as b"
-          [style.backgroundImage]="'url(' + b + ')'">
+             *ngIf="img(aSt.data.bannerUrl) as b"
+             [style.backgroundImage]="'url(' + b + ')'">
         </div>
       </div>
 
@@ -70,7 +71,7 @@
 
     <ng-template #academyHeadState>
       <div class="state-loading" *ngIf="aSt.loading">
-        <span class="loading-dot"></span> Loading academy…
+        <span class="loading-dot"></span>Loading academy…
       </div>
       <div class="alert-error" *ngIf="aSt.error"><span>⚠</span> {{ aSt.error }}</div>
     </ng-template>
@@ -81,15 +82,13 @@
     <div class="toolbar-main">
       <div class="search-wrap">
         <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round">
+             stroke-width="2" stroke-linecap="round">
           <circle cx="10.5" cy="10.5" r="7.5"/><path d="M21 21l-4.3-4.3"/>
         </svg>
-        <input
-          class="input search-input"
-          [value]="filters.value.q"
-          (input)="onQInput($any($event.target).value)"
-          placeholder="Search by title…"
-        />
+        <input class="input search-input"
+               [value]="filters.value.q"
+               (input)="onQInput($any($event.target).value)"
+               placeholder="Search by title…" />
       </div>
 
       <div class="filter-field">
@@ -104,12 +103,10 @@
 
       <div class="filter-field">
         <label class="filter-label">Category</label>
-        <input
-          class="input"
-          [value]="filters.value.category"
-          (input)="onCategoryInput($any($event.target).value)"
-          placeholder="Filter by category…"
-        />
+        <input class="input"
+               [value]="filters.value.category"
+               (input)="onCategoryInput($any($event.target).value)"
+               placeholder="Filter by category…" />
       </div>
     </div>
 
@@ -123,7 +120,7 @@
   <!-- ── COURSES STATE ── -->
   <ng-container *ngIf="filtered$ | async as st">
     <div class="state-loading" *ngIf="st.loading">
-      <span class="loading-dot"></span> Loading courses…
+      <span class="loading-dot"></span>Loading courses…
     </div>
     <div class="alert-error" *ngIf="st.error"><span>⚠</span> {{ st.error }}</div>
 
@@ -131,16 +128,14 @@
 
       <!-- Meta strip -->
       <div class="meta-strip">
-        <div class="meta-chip">
-          Academy <strong>{{ academyId }}</strong>
-        </div>
+        <div class="meta-chip">Academy <strong>{{ academyId }}</strong></div>
         <div class="meta-chip">
           Showing <strong>{{ st.data.length }}</strong>
           course{{ st.data.length === 1 ? '' : 's' }}
         </div>
       </div>
 
-      <!-- Empty state -->
+      <!-- ── EMPTY STATE ── -->
       <div class="empty-state" *ngIf="st.data.length === 0">
         <div class="empty-icon">📚</div>
         <div class="empty-title">No courses match your filters</div>
@@ -159,8 +154,8 @@
             <div class="card-title-row">
               <div class="item-title" [title]="c.title">{{ c.title }}</div>
               <span class="status-badge"
-                [class.status-good]="c.status === 1 && !c.isHidden"
-                [class.status-hidden]="c.isHidden">
+                    [class.status-good]="c.status === 1 && !c.isHidden"
+                    [class.status-hidden]="c.isHidden">
                 {{ c.isHidden ? 'Hidden' : statusLabel(c.status) }}
               </span>
             </div>
@@ -203,21 +198,21 @@
             <div class="control-label">Quick status</div>
             <div class="seg">
               <button class="seg-btn" type="button"
-                [class.on]="c.status === 1"
-                [disabled]="isBusy(c.id) || c.isHidden"
-                (click)="quickSet(c.id, 1)">
+                      [class.on]="c.status === 1"
+                      [disabled]="isBusy(c.id) || c.isHidden"
+                      (click)="quickSet(c.id, 1)">
                 Published
               </button>
               <button class="seg-btn" type="button"
-                [class.on]="c.status === 0"
-                [disabled]="isBusy(c.id)"
-                (click)="quickSet(c.id, 0)">
+                      [class.on]="c.status === 0"
+                      [disabled]="isBusy(c.id)"
+                      (click)="quickSet(c.id, 0)">
                 Draft
               </button>
               <button class="seg-btn" type="button"
-                [class.on]="c.status === 2"
-                [disabled]="isBusy(c.id)"
-                (click)="quickSet(c.id, 2)">
+                      [class.on]="c.status === 2"
+                      [disabled]="isBusy(c.id)"
+                      (click)="quickSet(c.id, 2)">
                 Private
               </button>
             </div>
@@ -225,9 +220,9 @@
             <div class="filter-field compact">
               <label class="filter-label">Or set via dropdown</label>
               <select class="input select-input"
-                [disabled]="isBusy(c.id) || c.isHidden"
-                [value]="c.status"
-                (change)="setStatus(c.id, $any($event.target).value)">
+                      [disabled]="isBusy(c.id) || c.isHidden"
+                      [value]="c.status"
+                      (change)="setStatus(c.id, $any($event.target).value)">
                 <option [value]="0">Draft</option>
                 <option [value]="1">Published</option>
                 <option [value]="2">Private</option>
@@ -237,25 +232,23 @@
 
           <!-- Actions -->
           <div class="item-actions">
-            <!-- Edit (metadata) -->
             <button class="btn btn-ghost btn-sm" type="button"
-              [disabled]="isBusy(c.id) || editSaving"
-              (click)="openEditDrawer(c)">
+                    [disabled]="isBusy(c.id) || editSaving"
+                    (click)="openEditDrawer(c)">
               Edit
             </button>
-
             <a class="btn btn-ghost btn-sm" [routerLink]="['/instructor/course-builder', c.id]">Builder</a>
             <a class="btn btn-ghost btn-sm" [routerLink]="['/instructor/course-enrollments', c.id]">Students</a>
             <button class="btn btn-ghost btn-sm" type="button" (click)="copyCourseLink(c.id)">Copy link</button>
             <a class="btn btn-ghost btn-sm"
-              *ngIf="c.status === 1 && !c.isHidden"
-              [href]="publicCourseLink(c.id)"
-              target="_blank" rel="noopener">
+               *ngIf="c.status === 1 && !c.isHidden"
+               [href]="publicCourseLink(c.id)"
+               target="_blank" rel="noopener">
               Public ↗
             </a>
             <span class="spacer"></span>
             <button class="btn btn-danger-outline btn-sm" type="button"
-              [disabled]="isBusy(c.id)" (click)="delete(c.id)">
+                    [disabled]="isBusy(c.id)" (click)="confirmDelete(c.id)">
               {{ isBusy(c.id) ? 'Working…' : 'Delete' }}
             </button>
           </div>
@@ -274,13 +267,53 @@
   <div class="drawer" *ngIf="editOpen && editingCourse" [formGroup]="editForm">
     <div class="drawer-head">
       <div>
-        <div class="drawer-title">Edit course</div>
+        <div class="drawer-title">Edit <em>course</em></div>
         <div class="drawer-sub">Target: <code>{{ editingCourse.title }}</code></div>
       </div>
-      <button class="btn btn-ghost btn-sm" type="button" (click)="closeEditDrawer()" [disabled]="editSaving">Close</button>
+      <button class="btn btn-ghost btn-sm" type="button" (click)="closeEditDrawer()" [disabled]="editSaving">
+        Close
+      </button>
     </div>
 
     <div class="drawer-body">
+
+      <!-- ✅ COURSE LOGO / THUMBNAIL -->
+      <div class="thumb-block">
+        <div class="thumb-left">
+          <div class="thumb-preview" [class.empty]="!thumbShownUrl()">
+            <img *ngIf="thumbShownUrl() as u" [src]="img(u)!" alt="Course logo" />
+            <div class="thumb-fallback" *ngIf="!thumbShownUrl()">No logo</div>
+          </div>
+
+          <div class="thumb-meta">
+            <div class="thumb-title">Course logo</div>
+            <div class="thumb-sub">Upload JPG/PNG/WEBP (max 5MB). This is used as the course thumbnail.</div>
+          </div>
+        </div>
+
+        <div class="thumb-actions">
+          <input
+            #thumbInput
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            hidden
+            (change)="onThumbSelected($any($event.target).files?.[0] || null); $any($event.target).value = ''"
+          />
+
+          <button class="btn btn-ghost btn-sm" type="button"
+                  (click)="thumbInput.click()"
+                  [disabled]="editSaving || thumbBusy">
+            {{ thumbBusy ? 'Working…' : 'Upload / Replace' }}
+          </button>
+
+          <button class="btn btn-danger-outline btn-sm" type="button"
+                  (click)="markThumbRemoved()"
+                  [disabled]="editSaving || thumbBusy || (!thumbShownUrl() && !currentThumbUrl)">
+            Remove
+          </button>
+        </div>
+      </div>
+
       <div class="drawer-grid">
         <div class="field">
           <label class="field-label">Title</label>
@@ -301,40 +334,51 @@
           <label class="field-label">Pricing</label>
           <div class="price-row">
             <label class="check">
-              <input type="checkbox" [checked]="editForm.controls.isFree.value" (change)="toggleFree($any($event.target).checked)" />
+              <input type="checkbox"
+                     [checked]="editForm.controls.isFree.value"
+                     (change)="toggleFree($any($event.target).checked)" />
               <span>Free</span>
             </label>
-            <input class="input" formControlName="price" placeholder="Price" [disabled]="editForm.controls.isFree.value" />
+            <input class="input" formControlName="price" placeholder="Price"
+                   [disabled]="editForm.controls.isFree.value" />
           </div>
-          <div class="hint">If course is paid, price must be > 0.</div>
+          <div class="hint">If course is paid, price must be &gt; 0.</div>
         </div>
       </div>
 
       <div class="field">
         <label class="field-label">Short description</label>
-        <textarea class="input textarea" formControlName="shortDescription" rows="3" placeholder="Short summary…"></textarea>
+        <textarea class="input textarea" formControlName="shortDescription" rows="3"
+                  placeholder="Short summary…"></textarea>
       </div>
 
       <div class="field">
         <label class="field-label">Full description</label>
-        <textarea class="input textarea" formControlName="fullDescription" rows="6" placeholder="Full description…"></textarea>
+        <textarea class="input textarea" formControlName="fullDescription" rows="6"
+                  placeholder="Full description…"></textarea>
       </div>
 
       <div class="field">
         <label class="field-label">TagsJson</label>
-        <textarea class="input textarea mono" formControlName="tagsJson" rows="3" placeholder='Example: ["web","angular"]'></textarea>
+        <textarea class="input textarea mono" formControlName="tagsJson" rows="3"
+                  placeholder='Example: ["web","angular"]'></textarea>
         <div class="hint">Must be valid JSON array string.</div>
       </div>
 
       <div class="drawer-actions">
-        <button class="btn btn-primary" type="button" (click)="saveEdit()" [disabled]="editSaving">
+        <button class="btn btn-primary" type="button" (click)="saveEdit()"
+                [disabled]="editSaving || thumbBusy">
           {{ editSaving ? 'Saving…' : 'Save changes' }}
         </button>
-        <button class="btn btn-ghost" type="button" (click)="closeEditDrawer()" [disabled]="editSaving">
+        <button class="btn btn-ghost" type="button" (click)="closeEditDrawer()"
+                [disabled]="editSaving || thumbBusy">
           Cancel
         </button>
-        <span class="drawer-note" *ngIf="editingCourse.isHidden">Note: Course is hidden by admin; publishing is blocked.</span>
+        <span class="drawer-note" *ngIf="editingCourse.isHidden">
+          Note: Course is hidden by admin; publishing is blocked.
+        </span>
       </div>
+
     </div>
   </div>
 

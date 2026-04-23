@@ -1,3 +1,4 @@
+// me.ts
 import {
   Component,
   HostListener,
@@ -11,13 +12,14 @@ import { Router, RouterModule } from '@angular/router';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { BehaviorSubject, Observable, of, Subscription } from 'rxjs';
 import { catchError, map, shareReplay, startWith, switchMap, tap } from 'rxjs/operators';
-
 import { HttpClient, HttpEvent, HttpEventType } from '@angular/common/http';
 
 import { ConfirmService } from '../../shared/ui/confirm.service';
 import { ToastService } from '../../shared/ui/toast.service';
 import { ProfileApi, ProfileDto } from '../../core/services/profile-api';
 import { Auth } from '../../core/services/auth';
+import { LanguageService, AppLang } from '../../core/services/language-services';
+import { TranslatePipe } from '../../shared/pipes/translate-pipe';
 import { environment } from '../../../environments/environment';
 
 type LoadState<T> = { loading: boolean; data: T | null; error: string | null };
@@ -26,7 +28,7 @@ type SectionKey = 'profile' | 'security' | 'prefs' | 'danger';
 @Component({
   selector: 'app-me',
   standalone: true,
-  imports: [CommonModule, RouterModule, ReactiveFormsModule],
+  imports: [CommonModule, RouterModule, ReactiveFormsModule, TranslatePipe],
   templateUrl: './me.html',
   styleUrl: './me.scss',
 })
@@ -38,67 +40,54 @@ export class MeComponent implements AfterViewInit, OnDestroy {
 
   activeSection: SectionKey = 'profile';
 
-  // ---- Avatar live (updates instantly) ----
+  // ── Avatar ────────────────────────────────────
   private avatarBust = Date.now();
   avatarLiveSrc: string | null = null;
   private lastServerAvatarPath: string | null = null;
   private localAvatarObjectUrl: string | null = null;
 
-  // ---- Upload + crop state ----
+  // ── Upload + crop ─────────────────────────────
   cropOpen = false;
   previewDataUrl: string | null = null;
-
   photoUploading = false;
   uploadPct = 0;
 
-  // canvas crop settings
   @ViewChild('cropCanvas') cropCanvas?: ElementRef<HTMLCanvasElement>;
   zoom = 1.15;
   minZoom = 1;
   maxZoom = 2.5;
 
-  // pan in CSS pixels
   private panPxX = 0;
   private panPxY = 0;
-
-  // drag tracking
   private dragging = false;
   private lastX = 0;
   private lastY = 0;
-
-  // decoded image for cropping
   private imgEl: HTMLImageElement | null = null;
 
-  // sizes
-  private wrapSize = 320; // canvas visual size (must match CSS)
-  private cropSize = 220; // crop window size inside canvas
-  private outSize = 512;  // output avatar size
+  private wrapSize = 320;
+  private cropSize = 220;
+  private outSize  = 512;
 
-  // Display name
+  // ── Profile fields ────────────────────────────
   displayName = '';
   nameWorking = false;
   nameError: string | null = null;
 
-  // Password
+  // ── Password ──────────────────────────────────
   pwWorking = false;
   pwError: string | null = null;
   pwSuccess: string | null = null;
   showCurrent = false;
   showNew = false;
 
-  // Delete
+  // ── Delete ────────────────────────────────────
   deleteWorking = false;
   deleteError: string | null = null;
-
-  // Preferences
-  lang = localStorage.getItem('alef_lang') || 'en';
 
   pwForm;
   deleteForm;
 
   private subs = new Subscription();
-
-  // Scroll-spy optimization
   private scrollTicking = false;
 
   constructor(
@@ -108,7 +97,8 @@ export class MeComponent implements AfterViewInit, OnDestroy {
     private fb: FormBuilder,
     private confirm: ConfirmService,
     private toast: ToastService,
-    private http: HttpClient
+    private http: HttpClient,
+    public lang: LanguageService   // public so template can use lang.isRtl / lang.current
   ) {
     this.state$ = this.reload$.pipe(
       switchMap(() =>
@@ -116,8 +106,6 @@ export class MeComponent implements AfterViewInit, OnDestroy {
           tap((p) => {
             this.displayName = p?.displayName || '';
             this.lastServerAvatarPath = p?.profileImageUrl || null;
-
-            // if we don't have a live src yet, use server avatar
             if (!this.avatarLiveSrc) {
               this.avatarLiveSrc = this.buildServerAvatarUrl(this.lastServerAvatarPath);
             }
@@ -138,7 +126,7 @@ export class MeComponent implements AfterViewInit, OnDestroy {
 
     this.pwForm = this.fb.group({
       currentPassword: ['', [Validators.required, Validators.minLength(6)]],
-      newPassword: ['', [Validators.required, Validators.minLength(6)]],
+      newPassword:     ['', [Validators.required, Validators.minLength(6)]],
     });
 
     this.deleteForm = this.fb.group({
@@ -147,9 +135,7 @@ export class MeComponent implements AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    if (this.cropOpen) {
-      queueMicrotask(() => this.drawCropCanvas());
-    }
+    if (this.cropOpen) queueMicrotask(() => this.drawCropCanvas());
   }
 
   ngOnDestroy(): void {
@@ -157,13 +143,10 @@ export class MeComponent implements AfterViewInit, OnDestroy {
     this.revokeLocalAvatarUrl();
   }
 
-  reload() {
-    this.reload$.next();
-  }
+  reload() { this.reload$.next(); }
 
   firstLetter(email?: string | null) {
-    const v = (email || 'U').trim();
-    return (v[0] || 'U').toUpperCase();
+    return ((email || 'U').trim()[0] || 'U').toUpperCase();
   }
 
   private buildServerAvatarUrl(url?: string | null): string | null {
@@ -171,20 +154,23 @@ export class MeComponent implements AfterViewInit, OnDestroy {
     return `${this.apiBase}${url}?v=${this.avatarBust}`;
   }
 
-  // Keep old template usage working
-  avatarUrl(profile: ProfileDto | null): string | null {
-    return this.buildServerAvatarUrl(profile?.profileImageUrl || null);
-  }
-
   displayPhone(phone?: string | null): string {
-    const v = (phone || '').trim();
-    return v || 'Not set';
+    return (phone || '').trim() || this.lang.label('notSet');
   }
 
   toggleCurrent() { this.showCurrent = !this.showCurrent; }
-  toggleNew() { this.showNew = !this.showNew; }
+  toggleNew()     { this.showNew = !this.showNew; }
 
-  // ------- Section nav -------
+  // ── Language ──────────────────────────────────
+
+  onLangChange(v: string) {
+    this.lang.set(v as AppLang);
+    const msg = v === 'ar' ? 'تم تغيير اللغة إلى العربية' : 'Language changed to English';
+    this.toast.success(msg);
+  }
+
+  // ── Section nav ───────────────────────────────
+
   goTo(section: SectionKey) {
     this.activeSection = section;
     const el = document.getElementById(`sec-${section}`);
@@ -195,27 +181,23 @@ export class MeComponent implements AfterViewInit, OnDestroy {
   onScroll() {
     if (this.scrollTicking) return;
     this.scrollTicking = true;
-
     requestAnimationFrame(() => {
       this.scrollTicking = false;
-
       const keys: SectionKey[] = ['profile', 'security', 'prefs', 'danger'];
       let best: { key: SectionKey; top: number } | null = null;
-
       for (const k of keys) {
         const el = document.getElementById(`sec-${k}`);
         if (!el) continue;
         const r = el.getBoundingClientRect();
-        if (r.top <= 130) {
-          if (!best || r.top > best.top) best = { key: k, top: r.top };
-        }
+        if (r.top <= 130 && (!best || r.top > best.top))
+          best = { key: k, top: r.top };
       }
-
       if (best) this.activeSection = best.key;
     });
   }
 
-  // ------- Photo select -> open crop -------
+  // ── Photo crop/upload ─────────────────────────
+
   onPhotoSelected(ev: Event) {
     const input = ev.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -234,12 +216,10 @@ export class MeComponent implements AfterViewInit, OnDestroy {
     }
 
     input.value = '';
-
     const reader = new FileReader();
     reader.onload = async () => {
       this.previewDataUrl = String(reader.result || '');
       this.cropOpen = true;
-
       try {
         await this.loadImageForCrop(this.previewDataUrl);
         this.resetCrop();
@@ -257,10 +237,8 @@ export class MeComponent implements AfterViewInit, OnDestroy {
     this.previewDataUrl = null;
     this.imgEl = null;
     this.dragging = false;
-
     this.photoUploading = false;
     this.uploadPct = 0;
-
     this.revokeLocalAvatarUrl();
     this.avatarBust = Date.now();
     this.avatarLiveSrc = this.buildServerAvatarUrl(this.lastServerAvatarPath);
@@ -269,17 +247,14 @@ export class MeComponent implements AfterViewInit, OnDestroy {
   private loadImageForCrop(dataUrl: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.onload = () => {
-        this.imgEl = img;
-        resolve();
-      };
+      img.onload  = () => { this.imgEl = img; resolve(); };
       img.onerror = () => reject(new Error('Image failed to load'));
       img.src = dataUrl;
     });
   }
 
   private resetCrop() {
-    this.zoom = 1.15;
+    this.zoom   = 1.15;
     this.panPxX = 0;
     this.panPxY = 0;
   }
@@ -300,21 +275,16 @@ export class MeComponent implements AfterViewInit, OnDestroy {
 
   onCropPointerMove(ev: PointerEvent) {
     if (!this.dragging || !this.cropOpen) return;
-
     const dx = ev.clientX - this.lastX;
     const dy = ev.clientY - this.lastY;
     this.lastX = ev.clientX;
     this.lastY = ev.clientY;
-
     this.panPxX += dx;
     this.panPxY += dy;
-
     this.drawCropCanvas();
   }
 
-  onCropPointerUp() {
-    this.dragging = false;
-  }
+  onCropPointerUp() { this.dragging = false; }
 
   private drawCropCanvas() {
     const canvas = this.cropCanvas?.nativeElement;
@@ -322,11 +292,11 @@ export class MeComponent implements AfterViewInit, OnDestroy {
     if (!canvas || !img) return;
 
     const size = this.wrapSize;
-    const dpr = window.devicePixelRatio || 1;
+    const dpr  = window.devicePixelRatio || 1;
 
-    canvas.width = Math.round(size * dpr);
+    canvas.width  = Math.round(size * dpr);
     canvas.height = Math.round(size * dpr);
-    canvas.style.width = `${size}px`;
+    canvas.style.width  = `${size}px`;
     canvas.style.height = `${size}px`;
 
     const ctx = canvas.getContext('2d');
@@ -335,70 +305,52 @@ export class MeComponent implements AfterViewInit, OnDestroy {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, size, size);
 
-    const iw = img.naturalWidth || img.width;
+    const iw = img.naturalWidth  || img.width;
     const ih = img.naturalHeight || img.height;
 
     const baseScale = Math.max(size / iw, size / ih);
     const scale = baseScale * this.zoom;
-
     const dw = iw * scale;
     const dh = ih * scale;
-
     const cx = size / 2 + this.panPxX;
     const cy = size / 2 + this.panPxY;
 
-    const dx = cx - dw / 2;
-    const dy = cy - dh / 2;
-
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, cx - dw / 2, cy - dh / 2, dw, dh);
 
-    ctx.drawImage(img, dx, dy, dw, dh);
-
-    const crop = this.cropSize;
+    const crop  = this.cropSize;
     const cropX = (size - crop) / 2;
     const cropY = (size - crop) / 2;
 
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
-
     ctx.beginPath();
     ctx.rect(0, 0, size, size);
     ctx.rect(cropX, cropY, crop, crop);
     ctx.fill('evenodd');
-
     ctx.strokeStyle = 'rgba(255,255,255,0.9)';
     ctx.lineWidth = 2;
     ctx.strokeRect(cropX + 1, cropY + 1, crop - 2, crop - 2);
-
     ctx.restore();
   }
 
-  confirmCropAndUpload() {
-    this.uploadPhotoNow();
-  }
+  confirmCropAndUpload() { this.uploadPhotoNow(); }
 
   private async uploadPhotoNow() {
-    if (this.photoUploading) return;
-    if (!this.imgEl) return;
-
+    if (this.photoUploading || !this.imgEl) return;
     try {
       const blob = await this.renderCroppedBlob(this.imgEl);
-
-      // instant UI update
       this.revokeLocalAvatarUrl();
       this.localAvatarObjectUrl = URL.createObjectURL(blob);
       this.avatarLiveSrc = this.localAvatarObjectUrl;
-
       await this.uploadBlobWithProgress(blob);
-
       this.cropOpen = false;
       this.previewDataUrl = null;
       this.imgEl = null;
-
-      this.toast.success('Profile photo updated.');
+      this.toast.success(this.lang.label('savePhoto'));
     } catch {
-      this.toast.error('Crop/upload failed.');
+      this.toast.error('Upload failed.');
       this.revokeLocalAvatarUrl();
       this.avatarBust = Date.now();
       this.avatarLiveSrc = this.buildServerAvatarUrl(this.lastServerAvatarPath);
@@ -408,45 +360,37 @@ export class MeComponent implements AfterViewInit, OnDestroy {
   private renderCroppedBlob(img: HTMLImageElement): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const out = document.createElement('canvas');
-      out.width = this.outSize;
+      out.width  = this.outSize;
       out.height = this.outSize;
-
       const ctx = out.getContext('2d');
       if (!ctx) return reject(new Error('No canvas ctx'));
 
-      const iw = img.naturalWidth || img.width;
+      const iw = img.naturalWidth  || img.width;
       const ih = img.naturalHeight || img.height;
 
-      const size = this.wrapSize;
-      const crop = this.cropSize;
-      const cropX = (size - crop) / 2;
-      const cropY = (size - crop) / 2;
-
+      const size   = this.wrapSize;
+      const crop   = this.cropSize;
+      const cropX  = (size - crop) / 2;
+      const cropY  = (size - crop) / 2;
       const baseScale = Math.max(size / iw, size / ih);
-      const scale = baseScale * this.zoom;
-
-      const dw = iw * scale;
-      const dh = ih * scale;
-
-      const cx = size / 2 + this.panPxX;
-      const cy = size / 2 + this.panPxY;
-
-      const dx = cx - dw / 2;
-      const dy = cy - dh / 2;
-
-      const sx = (cropX - dx) / scale;
-      const sy = (cropY - dy) / scale;
-      const sSize = crop / scale;
-
-      const sxClamped = Math.max(0, Math.min(iw - sSize, sx));
-      const syClamped = Math.max(0, Math.min(ih - sSize, sy));
+      const scale  = baseScale * this.zoom;
+      const dw     = iw * scale;
+      const dh     = ih * scale;
+      const cx     = size / 2 + this.panPxX;
+      const cy     = size / 2 + this.panPxY;
+      const dx     = cx - dw / 2;
+      const dy     = cy - dh / 2;
+      const sx     = (cropX - dx) / scale;
+      const sy     = (cropY - dy) / scale;
+      const sSize  = crop / scale;
 
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
-
       ctx.drawImage(
         img,
-        sxClamped, syClamped, sSize, sSize,
+        Math.max(0, Math.min(iw - sSize, sx)),
+        Math.max(0, Math.min(ih - sSize, sy)),
+        sSize, sSize,
         0, 0, this.outSize, this.outSize
       );
 
@@ -460,42 +404,30 @@ export class MeComponent implements AfterViewInit, OnDestroy {
   private uploadBlobWithProgress(blob: Blob): Promise<void> {
     return new Promise((resolve, reject) => {
       const form = new FormData();
-      const file = new File([blob], 'avatar.webp', { type: 'image/webp' });
-      form.append('file', file);
-
+      form.append('file', new File([blob], 'avatar.webp', { type: 'image/webp' }));
       this.photoUploading = true;
       this.uploadPct = 0;
 
       this.http.post<any>(`${this.apiBase}/api/profile/photo`, form, {
-        reportProgress: true,
-        observe: 'events'
+        reportProgress: true, observe: 'events'
       }).subscribe({
         next: (ev: HttpEvent<any>) => {
-          if (ev.type === HttpEventType.UploadProgress) {
-            const total = ev.total ?? 1;
-            this.uploadPct = Math.round((100 * ev.loaded) / total);
-          }
+          if (ev.type === HttpEventType.UploadProgress)
+            this.uploadPct = Math.round((100 * ev.loaded) / (ev.total ?? 1));
 
           if (ev.type === HttpEventType.Response) {
             this.photoUploading = false;
             this.uploadPct = 100;
-
             const profileImageUrl = (ev.body?.profileImageUrl as string | null) ?? null;
             this.lastServerAvatarPath = profileImageUrl;
-
             this.revokeLocalAvatarUrl();
             this.avatarBust = Date.now();
             this.avatarLiveSrc = this.buildServerAvatarUrl(profileImageUrl);
-
             this.reload();
             resolve();
           }
         },
-        error: () => {
-          this.photoUploading = false;
-          this.uploadPct = 0;
-          reject(new Error('Upload failed'));
-        }
+        error: () => { this.photoUploading = false; this.uploadPct = 0; reject(new Error('Upload failed')); }
       });
     });
   }
@@ -507,118 +439,99 @@ export class MeComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  // ------- Name -------
+  // ── Name ──────────────────────────────────────
+
   saveName() {
     this.nameError = null;
-    const value = (this.displayName || '').trim();
     this.nameWorking = true;
-
-    this.profileApi.updateProfile(value || null).subscribe({
+    this.profileApi.updateProfile((this.displayName || '').trim() || null).subscribe({
       next: () => {
         this.nameWorking = false;
-        this.toast.success('Profile updated.');
+        this.toast.success(this.lang.label('save') + ' ✓');
         this.reload();
       },
       error: (err) => {
         this.nameWorking = false;
         this.nameError = typeof err?.error === 'string' ? err.error : 'Failed to update profile.';
-        this.toast.error(this.nameError ?? 'Failed to update profile.');
+        this.toast.error(this.nameError ?? '');
       }
     });
   }
 
-  // ------- Password -------
+  // ── Password ──────────────────────────────────
+
   async changePassword() {
     this.pwError = null;
     this.pwSuccess = null;
-
-    if (this.pwForm.invalid) {
-      this.pwForm.markAllAsTouched();
-      return;
-    }
+    if (this.pwForm.invalid) { this.pwForm.markAllAsTouched(); return; }
 
     const { currentPassword, newPassword } = this.pwForm.value;
+    const isAr = this.lang.isRtl;
 
     const ok = await this.confirm.open({
-      title: 'Change password?',
-      message: 'You will be logged out and must sign in again with the new password.',
-      confirmText: 'Yes, change it',
-      cancelText: 'Cancel'
+      title:       isAr ? 'تغيير كلمة المرور؟'          : 'Change password?',
+      message:     isAr ? 'ستسجّل الدخول مجددًا بعد التغيير.' : 'You will be logged out and must sign in again.',
+      confirmText: isAr ? 'نعم، غيّرها'                 : 'Yes, change it',
+      cancelText:  isAr ? 'إلغاء'                       : 'Cancel',
     });
 
     if (!ok) return;
-
     this.pwWorking = true;
 
     this.profileApi.changePassword(currentPassword!, newPassword!).subscribe({
       next: (res) => {
         this.pwWorking = false;
-
-        const msg = res?.message || 'Password updated. Please sign in again.';
+        const msg = res?.message || (isAr ? 'تم التحديث.' : 'Password updated. Please sign in again.');
         this.pwSuccess = msg;
         sessionStorage.setItem('login_notice', msg);
-
         this.auth.logout();
         this.router.navigateByUrl('/login');
       },
       error: (err) => {
         this.pwWorking = false;
-        this.pwError =
-          typeof err?.error === 'string'
-            ? err.error
-            : err?.error?.message || 'Change password failed.';
-        this.toast.error(this.pwError ?? 'Change password failed.');
+        this.pwError = typeof err?.error === 'string' ? err.error : (err?.error?.message || 'Change password failed.');
+        this.toast.error(this.pwError ?? '');
       }
     });
   }
 
-  // ------- Preferences -------
-  setLang(v: string) {
-    this.lang = v;
-    localStorage.setItem('alef_lang', v);
-    this.toast.success('Preference saved.');
-  }
-
-  // ------- Logout / Delete -------
-  logout() {
-    sessionStorage.removeItem('login_notice');
-    this.auth.logout();
-    this.router.navigateByUrl('/login');
-  }
+  // ── Delete ────────────────────────────────────
 
   async deleteAccount() {
     this.deleteError = null;
+    if (this.deleteForm.invalid) { this.deleteForm.markAllAsTouched(); return; }
 
-    if (this.deleteForm.invalid) {
-      this.deleteForm.markAllAsTouched();
-      return;
-    }
-
+    const isAr = this.lang.isRtl;
     const ok = await this.confirm.open({
-      title: 'Delete account?',
-      message: 'This will permanently delete your account and content. This cannot be undone.',
-      confirmText: 'Yes, delete',
-      cancelText: 'Cancel'
+      title:       isAr ? 'حذف الحساب؟'                        : 'Delete account?',
+      message:     isAr ? 'سيؤدي هذا إلى حذف حسابك بشكل دائم.' : 'This will permanently delete your account. This cannot be undone.',
+      confirmText: isAr ? 'نعم، احذف'                          : 'Yes, delete',
+      cancelText:  isAr ? 'إلغاء'                              : 'Cancel',
     });
 
     if (!ok) return;
-
     this.deleteWorking = true;
-    const password = this.deleteForm.value.password!;
 
-    this.profileApi.deleteAccount(password).subscribe({
+    this.profileApi.deleteAccount(this.deleteForm.value.password!).subscribe({
       next: (res) => {
         this.deleteWorking = false;
-        this.toast.success(res?.message || 'Account deleted.');
-
+        this.toast.success(res?.message || (isAr ? 'تم حذف الحساب.' : 'Account deleted.'));
         this.auth.logout();
         this.router.navigateByUrl('/login');
       },
       error: (err) => {
         this.deleteWorking = false;
         this.deleteError = typeof err?.error === 'string' ? err.error : 'Delete failed.';
-        this.toast.error(this.deleteError ?? 'Delete failed.');
+        this.toast.error(this.deleteError ?? '');
       }
     });
+  }
+
+  // ── Logout ────────────────────────────────────
+
+  logout() {
+    sessionStorage.removeItem('login_notice');
+    this.auth.logout();
+    this.router.navigateByUrl('/login');
   }
 }

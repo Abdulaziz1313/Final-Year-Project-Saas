@@ -45,13 +45,13 @@
         <div class="academy-banner-scrim"></div>
       </div>
 
-      <!-- Breadcrumb -->
+      <!-- Breadcrumb — middle link goes to academy landing page, not catalog -->
       <div class="breadcrumb">
         <a class="bc-link" routerLink="/academies">Academies</a>
         <svg class="bc-sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14">
           <path d="M9 18l6-6-6-6"/>
         </svg>
-        <a class="bc-link" *ngIf="vm.academy?.slug" [routerLink]="['/academy', vm.academy?.slug]">
+        <a class="bc-link" *ngIf="vm.academy?.slug" [routerLink]="['/academy-home', vm.academy?.slug]">
           {{ vm.academy?.name || 'Academy' }}
         </a>
         <svg class="bc-sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14">
@@ -128,8 +128,9 @@
                 </div>
               </div>
 
+              <!-- Back to academy → goes to academy landing page -->
               <div class="hero-actions">
-                <a class="btn btn-ghost btn-sm" *ngIf="vm.academy?.slug" [routerLink]="['/academy', vm.academy?.slug]">
+                <a class="btn btn-ghost btn-sm" *ngIf="vm.academy?.slug" [routerLink]="['/academy-home', vm.academy?.slug]">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14">
                     <path d="M19 12H5M12 5l-7 7 7 7"/>
                   </svg>
@@ -344,8 +345,8 @@
         <aside class="cta-aside">
           <div class="cta-card">
 
-            <!-- Academy provider -->
-            <div class="cta-academy" *ngIf="vm.academy">
+            <!-- Academy provider — clicking goes to academy landing page -->
+            <a class="cta-academy" *ngIf="vm.academy" [routerLink]="['/academy-home', vm.academy.slug]">
               <div class="cta-academy-logo">
                 <img *ngIf="img(vm.academy.logoUrl) as l" [src]="l" alt="" />
                 <span *ngIf="!img(vm.academy.logoUrl)" class="cta-logo-initial">
@@ -354,9 +355,9 @@
               </div>
               <div class="cta-academy-text">
                 <div class="cta-academy-name">{{ vm.academy.name }}</div>
-                <div class="cta-academy-role">Course provider</div>
+                <div class="cta-academy-role">Course provider ↗</div>
               </div>
-            </div>
+            </a>
 
             <div class="cta-divider"></div>
 
@@ -365,7 +366,7 @@
               <div class="cta-price-label">Price</div>
               <div class="cta-price-value">{{ priceLabel(vm) }}</div>
               <div class="cta-price-note" *ngIf="vm.isFree">Free — instant access after enrollment</div>
-              <div class="cta-price-note" *ngIf="!vm.isFree">Payment integration coming soon</div>
+              <div class="cta-price-note" *ngIf="!vm.isFree">Secure checkout — access starts after successful payment</div>
             </div>
 
             <button class="cta-enroll-btn"
@@ -374,7 +375,7 @@
                     [disabled]="!canEnroll(vm)"
                     (click)="enroll(vm.id)">
 
-              <!-- Register state: person-plus icon -->
+              <!-- Register state -->
               <ng-container *ngIf="ctaIsRegister(vm)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                      stroke-linecap="round" stroke-linejoin="round" width="17" height="17">
@@ -386,7 +387,7 @@
                 {{ ctaLabel(vm) }}
               </ng-container>
 
-              <!-- Enroll state: arrow icon -->
+              <!-- Enroll / Buy state -->
               <ng-container *ngIf="!ctaIsRegister(vm)">
                 {{ ctaLabel(vm) }}
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
@@ -397,7 +398,7 @@
 
             </button>
 
-
+            <!-- View all courses → goes to full catalog -->
             <a class="btn btn-ghost cta-back-btn" *ngIf="vm.academy?.slug" [routerLink]="['/academy', vm.academy?.slug]">
               View all courses
             </a>

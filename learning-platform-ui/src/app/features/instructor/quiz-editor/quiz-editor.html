@@ -1,11 +1,9 @@
 <div class="quiz-editor">
 
-  <!-- Background -->
   <div class="home-bg" aria-hidden="true"></div>
 
   <div class="wrap">
 
-    <!-- ── TOPBAR ── -->
     <header class="topbar">
       <div class="top-left">
         <div class="kicker">
@@ -21,20 +19,33 @@
           ← Dashboard
         </a>
 
-        <button class="btn btn-ghost btn-sm" type="button"
-          (click)="load()" [disabled]="saving || loading">
+        <button
+          class="btn btn-ai btn-sm"
+          type="button"
+          (click)="openAiModal()"
+          [disabled]="saving || loading || aiGenerating">
+          ✨ Generate with AI
+        </button>
+
+        <button
+          class="btn btn-ghost btn-sm"
+          type="button"
+          (click)="load()"
+          [disabled]="saving || loading || aiGenerating">
           Reload
         </button>
 
-        <button class="btn btn-primary btn-sm" type="button"
-          [disabled]="saving || loading" (click)="save()">
+        <button
+          class="btn btn-primary btn-sm"
+          type="button"
+          [disabled]="saving || loading || aiGenerating"
+          (click)="save()">
           <span class="spinner" *ngIf="saving"></span>
           {{ saving ? 'Saving…' : 'Save quiz' }}
         </button>
       </div>
     </header>
 
-    <!-- ── SKELETON ── -->
     <div class="panel skeleton" *ngIf="loading">
       <div class="sk-head"></div>
       <div class="sk-line w80"></div>
@@ -42,10 +53,8 @@
       <div class="sk-card" *ngFor="let _ of [1,2,3]"></div>
     </div>
 
-    <!-- ── CONTENT ── -->
     <section class="layout" *ngIf="!loading">
 
-      <!-- ── ASIDE: Settings ── -->
       <aside class="panel sticky">
 
         <div class="panel-head">
@@ -62,7 +71,9 @@
         <form class="form" [formGroup]="form">
           <div class="field">
             <label>Quiz title</label>
-            <input class="input" formControlName="title"
+            <input
+              class="input"
+              formControlName="title"
               placeholder="e.g. Module 1 Quiz" />
             <div class="help">Shown to students on the lesson page.</div>
           </div>
@@ -82,6 +93,7 @@
                 <div class="add-btn-sub">Multiple choice</div>
               </div>
             </button>
+
             <button class="add-btn" type="button" (click)="addQuestion(1)">
               <div class="add-btn-icon c-gold">⚖️</div>
               <div class="add-btn-info">
@@ -89,6 +101,7 @@
                 <div class="add-btn-sub">Binary choice</div>
               </div>
             </button>
+
             <button class="add-btn" type="button" (click)="addQuestion(2)">
               <div class="add-btn-icon c-green">✏️</div>
               <div class="add-btn-info">
@@ -108,7 +121,6 @@
 
       </aside>
 
-      <!-- ── MAIN: Questions ── -->
       <section class="panel questions-panel">
 
         <div class="panel-head">
@@ -136,7 +148,6 @@
                 *ngFor="let q of questions.controls; let i = index; trackBy: trackByIndex"
                 [formGroupName]="i"
               >
-                <!-- Card header -->
                 <header class="q-head">
                   <div class="q-left">
                     <div class="q-badge">Q{{ i + 1 }}</div>
@@ -150,7 +161,6 @@
                   </button>
                 </header>
 
-                <!-- Type + Points -->
                 <div class="row">
                   <div class="field">
                     <label>Type</label>
@@ -162,28 +172,30 @@
                   </div>
                   <div class="field">
                     <label>Points</label>
-                    <input class="input" type="number"
-                      formControlName="points" min="1" />
+                    <input
+                      class="input"
+                      type="number"
+                      formControlName="points"
+                      min="1" />
                   </div>
                 </div>
 
-                <!-- Prompt -->
                 <div class="field">
                   <label>Prompt</label>
-                  <textarea class="input" rows="2"
+                  <textarea
+                    class="input"
+                    rows="2"
                     formControlName="prompt"
                     placeholder="Write the question here…"></textarea>
                 </div>
 
-                <!-- MCQ / TF choices -->
                 <section class="choices-block" *ngIf="q.value.type !== 2">
                   <div class="choices-head">
                     <div>
                       <div class="block-title">Choices</div>
                       <div class="block-sub">Pick exactly one correct answer.</div>
                     </div>
-                    <button class="btn btn-ghost btn-sm" type="button"
-                      (click)="addChoice(i)">
+                    <button class="btn btn-ghost btn-sm" type="button" (click)="addChoice(i)">
                       + Add choice
                     </button>
                   </div>
@@ -197,18 +209,26 @@
                     >
                       <div class="choice-left">
                         <div class="choice-index">{{ ci + 1 }}</div>
-                        <input class="input" formControlName="text"
+                        <input
+                          class="input"
+                          formControlName="text"
                           placeholder="Choice text…" />
                       </div>
+
                       <div class="choice-actions">
                         <label class="correct-pill" [class.on]="c.value.isCorrect">
-                          <input type="radio" name="correct-{{ i }}"
+                          <input
+                            type="radio"
+                            name="correct-{{ i }}"
                             [checked]="c.value.isCorrect"
                             (change)="markCorrect(i, ci)" />
                           <span class="tick" aria-hidden="true">✓</span>
                           <span class="txt">Correct</span>
                         </label>
-                        <button class="btn btn-ghost btn-sm btn-xs" type="button"
+
+                        <button
+                          class="btn btn-ghost btn-sm btn-xs"
+                          type="button"
                           (click)="removeChoice(i, ci)">
                           ✕
                         </button>
@@ -217,17 +237,20 @@
                   </div>
                 </section>
 
-                <!-- Short answer -->
                 <section class="short-block" *ngIf="q.value.type === 2">
                   <div class="block-title">Accepted answers</div>
                   <div class="block-sub">
                     Separate multiple accepted answers with
                     <code class="mono">|</code>
                   </div>
+
                   <div class="field" style="margin-top: 10px">
-                    <input class="input" formControlName="correctAnswerText"
+                    <input
+                      class="input"
+                      formControlName="correctAnswerText"
                       placeholder="e.g. csharp|c#|C Sharp" />
                   </div>
+
                   <div class="row one" style="margin-top: 10px">
                     <div class="field">
                       <label>Match mode</label>
@@ -242,13 +265,12 @@
               </article>
             </ng-container>
 
-            <!-- Empty state -->
             <ng-template #empty>
               <div class="empty-state">
                 <div class="empty-icon">📝</div>
                 <div class="empty-title">No questions yet</div>
                 <p class="empty-desc">
-                  Use the question type buttons on the left to add your first question.
+                  Use the question type buttons on the left or generate a draft with AI.
                 </p>
               </div>
             </ng-template>
@@ -259,5 +281,95 @@
       </section>
     </section>
 
+  </div>
+
+  <div class="modal-backdrop" *ngIf="aiModalOpen" (click)="closeAiModal()"></div>
+
+  <div class="modal" *ngIf="aiModalOpen">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+
+      <div class="modal-head">
+        <div>
+          <div class="modal-kicker">AI Quiz Generator</div>
+          <div class="modal-title">Create quiz with AI</div>
+          <div class="modal-sub">Generate draft questions from the current lesson context.</div>
+        </div>
+
+        <button
+          class="icon-close"
+          type="button"
+          (click)="closeAiModal()"
+          aria-label="Close">
+          ✕
+        </button>
+      </div>
+
+      <form class="form modal-form" [formGroup]="aiForm">
+        <div class="field">
+          <label>Topic</label>
+          <input
+            class="input"
+            formControlName="topic"
+            placeholder="e.g. Angular Components" />
+        </div>
+
+        <div class="row ai-row">
+          <div class="field">
+            <label>Questions</label>
+            <input
+              class="input"
+              type="number"
+              min="1"
+              max="20"
+              formControlName="questionCount" />
+          </div>
+
+          <div class="field">
+            <label>Difficulty</label>
+            <select class="input select" formControlName="difficulty">
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>
+            Instructions
+            <span class="label-optional">— optional</span>
+          </label>
+          <textarea
+            class="input"
+            rows="3"
+            formControlName="instructions"
+            placeholder="Optional extra instructions for the AI..."></textarea>
+        </div>
+
+        <div class="ai-note">
+          Generated questions are added as a draft only. You can edit everything before saving.
+        </div>
+      </form>
+
+      <div class="modal-foot">
+        <button
+          class="btn btn-ghost"
+          type="button"
+          (click)="closeAiModal()"
+          [disabled]="aiGenerating">
+          Cancel
+        </button>
+
+        <button
+          class="btn btn-ai"
+          type="button"
+          (click)="generateQuizWithAi()"
+          [disabled]="aiGenerating || aiForm.invalid">
+          <span class="spinner dark" *ngIf="aiGenerating"></span>
+          {{ aiGenerating ? 'Generating…' : '✨ Generate questions' }}
+        </button>
+      </div>
+
+    </div>
   </div>
 </div>

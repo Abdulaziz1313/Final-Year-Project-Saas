@@ -17,7 +17,7 @@ namespace LearningPlatform.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.22")
+                .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -83,7 +83,8 @@ namespace LearningPlatform.Infrastructure.Migrations
 
                     b.Property<string>("OwnerUserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("PrimaryColor")
                         .IsRequired()
@@ -110,6 +111,52 @@ namespace LearningPlatform.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Academies");
+                });
+
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.AcademyPayoutSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AcademyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<decimal>("InstructorFeePercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("OrganizationFeePercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("PlatformFeePercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("WeeklyAutoReleaseEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("WeeklyReleaseDay")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcademyId")
+                        .IsUnique();
+
+                    b.ToTable("AcademyPayoutSettings");
                 });
 
             modelBuilder.Entity("LearningPlatform.Domain.Entities.AcademyReview", b =>
@@ -249,7 +296,8 @@ namespace LearningPlatform.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Category")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetimeoffset");
@@ -260,6 +308,7 @@ namespace LearningPlatform.Infrastructure.Migrations
                         .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("FullDescription")
+                        .HasMaxLength(20000)
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTimeOffset?>("HiddenAt")
@@ -270,6 +319,10 @@ namespace LearningPlatform.Infrastructure.Migrations
 
                     b.Property<string>("HiddenReason")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("InstructorUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<bool>("IsFree")
                         .HasColumnType("bit");
@@ -282,7 +335,8 @@ namespace LearningPlatform.Infrastructure.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("ShortDescription")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -292,7 +346,8 @@ namespace LearningPlatform.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ThumbnailUrl")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -300,6 +355,8 @@ namespace LearningPlatform.Infrastructure.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("InstructorUserId");
 
                     b.HasIndex("AcademyId", "Status");
 
@@ -361,6 +418,7 @@ namespace LearningPlatform.Infrastructure.Migrations
 
                     b.Property<string>("StudentUserId")
                         .IsRequired()
+                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
@@ -371,6 +429,199 @@ namespace LearningPlatform.Infrastructure.Migrations
                     b.ToTable("Enrollments");
                 });
 
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.InstructorEarning", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AcademyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTimeOffset>("EarnedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<decimal>("GrossAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("InstructorAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("InstructorUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsPaidOut")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsReleasedForPayout")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("OrganizationAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTimeOffset?>("PaidOutAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("PaymentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("PayoutId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("PlatformAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTimeOffset?>("ReleasedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("StudentUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("PaymentId")
+                        .IsUnique();
+
+                    b.HasIndex("PayoutId");
+
+                    b.HasIndex("AcademyId", "InstructorUserId", "IsReleasedForPayout", "IsPaidOut");
+
+                    b.ToTable("InstructorEarnings");
+                });
+
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.InstructorPayout", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AcademyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("ApprovedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("InstructorUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsInstantRequest")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MessageToInstructor")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset?>("PaidAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("ProcessingAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("RequestNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTimeOffset?>("RequestedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcademyId", "InstructorUserId", "Status");
+
+                    b.ToTable("InstructorPayouts");
+                });
+
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.InstructorPayoutRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AcademyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("InstructorUserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("MessageToInstructor")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid?>("PayoutId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("RequestedAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTimeOffset?>("ResolvedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PayoutId");
+
+                    b.HasIndex("AcademyId", "InstructorUserId", "Status");
+
+                    b.ToTable("InstructorPayoutRequests");
+                });
+
             modelBuilder.Entity("LearningPlatform.Domain.Entities.Lesson", b =>
                 {
                     b.Property<Guid>("Id")
@@ -378,7 +629,8 @@ namespace LearningPlatform.Infrastructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("ContentUrl")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("HtmlContent")
                         .HasColumnType("nvarchar(max)");
@@ -408,6 +660,84 @@ namespace LearningPlatform.Infrastructure.Migrations
                     b.HasIndex("ModuleId", "SortOrder");
 
                     b.ToTable("Lessons");
+                });
+
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.LessonAiFlashcard", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Answer")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsPublished")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("OrderIndex")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Question")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId", "OrderIndex");
+
+                    b.ToTable("LessonAiFlashcards");
+                });
+
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.LessonAiSummary", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ImportantTermsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("KeyPointsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId")
+                        .IsUnique();
+
+                    b.ToTable("LessonAiSummaries");
                 });
 
             modelBuilder.Entity("LearningPlatform.Domain.Entities.LessonProgress", b =>
@@ -552,6 +882,81 @@ namespace LearningPlatform.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Organizations");
+                });
+
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.Payment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("CheckoutSessionId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTimeOffset?>("PaidAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("PaymentIntentId")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("PaymentMethodType")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ProviderReference")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CheckoutSessionId")
+                        .IsUnique();
+
+                    b.HasIndex("PaymentIntentId");
+
+                    b.HasIndex("CourseId", "UserId", "Status");
+
+                    b.ToTable("Payments");
                 });
 
             modelBuilder.Entity("LearningPlatform.Domain.Entities.PendingRegistration", b =>
@@ -784,6 +1189,9 @@ namespace LearningPlatform.Infrastructure.Migrations
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("bit");
+
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -818,6 +1226,8 @@ namespace LearningPlatform.Infrastructure.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AcademyId");
 
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
@@ -976,10 +1386,21 @@ namespace LearningPlatform.Infrastructure.Migrations
                     b.Navigation("Organization");
                 });
 
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.AcademyPayoutSettings", b =>
+                {
+                    b.HasOne("LearningPlatform.Domain.Entities.Academy", "Academy")
+                        .WithOne("PayoutSettings")
+                        .HasForeignKey("LearningPlatform.Domain.Entities.AcademyPayoutSettings", "AcademyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Academy");
+                });
+
             modelBuilder.Entity("LearningPlatform.Domain.Entities.Course", b =>
                 {
                     b.HasOne("LearningPlatform.Domain.Entities.Academy", "Academy")
-                        .WithMany()
+                        .WithMany("Courses")
                         .HasForeignKey("AcademyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -990,12 +1411,75 @@ namespace LearningPlatform.Infrastructure.Migrations
             modelBuilder.Entity("LearningPlatform.Domain.Entities.Enrollment", b =>
                 {
                     b.HasOne("LearningPlatform.Domain.Entities.Course", "Course")
-                        .WithMany()
+                        .WithMany("Enrollments")
                         .HasForeignKey("CourseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.InstructorEarning", b =>
+                {
+                    b.HasOne("LearningPlatform.Domain.Entities.Academy", "Academy")
+                        .WithMany("InstructorEarnings")
+                        .HasForeignKey("AcademyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LearningPlatform.Domain.Entities.Course", "Course")
+                        .WithMany("InstructorEarnings")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LearningPlatform.Domain.Entities.Payment", "Payment")
+                        .WithMany()
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LearningPlatform.Domain.Entities.InstructorPayout", "Payout")
+                        .WithMany("Earnings")
+                        .HasForeignKey("PayoutId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Academy");
+
+                    b.Navigation("Course");
+
+                    b.Navigation("Payment");
+
+                    b.Navigation("Payout");
+                });
+
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.InstructorPayout", b =>
+                {
+                    b.HasOne("LearningPlatform.Domain.Entities.Academy", "Academy")
+                        .WithMany("InstructorPayouts")
+                        .HasForeignKey("AcademyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Academy");
+                });
+
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.InstructorPayoutRequest", b =>
+                {
+                    b.HasOne("LearningPlatform.Domain.Entities.Academy", "Academy")
+                        .WithMany("InstructorPayoutRequests")
+                        .HasForeignKey("AcademyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LearningPlatform.Domain.Entities.InstructorPayout", "Payout")
+                        .WithMany()
+                        .HasForeignKey("PayoutId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Academy");
+
+                    b.Navigation("Payout");
                 });
 
             modelBuilder.Entity("LearningPlatform.Domain.Entities.Lesson", b =>
@@ -1007,6 +1491,28 @@ namespace LearningPlatform.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Module");
+                });
+
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.LessonAiFlashcard", b =>
+                {
+                    b.HasOne("LearningPlatform.Domain.Entities.Lesson", "Lesson")
+                        .WithMany("AiFlashcards")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
+                });
+
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.LessonAiSummary", b =>
+                {
+                    b.HasOne("LearningPlatform.Domain.Entities.Lesson", "Lesson")
+                        .WithMany()
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
                 });
 
             modelBuilder.Entity("LearningPlatform.Domain.Entities.LessonProgress", b =>
@@ -1024,6 +1530,17 @@ namespace LearningPlatform.Infrastructure.Migrations
                 {
                     b.HasOne("LearningPlatform.Domain.Entities.Course", "Course")
                         .WithMany("Modules")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.Payment", b =>
+                {
+                    b.HasOne("LearningPlatform.Domain.Entities.Course", "Course")
+                        .WithMany("Payments")
                         .HasForeignKey("CourseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1143,9 +1660,38 @@ namespace LearningPlatform.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.Academy", b =>
+                {
+                    b.Navigation("Courses");
+
+                    b.Navigation("InstructorEarnings");
+
+                    b.Navigation("InstructorPayoutRequests");
+
+                    b.Navigation("InstructorPayouts");
+
+                    b.Navigation("PayoutSettings");
+                });
+
             modelBuilder.Entity("LearningPlatform.Domain.Entities.Course", b =>
                 {
+                    b.Navigation("Enrollments");
+
+                    b.Navigation("InstructorEarnings");
+
                     b.Navigation("Modules");
+
+                    b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.InstructorPayout", b =>
+                {
+                    b.Navigation("Earnings");
+                });
+
+            modelBuilder.Entity("LearningPlatform.Domain.Entities.Lesson", b =>
+                {
+                    b.Navigation("AiFlashcards");
                 });
 
             modelBuilder.Entity("LearningPlatform.Domain.Entities.Module", b =>

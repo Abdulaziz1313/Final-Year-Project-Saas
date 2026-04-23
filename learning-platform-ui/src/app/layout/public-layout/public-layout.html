@@ -3,47 +3,94 @@
   <header class="pub-top" *ngIf="!hideTopbar">
     <div class="pub-inner">
 
-      <!-- Brand -->
-      <a class="brand" routerLink="/home" aria-label="Alef Home">
-        <div class="logo-mark">
-          <span>الف</span>
-        </div>
-        <div class="brand-text">
-          <span class="brand-name">Alef</span>
-          <span class="brand-sub">Learning Commerce</span>
-        </div>
+      <a
+        class="brand"
+        [routerLink]="showAcademyBrand ? ['/academy-home', academyBrandForTemplate?.slug] : ['/home']"
+        aria-label="Brand Home"
+      >
+        <ng-container *ngIf="showAcademyBrand; else alefBrand">
+          <div
+            class="logo-mark academy-brand-mark"
+            [style.background]="academyAccent()"
+          >
+            <img *ngIf="academyLogoUrl()" [src]="academyLogoUrl()!" alt="Academy logo" />
+            <span *ngIf="!academyLogoUrl()">{{ academyInitial() }}</span>
+          </div>
+
+          <div class="brand-text">
+            <span class="brand-name">{{ academyBrandForTemplate?.name }}</span>
+            <span class="brand-sub">{{ academyBrandForTemplate?.orgName || 'Learning Academy' }}</span>
+          </div>
+        </ng-container>
+
+        <ng-template #alefBrand>
+          <div class="logo-mark alef-logo-mark">
+            <img src="/branding/alef-logo.svg" alt="Alef logo" class="alef-logo-img" />
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">Alef</span>
+            <span class="brand-sub">Learning Commerce</span>
+          </div>
+        </ng-template>
       </a>
 
-      <!-- Nav -->
       <nav class="nav" aria-label="Public navigation">
         <a
           class="nav-link"
           routerLink="/home"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
-        >Home</a>
+        >
+          Home
+        </a>
+
         <a
           class="nav-link"
           routerLink="/academies"
           routerLinkActive="active"
-        >Explore</a>
+        >
+          Explore
+        </a>
+
+        <a
+          class="nav-link"
+          *ngIf="academyBrandForTemplate"
+          [routerLink]="['/academy-home', academyBrandForTemplate.slug]"
+        >
+          Academy page
+        </a>
+
         <div class="nav-sep"></div>
       </nav>
 
-      <!-- Right actions -->
       <div class="pub-actions">
-        <!-- Logged out -->
         <ng-container *ngIf="!loggedIn; else loggedInLinks">
-          <a class="nav-link" routerLink="/login">Sign in</a>
-          <a class="btn btn-primary" routerLink="/register">Create account</a>
+
+          <ng-container *ngIf="academyBrandForTemplate; else globalAuthLinks">
+            <a class="nav-link"
+               [routerLink]="['/login-academy']"
+               [queryParams]="{ academy: academyBrandForTemplate.slug }">
+              Sign in
+            </a>
+            <a class="btn btn-primary"
+               [routerLink]="['/register-student']"
+               [queryParams]="{ academy: academyBrandForTemplate.slug }">
+              Create account
+            </a>
+          </ng-container>
+
+          <ng-template #globalAuthLinks>
+            <a class="nav-link" routerLink="/login">Sign in</a>
+            <a class="btn btn-primary" routerLink="/register">Create account</a>
+          </ng-template>
+
         </ng-container>
 
-        <!-- Logged in -->
         <ng-template #loggedInLinks>
           <a class="nav-link" routerLink="/me">Account</a>
-          <a class="nav-link" *ngIf="isStudent"    routerLink="/my-learning">My Learning</a>
+          <a class="nav-link" *ngIf="isStudent" routerLink="/my-learning">My Learning</a>
           <a class="nav-link" *ngIf="isInstructor" routerLink="/instructor">Dashboard</a>
-          <a class="nav-link" *ngIf="isAdmin"      routerLink="/admin">Admin</a>
+          <a class="nav-link" *ngIf="isAdmin" routerLink="/admin">Admin</a>
           <button class="btn btn-ghost" type="button" (click)="logout()">Logout</button>
         </ng-template>
       </div>

@@ -1,7 +1,9 @@
-<div class="me-page">
+<div class="me-page" [class.rtl]="lang.isRtl" [dir]="lang.isRtl ? 'rtl' : 'ltr'">
   <ng-container *ngIf="state$ | async as st">
 
-    <div class="state-loading" *ngIf="st.loading">Loading…</div>
+    <div class="state-loading" *ngIf="st.loading">
+      <span class="loading-dot"></span>{{ 'loading' | translate }}
+    </div>
     <div class="alert-error" *ngIf="st.error"><span>⚠</span> {{ st.error }}</div>
 
     <div class="me-layout" *ngIf="st.data && !st.loading && !st.error">
@@ -9,7 +11,6 @@
       <!-- ── LEFT SIDEBAR ── -->
       <aside class="me-aside">
 
-        <!-- Avatar + identity -->
         <div class="aside-user">
           <div class="aside-avatar">
             <img *ngIf="avatarLiveSrc" [src]="avatarLiveSrc" alt="Avatar" />
@@ -19,61 +20,58 @@
             <div class="aside-email">{{ st.data.email }}</div>
             <div class="aside-phone">{{ displayPhone(st.data.phoneNumber) }}</div>
             <div class="aside-roles">
-              <span class="role-chip" *ngFor="let r of st.data.roles">{{ r }}</span>
+              <span class="role-pill" *ngFor="let r of st.data.roles">{{ r }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Quick stats -->
         <div class="aside-stats">
           <div class="stat-cell">
-            <div class="stat-label">Language</div>
-            <div class="stat-value">{{ (lang || 'en').toUpperCase() }}</div>
+            <div class="stat-label">{{ 'language_label' | translate }}</div>
+            <div class="stat-value">{{ (lang.current || 'en').toUpperCase() }}</div>
           </div>
           <div class="stat-cell">
-            <div class="stat-label">Status</div>
+            <div class="stat-label">{{ 'status' | translate }}</div>
             <div class="stat-value">
-              <span class="active-pill"><span class="active-dot"></span>Active</span>
+              <span class="active-pill"><span class="active-dot"></span>{{ 'active' | translate }}</span>
             </div>
           </div>
         </div>
 
         <div class="aside-divider"></div>
 
-        <!-- Nav -->
-        <div class="aside-nav-label">Settings</div>
+        <div class="aside-nav-label">{{ 'settingsLabel' | translate }}</div>
         <nav class="aside-nav">
           <button class="aside-nav-item" type="button" [class.active]="activeSection==='profile'" (click)="goTo('profile')">
             <svg class="aside-nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
               <circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0" stroke-linecap="round"/>
             </svg>
-            <span>Profile</span>
+            <span>{{ 'profile' | translate }}</span>
           </button>
           <button class="aside-nav-item" type="button" [class.active]="activeSection==='security'" (click)="goTo('security')">
             <svg class="aside-nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round">
               <rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
             </svg>
-            <span>Security</span>
+            <span>{{ 'security' | translate }}</span>
           </button>
           <button class="aside-nav-item" type="button" [class.active]="activeSection==='prefs'" (click)="goTo('prefs')">
             <svg class="aside-nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="3"/>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>
             </svg>
-            <span>Preferences</span>
+            <span>{{ 'prefs' | translate }}</span>
           </button>
           <button class="aside-nav-item danger" type="button" [class.active]="activeSection==='danger'" (click)="goTo('danger')">
             <svg class="aside-nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
               <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
               <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
-            <span>Danger zone</span>
+            <span>{{ 'danger' | translate }}</span>
           </button>
         </nav>
 
-        <!-- User ID footer -->
         <div class="aside-footer">
-          <div class="aside-footer-label">User ID</div>
+          <div class="aside-footer-label">{{ 'userId' | translate }}</div>
           <div class="aside-footer-id">{{ st.data.userId }}</div>
         </div>
 
@@ -82,21 +80,20 @@
       <!-- ── RIGHT CONTENT ── -->
       <div class="me-content">
 
-        <!-- Content topbar -->
         <div class="content-bar">
           <div class="seg-tabs" role="tablist">
-            <button class="seg-tab" type="button" [class.active]="activeSection==='profile'"  (click)="goTo('profile')">Profile</button>
-            <button class="seg-tab" type="button" [class.active]="activeSection==='security'" (click)="goTo('security')">Security</button>
-            <button class="seg-tab" type="button" [class.active]="activeSection==='prefs'"    (click)="goTo('prefs')">Preferences</button>
-            <button class="seg-tab danger" type="button" [class.active]="activeSection==='danger'"   (click)="goTo('danger')">Danger</button>
+            <button class="seg-tab" type="button" [class.active]="activeSection==='profile'"  (click)="goTo('profile')">{{ 'profile' | translate }}</button>
+            <button class="seg-tab" type="button" [class.active]="activeSection==='security'" (click)="goTo('security')">{{ 'security' | translate }}</button>
+            <button class="seg-tab" type="button" [class.active]="activeSection==='prefs'"    (click)="goTo('prefs')">{{ 'prefs' | translate }}</button>
+            <button class="seg-tab danger" type="button" [class.active]="activeSection==='danger'" (click)="goTo('danger')">{{ 'danger' | translate }}</button>
           </div>
           <div class="content-bar-actions">
-            <button class="btn btn-ghost btn-sm" type="button" (click)="reload()">Refresh</button>
-            <button class="btn btn-ghost btn-sm" type="button" (click)="logout()">Logout</button>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="reload()">{{ 'refresh' | translate }}</button>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="logout()">{{ 'logout' | translate }}</button>
           </div>
         </div>
 
-        <!-- ── PROFILE SECTION ── -->
+        <!-- ── PROFILE ── -->
         <section class="section-card" id="sec-profile">
           <div class="section-header">
             <div class="section-icon">
@@ -105,12 +102,11 @@
               </svg>
             </div>
             <div>
-              <div class="section-title">Profile</div>
-              <div class="section-sub">Account details and photo</div>
+              <div class="section-title">{{ 'profile' | translate }}</div>
+              <div class="section-sub">{{ 'profileSub' | translate }}</div>
             </div>
           </div>
 
-          <!-- Avatar + info -->
           <div class="profile-block">
             <div class="profile-avatar">
               <img *ngIf="avatarLiveSrc" [src]="avatarLiveSrc" alt="Avatar" />
@@ -120,21 +116,21 @@
             <div class="profile-info">
               <div class="info-grid">
                 <div class="info-cell">
-                  <div class="info-label">Email</div>
+                  <div class="info-label">{{ 'email' | translate }}</div>
                   <div class="info-value">{{ st.data.email }}</div>
                 </div>
                 <div class="info-cell">
-                  <div class="info-label">Phone</div>
+                  <div class="info-label">{{ 'phone' | translate }}</div>
                   <div class="info-value mono">{{ displayPhone(st.data.phoneNumber) }}</div>
                 </div>
                 <div class="info-cell span-2">
-                  <div class="info-label">Roles</div>
+                  <div class="info-label">{{ 'roles' | translate }}</div>
                   <div class="info-value roles-row">
-                    <span class="role-chip" *ngFor="let r of st.data.roles">{{ r }}</span>
+                    <span class="role-pill" *ngFor="let r of st.data.roles">{{ r }}</span>
                   </div>
                 </div>
                 <div class="info-cell span-2">
-                  <div class="info-label">User ID</div>
+                  <div class="info-label">{{ 'userId' | translate }}</div>
                   <div class="info-value mono small">{{ st.data.userId }}</div>
                 </div>
               </div>
@@ -142,16 +138,16 @@
               <div class="upload-row">
                 <label class="btn btn-primary btn-sm upload-btn">
                   <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onPhotoSelected($event)" hidden />
-                  Change photo
+                  {{ 'changePhoto' | translate }}
                 </label>
-                <span class="hint-text">JPG / PNG / WEBP · up to 5 MB</span>
+                <span class="hint-text">{{ 'photoHint' | translate }}</span>
               </div>
 
               <div class="upload-progress" *ngIf="photoUploading">
                 <div class="progress-track">
                   <div class="progress-fill" [style.width.%]="uploadPct"></div>
                 </div>
-                <span class="hint-text">Uploading… {{ uploadPct }}%</span>
+                <span class="hint-text">{{ 'uploading' | translate }} {{ uploadPct }}%</span>
               </div>
             </div>
           </div>
@@ -160,10 +156,10 @@
           <div class="crop-panel" *ngIf="cropOpen && previewDataUrl">
             <div class="crop-head">
               <div>
-                <div class="crop-title">Crop photo</div>
-                <div class="hint-text">Drag to reposition · adjust zoom</div>
+                <div class="crop-title">{{ 'cropPhoto' | translate }}</div>
+                <div class="hint-text">{{ 'cropHint' | translate }}</div>
               </div>
-              <button class="btn btn-ghost btn-sm" type="button" (click)="cancelCrop()">Close</button>
+              <button class="btn btn-ghost btn-sm" type="button" (click)="cancelCrop()">{{ 'close' | translate }}</button>
             </div>
             <div class="crop-body">
               <div class="crop-canvas-wrap"
@@ -175,7 +171,7 @@
               </div>
               <div class="crop-controls">
                 <div class="field">
-                  <label class="field-label">Zoom</label>
+                  <label class="field-label">{{ 'zoom' | translate }}</label>
                   <input class="input range-input" type="range"
                          [min]="minZoom" [max]="maxZoom" step="0.01"
                          [value]="zoom" (input)="onZoomInput($any($event.target).value)" />
@@ -183,9 +179,11 @@
                 </div>
                 <div class="crop-actions">
                   <button class="btn btn-primary" type="button" [disabled]="photoUploading" (click)="confirmCropAndUpload()">
-                    {{ photoUploading ? 'Uploading…' : 'Save photo' }}
+                    {{ photoUploading ? ('uploading' | translate) : ('savePhoto' | translate) }}
                   </button>
-                  <button class="btn btn-ghost" type="button" [disabled]="photoUploading" (click)="cancelCrop()">Cancel</button>
+                  <button class="btn btn-ghost" type="button" [disabled]="photoUploading" (click)="cancelCrop()">
+                    {{ 'cancel' | translate }}
+                  </button>
                 </div>
               </div>
             </div>
@@ -193,14 +191,15 @@
 
           <div class="section-divider"></div>
 
-          <!-- Display name -->
           <div class="form">
             <div class="field">
-              <label class="field-label">Display name</label>
+              <label class="field-label">{{ 'displayName' | translate }}</label>
               <div class="inline-field">
-                <input class="input" [value]="displayName" (input)="displayName = $any($event.target).value" placeholder="Optional" />
+                <input class="input" [value]="displayName"
+                       (input)="displayName = $any($event.target).value"
+                       [placeholder]="'optional' | translate" />
                 <button class="btn btn-primary" type="button" [disabled]="nameWorking" (click)="saveName()">
-                  {{ nameWorking ? 'Saving…' : 'Save' }}
+                  {{ nameWorking ? ('saving' | translate) : ('save' | translate) }}
                 </button>
               </div>
               <span class="hint-text error-text" *ngIf="nameError">{{ nameError }}</span>
@@ -208,7 +207,7 @@
           </div>
         </section>
 
-        <!-- ── SECURITY SECTION ── -->
+        <!-- ── SECURITY ── -->
         <section class="section-card" id="sec-security">
           <div class="section-header">
             <div class="section-icon">
@@ -217,46 +216,46 @@
               </svg>
             </div>
             <div>
-              <div class="section-title">Security</div>
-              <div class="section-sub">Change your password</div>
+              <div class="section-title">{{ 'security' | translate }}</div>
+              <div class="section-sub">{{ 'securitySub' | translate }}</div>
             </div>
           </div>
 
           <form [formGroup]="pwForm" (ngSubmit)="changePassword()" class="form">
             <div class="field">
-              <label class="field-label">Current password</label>
+              <label class="field-label">{{ 'currentPassword' | translate }}</label>
               <div class="pw-wrap">
                 <input class="input" [type]="showCurrent ? 'text' : 'password'" formControlName="currentPassword" />
                 <button class="pw-toggle" type="button" (click)="toggleCurrent()">
-                  {{ showCurrent ? 'Hide' : 'Show' }}
+                  {{ showCurrent ? ('hide' | translate) : ('show' | translate) }}
                 </button>
               </div>
             </div>
 
             <div class="field">
-              <label class="field-label">New password</label>
+              <label class="field-label">{{ 'newPassword' | translate }}</label>
               <div class="pw-wrap">
                 <input class="input" [type]="showNew ? 'text' : 'password'" formControlName="newPassword" />
                 <button class="pw-toggle" type="button" (click)="toggleNew()">
-                  {{ showNew ? 'Hide' : 'Show' }}
+                  {{ showNew ? ('hide' | translate) : ('show' | translate) }}
                 </button>
               </div>
-              <span class="hint-text">Minimum 6 characters.</span>
+              <span class="hint-text">{{ 'newPasswordHint' | translate }}</span>
             </div>
 
             <div class="actions-row">
               <button class="btn btn-primary" type="submit" [disabled]="pwWorking">
-                {{ pwWorking ? 'Updating…' : 'Update password' }}
+                {{ pwWorking ? ('updatingPassword' | translate) : ('updatePassword' | translate) }}
               </button>
-              <span class="hint-text">You'll sign in again after changing.</span>
+              <span class="hint-text">{{ 'signInAgain' | translate }}</span>
             </div>
 
             <div class="inline-msg success-msg" *ngIf="pwSuccess">{{ pwSuccess }}</div>
-            <div class="inline-msg error-msg" *ngIf="pwError">{{ pwError }}</div>
+            <div class="inline-msg error-msg"   *ngIf="pwError">{{ pwError }}</div>
           </form>
         </section>
 
-        <!-- ── PREFERENCES SECTION ── -->
+        <!-- ── PREFERENCES ── -->
         <section class="section-card" id="sec-prefs">
           <div class="section-header">
             <div class="section-icon">
@@ -266,38 +265,38 @@
               </svg>
             </div>
             <div>
-              <div class="section-title">Preferences</div>
-              <div class="section-sub">Personal settings</div>
+              <div class="section-title">{{ 'prefs' | translate }}</div>
+              <div class="section-sub">{{ 'prefsSub' | translate }}</div>
             </div>
           </div>
 
           <div class="form">
             <div class="field">
-              <label class="field-label">Language</label>
-              <select class="input select-input" [value]="lang" (change)="setLang($any($event.target).value)">
+              <label class="field-label">{{ 'language' | translate }}</label>
+              <select class="input select-input" [value]="lang.current" (change)="onLangChange($any($event.target).value)">
                 <option value="en">English</option>
-                <option value="ar">Arabic (LTR for now)</option>
+                <option value="ar">العربية</option>
               </select>
-              <span class="hint-text">We'll add RTL layout later.</span>
+              <span class="hint-text">{{ 'langHint' | translate }}</span>
             </div>
 
             <div class="pref-list">
               <label class="pref-row">
                 <input class="pref-cb" type="checkbox" disabled />
-                <span class="pref-label">Email notifications</span>
-                <span class="soon-pill">Soon</span>
+                <span class="pref-label">{{ 'emailNotif' | translate }}</span>
+                <span class="soon-pill">{{ 'soon' | translate }}</span>
               </label>
               <label class="pref-row">
                 <input class="pref-cb" type="checkbox" disabled />
-                <span class="pref-label">Weekly summary</span>
-                <span class="soon-pill">Soon</span>
+                <span class="pref-label">{{ 'weeklySummary' | translate }}</span>
+                <span class="soon-pill">{{ 'soon' | translate }}</span>
               </label>
-              <span class="hint-text">More options coming soon.</span>
+              <span class="hint-text">{{ 'moreOptionsSoon' | translate }}</span>
             </div>
           </div>
         </section>
 
-        <!-- ── DANGER SECTION ── -->
+        <!-- ── DANGER ── -->
         <section class="section-card danger-section" id="sec-danger">
           <div class="section-header">
             <div class="section-icon danger-icon">
@@ -307,25 +306,25 @@
               </svg>
             </div>
             <div>
-              <div class="section-title">Danger zone</div>
-              <div class="section-sub">Permanent actions</div>
+              <div class="section-title">{{ 'danger' | translate }}</div>
+              <div class="section-sub">{{ 'dangerSub' | translate }}</div>
             </div>
           </div>
 
           <div class="danger-notice">
-            <strong>Delete account</strong>
-            <p>This permanently deletes your account and all content. This cannot be undone.</p>
+            <strong>{{ 'deleteAccount' | translate }}</strong>
+            <p>{{ 'deleteDesc' | translate }}</p>
           </div>
 
           <form [formGroup]="deleteForm" (ngSubmit)="deleteAccount()" class="form">
             <div class="field">
-              <label class="field-label">Confirm password</label>
+              <label class="field-label">{{ 'confirmPassword' | translate }}</label>
               <input class="input" type="password" formControlName="password" />
-              <span class="hint-text">Required to confirm account deletion.</span>
+              <span class="hint-text">{{ 'confirmPasswordHint' | translate }}</span>
             </div>
 
             <button class="btn btn-danger" type="submit" [disabled]="deleteWorking">
-              {{ deleteWorking ? 'Deleting…' : 'Delete account' }}
+              {{ deleteWorking ? ('deleting' | translate) : ('deleteAccount' | translate) }}
             </button>
 
             <div class="inline-msg error-msg" *ngIf="deleteError">{{ deleteError }}</div>

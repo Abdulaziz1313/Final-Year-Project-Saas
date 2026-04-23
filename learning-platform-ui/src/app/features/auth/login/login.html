@@ -1,48 +1,45 @@
 <div class="login">
 
-  <!-- Background -->
   <div class="home-bg"></div>
 
-  <!-- ── TOPBAR ── -->
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="brand" routerLink="/home">
-        <div class="logo-mark"><span>الف</span></div>
-        <div class="brand-text">
-          <span class="brand-name">Alef</span>
-          <span class="brand-sub">Learning Commerce</span>
-        </div>
+      <a class="brand brand-logo-full" routerLink="/home" aria-label="Alef home">
+        <img
+          src="/branding/alef-logo.svg"
+          alt="Alef Learning Commerce"
+          class="brand-logo-img" />
       </a>
 
       <nav class="nav">
         <a class="nav-link" routerLink="/academies">Explore</a>
+        <a class="nav-link" routerLink="/home">Home</a>
         <div class="nav-sep"></div>
 
         <ng-container *ngIf="!isLoggedIn; else loggedNav">
-          <a class="nav-link" routerLink="/login">Sign in</a>
-          <a class="btn btn-primary btn-sm" routerLink="/register">Create account</a>
+          <a class="btn btn-primary btn-sm" routerLink="/register">Create organization</a>
         </ng-container>
 
         <ng-template #loggedNav>
           <a class="nav-link" routerLink="/me">Account</a>
-          <a class="btn btn-primary btn-sm" *ngIf="isInstructor" routerLink="/instructor">Dashboard</a>
-          <a class="btn btn-primary btn-sm" *ngIf="isStudent" routerLink="/my-learning">My Learning</a>
-          <a class="btn btn-primary btn-sm" *ngIf="!isInstructor && !isStudent" routerLink="/me">Go to Account</a>
+
+          <a class="btn btn-primary btn-sm" *ngIf="isAdmin" routerLink="/admin">Admin Dashboard</a>
+          <a class="btn btn-primary btn-sm" *ngIf="!isAdmin && isOrgAdmin" routerLink="/org/academies">Org Dashboard</a>
+
+          <a class="btn btn-primary btn-sm" *ngIf="!isAdmin && !isOrgAdmin" routerLink="/me">Go to Account</a>
         </ng-template>
       </nav>
     </div>
   </header>
 
-  <!-- ── MAIN ── -->
   <main class="wrap">
     <div class="layout">
 
-      <!-- ── LEFT: Copy panel ── -->
       <div class="copy-panel">
 
         <div class="eyebrow">
           <div class="eyebrow-dot"></div>
-          <span class="eyebrow-text">Secure sign in</span>
+          <span class="eyebrow-text">Backoffice sign in</span>
         </div>
 
         <h1 class="copy-title">
@@ -50,29 +47,30 @@
         </h1>
 
         <p class="copy-desc">
-          Sign in to manage your academies and courses, or continue your learning journey as a student.
+          This page is for <strong>organizations</strong> and <strong>admins</strong> only.
+          Sign in to manage academies, members, and platform settings.
         </p>
 
         <ul class="feature-list">
           <li>
-            <div class="fl-icon">🎓</div>
+            <div class="fl-icon">🏢</div>
             <div class="fl-text">
-              <div class="fl-title">Instructor &amp; Student experiences</div>
-              <div class="fl-desc">Role-based dashboards tailored to how you use Alef.</div>
+              <div class="fl-title">Organization dashboard</div>
+              <div class="fl-desc">Create and manage academies, members, and settings.</div>
+            </div>
+          </li>
+          <li>
+            <div class="fl-icon">🛡️</div>
+            <div class="fl-text">
+              <div class="fl-title">Admin console</div>
+              <div class="fl-desc">Platform-level controls for administrators.</div>
             </div>
           </li>
           <li>
             <div class="fl-icon">🔐</div>
             <div class="fl-text">
               <div class="fl-title">Identity + JWT + Roles</div>
-              <div class="fl-desc">Enterprise-grade auth stack protecting your account.</div>
-            </div>
-          </li>
-          <li>
-            <div class="fl-icon">📱</div>
-            <div class="fl-text">
-              <div class="fl-title">SMS OTP verification</div>
-              <div class="fl-desc">One-time codes add a layer of security at sign in.</div>
+              <div class="fl-desc">Secure role-based access for backoffice users.</div>
             </div>
           </li>
         </ul>
@@ -80,21 +78,27 @@
         <div class="tip-card">
           <div class="tip-icon">💡</div>
           <div class="tip-text">
-            <div class="tip-title">Tip for instructors</div>
-            <div class="tip-desc">Use your Instructor account to publish courses and track student enrollments from your dashboard.</div>
+            <div class="tip-title">Students & instructors</div>
+            <div class="tip-desc">
+              Students and instructors should sign in via <strong>Explore → choose academy</strong>.
+            </div>
           </div>
         </div>
 
       </div>
 
-      <!-- ── RIGHT: Login card ── -->
       <div class="form-panel">
         <div class="login-card">
 
           <div class="card-head">
-            <div class="logo-mark sm"><span>الف</span></div>
-            <h2 class="card-title">Log in to Alef</h2>
-            <p class="card-sub">Enter your credentials to continue.</p>
+            <div class="logo-mark logo-mark--image sm">
+              <img
+                src="/branding/alef-logo.svg"
+                alt="Alef logo"
+                class="logo-mark-img" />
+            </div>
+            <h2 class="card-title">Backoffice sign in</h2>
+            <p class="card-sub">Enter your Admin / Organization credentials to continue.</p>
           </div>
 
           <div class="notice success" *ngIf="loginNotice">
@@ -123,8 +127,9 @@
             <div class="field">
               <div class="label-row">
                 <label class="label" for="password">Password</label>
-                <button class="forgot-link" type="button" (click)="forgotPassword()">Forgot password?</button>
+                <a class="forgot-link" routerLink="/forgot-password">Forgot password?</a>
               </div>
+
               <div class="pw-wrap">
                 <input
                   id="password"
@@ -149,10 +154,10 @@
             </label>
 
             <button class="btn btn-primary btn-submit" type="submit" [disabled]="loading || form.invalid">
-              <span *ngIf="!loading">Log in</span>
+              <span *ngIf="!loading">Sign in</span>
               <span *ngIf="loading" class="loading-row">
                 <span class="spinner"></span>
-                Logging in…
+                Signing in…
               </span>
             </button>
 
@@ -169,8 +174,8 @@
           </form>
 
           <div class="card-foot">
-            <span class="card-foot-muted">New to Alef?</span>
-            <a routerLink="/register" class="card-foot-link">Create a free account →</a>
+            <span class="card-foot-muted">New organization?</span>
+            <a routerLink="/register" class="card-foot-link">Create organization →</a>
           </div>
 
         </div>

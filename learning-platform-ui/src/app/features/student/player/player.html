@@ -1,11 +1,9 @@
-<div class="player-page">
+<div class="player-page" [ngStyle]="brandingVars">
 
-  <!-- Background matching home -->
   <div class="home-bg" aria-hidden="true"></div>
 
   <ng-container *ngIf="state$ | async as st">
 
-    <!-- ── LOADING ── -->
     <div class="state-panel" *ngIf="st.loading">
       <div class="sk-topbar skel"></div>
       <div class="sk-layout">
@@ -24,7 +22,6 @@
       </div>
     </div>
 
-    <!-- ── ERROR ── -->
     <div class="error-center" *ngIf="st.error && !st.loading">
       <div class="error-panel">
         <div class="error-icon">
@@ -38,20 +35,26 @@
       </div>
     </div>
 
-    <!-- ── PLAYER ── -->
     <ng-container *ngIf="st.data && !st.loading && !st.error">
 
-      <!-- ══ TOPBAR (glass, home-style) ══ -->
       <header class="topbar">
         <div class="topbar-inner">
 
-          <!-- Left: brand + course info -->
           <div class="tb-left">
             <a class="brand" routerLink="/my-learning">
-              <div class="logo-mark"><span>الف</span></div>
+              <div class="logo-mark" [class.logo-mark-image]="!!academyLogoUrl()">
+                <ng-container *ngIf="academyLogoUrl(); else logoFallback">
+                  <img [src]="academyLogoUrl()!" [alt]="(academy?.name || 'Academy') + ' logo'" />
+                </ng-container>
+
+                <ng-template #logoFallback>
+                  <span>{{ academyInitials() }}</span>
+                </ng-template>
+              </div>
+
               <div class="brand-text">
-                <span class="brand-name">Alef</span>
-                <span class="brand-sub">Learning</span>
+                <span class="brand-name">{{ academy?.name || 'Alef' }}</span>
+                <span class="brand-sub">{{ academy?.orgName || 'Learning' }}</span>
               </div>
             </a>
 
@@ -66,16 +69,21 @@
             </div>
           </div>
 
-          <!-- Right: progress + actions -->
           <div class="tb-right">
             <div class="tb-progress-pill">
               <div class="tpp-ring">
                 <svg viewBox="0 0 32 32" width="32" height="32">
                   <circle class="tpp-track" cx="16" cy="16" r="13"/>
-                  <circle class="tpp-fill" cx="16" cy="16" r="13"
-                          [attr.stroke-dasharray]="ringDash((completed.size / (flat(st.data).length || 1)) * 100)"/>
+                  <circle
+                    class="tpp-fill"
+                    cx="16"
+                    cy="16"
+                    r="13"
+                    [attr.stroke-dasharray]="ringDash((completed.size / (flat(st.data).length || 1)) * 100, 13)"
+                  />
                 </svg>
-                <span class="tpp-pct">{{ ((completed.size / (flat(st.data).length || 1)) * 100) | number:'1.0-0' }}</span>
+                <!-- FIX 5: Added % sign — previously showed a bare number with no unit -->
+                <span class="tpp-pct">{{ ((completed.size / (flat(st.data).length || 1)) * 100) | number:'1.0-0' }}%</span>
               </div>
               <div class="tpp-text">
                 <div class="tpp-label">Progress</div>
@@ -104,17 +112,30 @@
         </div>
       </header>
 
-      <!-- Mobile sidebar overlay -->
       <div class="overlay" *ngIf="sidebarOpen && isMobile" (click)="toggleSidebar(false)"></div>
 
-      <!-- ══ MAIN LAYOUT ══ -->
       <div class="player-layout" [class.sidebar-hidden]="!sidebarOpen">
 
-        <!-- ── SIDEBAR ── -->
         <aside class="sidebar" [class.open]="sidebarOpen" [class.drawer]="isMobile">
 
           <div class="sb-head">
-            <div class="sb-title">Course content</div>
+            <div class="sb-head-main">
+              <div class="sb-logo" [class.sb-logo-image]="!!academyLogoUrl()">
+                <ng-container *ngIf="academyLogoUrl(); else sidebarLogoFallback">
+                  <img [src]="academyLogoUrl()!" [alt]="(academy?.name || 'Academy') + ' logo'" />
+                </ng-container>
+
+                <ng-template #sidebarLogoFallback>
+                  <span>{{ academyInitials() }}</span>
+                </ng-template>
+              </div>
+
+              <div class="sb-head-copy">
+                <div class="sb-title">Course content</div>
+                <div class="sb-academy-name" *ngIf="academy?.name">{{ academy?.name }}</div>
+              </div>
+            </div>
+
             <button class="sb-close" type="button" (click)="toggleSidebar(false)" *ngIf="isMobile">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="14" height="14">
                 <path d="M18 6L6 18M6 6l12 12"/>
@@ -122,7 +143,6 @@
             </button>
           </div>
 
-          <!-- Overall progress bar in sidebar -->
           <div class="sb-progress">
             <div class="sb-progress-meta">
               <span class="sb-progress-label">{{ progressText(st.data) }}</span>
@@ -134,7 +154,6 @@
             </div>
           </div>
 
-          <!-- Search -->
           <div class="sb-search">
             <svg class="sb-search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="14" height="14">
               <circle cx="10.5" cy="10.5" r="7.5"/><path d="M21 21l-4.3-4.3"/>
@@ -148,7 +167,6 @@
             </button>
           </div>
 
-          <!-- Module list -->
           <div class="sb-modules">
             <div class="sb-module" *ngFor="let m of filteredModules(st.data)">
 
@@ -173,7 +191,6 @@
                   [class.is-done]="completed.has(l.id)"
                   (click)="pickLesson(st.data.id, l.id)"
                 >
-                  <!-- Completion indicator -->
                   <div class="sb-check">
                     <svg *ngIf="completed.has(l.id)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" width="10" height="10">
                       <path d="M20 6L9 17l-5-5"/>
@@ -182,7 +199,6 @@
 
                   <span class="sb-lesson-name">{{ l.title }}</span>
 
-                  <!-- Type badge -->
                   <span class="sb-type"
                         [class.type-video]="isVideo(l.type)"
                         [class.type-quiz]="isQuiz(l.type)"
@@ -213,14 +229,11 @@
 
         </aside>
 
-        <!-- ── CONTENT AREA ── -->
         <section class="content-area">
           <ng-container *ngIf="currentLesson(st.data) as lesson">
 
-            <!-- Content header -->
             <div class="content-header">
               <div class="ch-left">
-                <!-- Breadcrumb -->
                 <div class="ch-crumb">
                   <a class="ch-crumb-link" routerLink="/my-learning">My Learning</a>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12" class="ch-crumb-sep">
@@ -233,11 +246,10 @@
                   <span class="ch-crumb-current">{{ lesson.title }}</span>
                 </div>
 
-                <!-- Lesson meta -->
                 <div class="ch-meta-row">
                   <span class="ch-now-pill">
                     <div class="ch-now-dot"></div>
-                    Now learning
+                    {{ academy?.name || 'Now learning' }}
                   </span>
                   <span class="ch-type-badge"
                         [class.badge-video]="isVideo(lesson.type)"
@@ -265,7 +277,6 @@
                 </p>
               </div>
 
-              <!-- Navigation + actions -->
               <div class="ch-actions">
                 <div class="ch-nav">
                   <button class="btn btn-ghost btn-sm" type="button"
@@ -306,7 +317,6 @@
               </div>
             </div>
 
-            <!-- ── VIDEO ── -->
             <div class="media-block" *ngIf="isVideo(lesson.type)">
               <ng-container *ngIf="assetUrl(lesson.contentUrl) as videoUrl; else noVideo">
                 <div class="video-frame">
@@ -327,7 +337,6 @@
               </ng-template>
             </div>
 
-            <!-- ── DOCUMENT ── -->
             <div class="media-block" *ngIf="isDoc(lesson.type)">
               <ng-container *ngIf="assetUrl(lesson.contentUrl) as docUrl; else noDoc">
                 <div class="doc-toolbar">
@@ -362,17 +371,66 @@
               </ng-template>
             </div>
 
-            <!-- ── TEXT ── -->
             <div class="text-block" *ngIf="isText(lesson.type)">
               <div class="prose" [innerHTML]="lesson.htmlContent || '<p>No content yet.</p>'"></div>
             </div>
 
-            <!-- ── QUIZ ── -->
+            <!-- FIX 6: Added null guard — lesson is narrowed by ng-container but
+                 shouldShowFlashcards() accepts null; explicit guard prevents any
+                 edge case where the binding resolves before the as-cast settles -->
+            <div class="flashcards-block" *ngIf="lesson && shouldShowFlashcards(lesson)">
+              <div class="fc-head">
+                <div>
+                  <div class="fc-kicker">Study tools</div>
+                  <h3 class="fc-title">Flashcards</h3>
+                  <p class="fc-sub">Tap a card to reveal the answer.</p>
+                </div>
+
+                <div class="fc-actions" *ngIf="publishedFlashcardsFor(lesson.id).length > 0">
+                  <span class="fc-count">{{ publishedFlashcardsFor(lesson.id).length }} cards</span>
+                  <button class="btn btn-ghost btn-sm" type="button" (click)="resetFlashcards(lesson.id)">
+                    Reset cards
+                  </button>
+                </div>
+              </div>
+
+              <div class="fc-loading" *ngIf="flashcardsLoading.has(lesson.id)">
+                Loading flashcards…
+              </div>
+
+              <div class="fc-empty" *ngIf="!flashcardsLoading.has(lesson.id) && publishedFlashcardsFor(lesson.id).length === 0">
+                No flashcards available for this lesson yet.
+              </div>
+
+              <div class="fc-grid" *ngIf="!flashcardsLoading.has(lesson.id) && publishedFlashcardsFor(lesson.id).length > 0">
+                <button
+                  type="button"
+                  class="fc-card"
+                  *ngFor="let card of publishedFlashcardsFor(lesson.id); let i = index"
+                  [class.is-flipped]="isFlashcardFlipped(lesson.id, i)"
+                  (click)="toggleFlashcard(lesson.id, i)"
+                >
+                  <div class="fc-card-inner">
+                    <div class="fc-face fc-front">
+                      <div class="fc-label">Question</div>
+                      <div class="fc-text">{{ card.question }}</div>
+                      <div class="fc-hint">Tap to reveal</div>
+                    </div>
+
+                    <div class="fc-face fc-back">
+                      <div class="fc-label">Answer</div>
+                      <div class="fc-text">{{ card.answer }}</div>
+                      <div class="fc-hint">Tap to hide</div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
             <div class="quiz-block" *ngIf="isQuiz(lesson.type)">
               <app-quiz-player #qp [lessonId]="lesson.id"></app-quiz-player>
             </div>
 
-            <!-- ── UNSUPPORTED ── -->
             <div class="empty-media"
                  *ngIf="!isVideo(lesson.type) && !isDoc(lesson.type) && !isText(lesson.type) && !isQuiz(lesson.type)">
               <div class="em-icon">
@@ -382,10 +440,13 @@
               </div>
               <div class="em-title">Not yet supported</div>
               <div class="em-desc">This lesson type isn't available in the player yet.</div>
-              <a class="btn btn-ghost btn-sm" *ngIf="assetUrl(lesson.contentUrl)"
-                 [href]="assetUrl(lesson.contentUrl)!" target="_blank" rel="noopener">
-                Open resource
-              </a>
+              <!-- FIX 4: Removed invalid ! non-null assertion after *ngIf expression.
+                   Using `as` binding instead to safely capture and reuse the value. -->
+              <ng-container *ngIf="assetUrl(lesson.contentUrl) as resourceUrl">
+                <a class="btn btn-ghost btn-sm" [href]="resourceUrl" target="_blank" rel="noopener">
+                  Open resource
+                </a>
+              </ng-container>
             </div>
 
           </ng-container>

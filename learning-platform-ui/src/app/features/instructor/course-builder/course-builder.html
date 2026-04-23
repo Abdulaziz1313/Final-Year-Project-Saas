@@ -199,7 +199,7 @@
           </div>
           <div class="tip-body">
             <div class="tip-title">Getting started</div>
-            <div class="tip-text">Add modules first, then lessons inside each. Upload video or PDF after creating the lesson. Quiz lessons have their own editor.</div>
+            <div class="tip-text">Add modules first, then lessons inside each. Upload video or PDF after creating the lesson. Quiz lessons have their own editor. Other lesson types can use flashcards.</div>
           </div>
         </div>
 
@@ -376,6 +376,18 @@
                         <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z"/>
                       </svg>
                       Edit quiz
+                    </button>
+
+                    <!-- Edit flashcards -->
+                    <button class="btn btn-ghost btn-sm" type="button" *ngIf="supportsFlashcards(l.type)"
+                            [disabled]="st.data.isHidden" (click)="openFlashcardsEditor(l.id)">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="12" height="12">
+                        <rect x="4" y="6" width="14" height="10" rx="2"></rect>
+                        <path d="M8 10h6"></path>
+                        <path d="M8 13h4"></path>
+                        <path d="M10 18h10a2 2 0 0 0 2-2V8"></path>
+                      </svg>
+                      Edit flashcards
                     </button>
 
                     <!-- Open file -->

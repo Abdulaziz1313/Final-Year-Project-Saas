@@ -1,0 +1,137 @@
+<main class="purchases-page">
+
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">My account</span>
+      </div>
+      <h1 class="page-title">My <em>Purchases</em></h1>
+      <p class="page-desc">Track your payments, purchases, and course access.</p>
+    </div>
+    <div class="hero-right">
+      <div class="action-group">
+        <a class="btn btn-ghost" routerLink="/my-learning">My Learning</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FILTERS ── -->
+  <div class="filters">
+    <button
+      *ngFor="let s of statuses"
+      type="button"
+      class="filter-chip"
+      [class.active]="statusFilter === s.value"
+      (click)="setStatus(s.value)">
+      {{ s.label }}
+    </button>
+  </div>
+
+  <ng-container *ngIf="state$ | async as st">
+
+    <!-- Loading -->
+    <div class="state-loading" *ngIf="st.loading">
+      <span class="loading-dot"></span>Loading purchases…
+    </div>
+
+    <!-- Error -->
+    <div class="alert-error" *ngIf="st.error && !st.loading">
+      <span>⚠</span> {{ st.error }}
+    </div>
+
+    <ng-container *ngIf="!st.loading && st.data as vm">
+
+      <!-- ── KPI STRIP ── -->
+      <div class="kpi-strip">
+        <div class="kpi-card kpi-success">
+          <div class="kpi-header">
+            <span class="kpi-label">Successful purchases</span>
+            <span class="kpi-icon">✅</span>
+          </div>
+          <div class="kpi-value">{{ vm.successfulCount }}</div>
+          <div class="kpi-sub">Completed payments</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Total spent</span>
+            <span class="kpi-icon">💳</span>
+          </div>
+          <div class="kpi-value">{{ money(vm.paidTotal, 'EUR') }}</div>
+          <div class="kpi-sub">All-time spending</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Total records</span>
+            <span class="kpi-icon">🧾</span>
+          </div>
+          <div class="kpi-value">{{ vm.total }}</div>
+          <div class="kpi-sub">All transactions</div>
+        </div>
+      </div>
+
+      <!-- ── EMPTY ── -->
+      <div class="empty" *ngIf="vm.items.length === 0">
+        <div class="empty-title">No purchases found</div>
+        <div class="empty-sub">Once you buy a paid course, it will appear here.</div>
+        <a class="btn btn-primary" routerLink="/academies">Browse academies</a>
+      </div>
+
+      <!-- ── PURCHASE LIST ── -->
+      <div class="purchase-list" *ngIf="vm.items.length > 0">
+        <div class="purchase-card" *ngFor="let item of vm.items">
+
+          <div class="purchase-main">
+            <div class="thumb" *ngIf="img(item.course.thumbnailUrl) as thumb; else noThumb">
+              <img [src]="thumb" alt="" />
+            </div>
+            <ng-template #noThumb>
+              <div class="thumb thumb-placeholder">
+                {{ (item.course.title || 'C').slice(0,1).toUpperCase() }}
+              </div>
+            </ng-template>
+
+            <div class="purchase-details">
+              <div class="purchase-top">
+                <div class="purchase-title">{{ item.course.title }}</div>
+                <span class="status-badge" [ngClass]="statusClass(item.status)">
+                  {{ item.status }}
+                </span>
+              </div>
+
+              <div class="purchase-meta">
+                <span>{{ money(item.amount, item.currency) }}</span>
+                <span class="meta-sep">•</span>
+                <span>{{ item.provider }}</span>
+                <span class="meta-sep">•</span>
+                <span>{{ when(item.paidAt || item.createdAt) }}</span>
+              </div>
+
+              <div class="purchase-reason" *ngIf="item.failureReason">
+                ⚠ {{ item.failureReason }}
+              </div>
+            </div>
+          </div>
+
+          <div class="purchase-actions">
+            <button type="button" class="btn btn-ghost btn-sm" (click)="openDetail(item.id)">View details</button>
+            <button type="button" class="btn btn-primary btn-sm" (click)="continueCourse(item.course.courseId)">Open course</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── PAGER ── -->
+      <div class="pager" *ngIf="vm.total > pageSize">
+        <button type="button" class="btn btn-ghost btn-sm" (click)="prevPage()" [disabled]="page <= 1">← Previous</button>
+        <span class="pager-info">Page {{ page }} of {{ totalPages(vm.total) }}</span>
+        <button type="button" class="btn btn-ghost btn-sm" (click)="nextPage(vm.total)" [disabled]="page >= totalPages(vm.total)">Next →</button>
+      </div>
+
+    </ng-container>
+  </ng-container>
+
+</main>

@@ -1,0 +1,165 @@
+<main class="earnings-page">
+
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">Instructor panel</span>
+      </div>
+      <h1 class="page-title">Instructor <em>Earnings</em></h1>
+      <p class="page-desc">Track your earnings, payout status, and request an early payout.</p>
+    </div>
+    <div class="hero-right">
+      <div class="action-group">
+        <button type="button" class="btn btn-ghost" (click)="goRevenue()">Revenue</button>
+        <button type="button" class="btn btn-ghost" (click)="reload()">Refresh</button>
+      </div>
+    </div>
+  </div>
+
+  <ng-container *ngIf="state$ | async as st">
+
+    <!-- Loading -->
+    <div class="state-loading" *ngIf="st.loading">
+      <span class="loading-dot"></span>Loading earnings…
+    </div>
+
+    <!-- Error -->
+    <div class="alert-error" *ngIf="st.error && !st.loading">
+      <span>⚠</span> {{ st.error }}
+    </div>
+
+    <ng-container *ngIf="!st.loading && st.data as vm">
+
+      <!-- ── KPI STRIP ── -->
+      <div class="kpi-strip">
+        <div class="kpi-card kpi-success">
+          <div class="kpi-header">
+            <span class="kpi-label">Available now</span>
+            <span class="kpi-icon">💵</span>
+          </div>
+          <div class="kpi-value">{{ money(vm.available) }}</div>
+          <div class="kpi-sub">Ready to request</div>
+        </div>
+
+        <div class="kpi-card kpi-warn">
+          <div class="kpi-header">
+            <span class="kpi-label">Processing</span>
+            <span class="kpi-icon">⏳</span>
+          </div>
+          <div class="kpi-value">{{ money(vm.processing) }}</div>
+          <div class="kpi-sub">In transit</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Paid out</span>
+            <span class="kpi-icon">✅</span>
+          </div>
+          <div class="kpi-value">{{ money(vm.paidOut) }}</div>
+          <div class="kpi-sub">All-time disbursed</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Records</span>
+            <span class="kpi-icon">🧾</span>
+          </div>
+          <div class="kpi-value">{{ vm.total }}</div>
+          <div class="kpi-sub">Total line items</div>
+        </div>
+      </div>
+
+      <!-- ── REQUEST PAYOUT ── -->
+      <section class="item-card">
+        <div class="item-head">
+          <div>
+            <div class="item-title-lg">Request <em>payout</em></div>
+            <div class="item-sub">Your request will be sent to the organization for release.</div>
+          </div>
+        </div>
+
+        <div class="payout-form" [formGroup]="form">
+          <div class="field">
+            <label class="field-label">Note <span class="field-optional">(optional)</span></label>
+            <textarea
+              class="textarea"
+              rows="3"
+              formControlName="note"
+              placeholder="Optional message for the organization…"></textarea>
+          </div>
+
+          <div class="payout-actions">
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="requesting || vm.available <= 0"
+              (click)="requestPayoutNow()">
+              {{ requesting ? 'Sending…' : 'Request payout now' }}
+            </button>
+            <span class="hint-text" *ngIf="vm.available <= 0">No available balance yet.</span>
+          </div>
+
+          <div class="inline-msg success-msg" *ngIf="requestMessage">{{ requestMessage }}</div>
+          <div class="inline-msg error-msg"   *ngIf="requestError">{{ requestError }}</div>
+        </div>
+      </section>
+
+      <!-- ── EARNINGS TABLE ── -->
+      <section class="item-card" *ngIf="vm.items.length > 0">
+        <div class="item-head">
+          <div>
+            <div class="item-title-lg">Earnings <em>breakdown</em></div>
+            <div class="item-sub">Per-enrollment revenue split</div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Course</th>
+                <th>Gross</th>
+                <th>Platform</th>
+                <th>Organization</th>
+                <th>Instructor</th>
+                <th>Status</th>
+                <th>Earned</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of vm.items">
+                <td class="cell-course">{{ item.courseTitle }}</td>
+                <td>{{ money(item.grossAmount, item.currency) }}</td>
+                <td>{{ money(item.platformAmount, item.currency) }}</td>
+                <td>{{ money(item.organizationAmount, item.currency) }}</td>
+                <td class="cell-strong">{{ money(item.instructorAmount, item.currency) }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="statusClass(item)">
+                    {{ statusLabel(item) }}
+                  </span>
+                </td>
+                <td class="cell-date">{{ when(item.earnedAt) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── EMPTY ── -->
+      <div class="empty" *ngIf="vm.items.length === 0">
+        <div class="empty-title">No earnings yet</div>
+        <div class="empty-sub">Your paid enrollments will appear here.</div>
+      </div>
+
+      <!-- ── PAGER ── -->
+      <div class="pager" *ngIf="vm.total > pageSize">
+        <button type="button" class="btn btn-ghost btn-sm" (click)="prevPage()" [disabled]="page <= 1">← Previous</button>
+        <span class="pager-info">Page {{ page }} of {{ totalPages(vm.total) }}</span>
+        <button type="button" class="btn btn-ghost btn-sm" (click)="nextPage(vm.total)" [disabled]="page >= totalPages(vm.total)">Next →</button>
+      </div>
+
+    </ng-container>
+  </ng-container>
+</main>

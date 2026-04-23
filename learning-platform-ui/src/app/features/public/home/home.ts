@@ -19,11 +19,17 @@ export class HomeComponent {
     return !!this.auth.isLoggedIn?.();
   }
 
-  get isInstructor(): boolean {
-    try { return this.auth.hasRole?.('Instructor'); } catch { return false; }
+  get isOrgAdmin(): boolean {
+    try { return this.auth.hasRole?.('OrgAdmin'); } catch { return false; }
   }
 
-  get isStudent(): boolean {
-    try { return this.auth.hasRole?.('Student'); } catch { return false; }
+  get isAdmin(): boolean {
+    try { return this.auth.hasRole?.('Admin'); } catch { return false; }
+  }
+
+  scrollTo(event: Event, id: string): void {
+    event.preventDefault();
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }

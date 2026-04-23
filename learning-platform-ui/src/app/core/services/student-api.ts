@@ -120,6 +120,18 @@ export type MyLearningItem = {
   };
 };
 
+export type StudentAcademy = {
+  id: string;
+  name: string;
+  slug: string;
+  logoUrl?: string | null;
+  bannerUrl?: string | null;
+  primaryColor?: string | null;
+  description?: string | null;
+  orgName?: string | null;
+  isPublished: boolean;
+};
+
 export type PlayerCourse = {
   id: string;
   title: string;
@@ -148,23 +160,16 @@ export type QuizSubmitResult = {
   Status?: number;
 };
 
-/* =========================
-   Reviews
-========================= */
-
 export type ReviewTargetKind = 'course' | 'academy';
 
 export type ReviewItem = {
   id: string;
   targetKind: ReviewTargetKind;
   targetId: string;
-
-  rating: number; // 1..5
+  rating: number;
   comment?: string | null;
-
   createdAt: string;
   updatedAt?: string | null;
-
   userId?: string | null;
   userDisplayName?: string | null;
   userEmailMasked?: string | null;
@@ -186,16 +191,101 @@ export type ReviewListResponse = {
 };
 
 export type UpsertReviewPayload = {
-  rating: number; // 1..5
+  rating: number;
   comment?: string | null;
 };
 
-/* =========================
-    Certificates 
-========================= */
 export type CertificateIssueResponse = {
   id: string;
   certificateNumber: string;
+};
+
+export type CreateCheckoutSessionPayload = {
+  courseId: string;
+};
+
+export type CheckoutSessionResponse = {
+  url: string;
+  sessionId: string;
+  publishableKey?: string;
+};
+
+export type CheckoutSessionStatusResponse = {
+  id?: string;
+  status: string;
+  amount: number;
+  currency: string;
+  courseId: string;
+  courseTitle?: string;
+  paidAt?: string | null;
+};
+
+export type PaymentStatus =
+  | 'Pending'
+  | 'Paid'
+  | 'Failed'
+  | 'Cancelled';
+
+export type MyPurchaseCourse = {
+  courseId: string;
+  title: string;
+  thumbnailUrl?: string | null;
+  category?: string | null;
+  isHidden?: boolean;
+};
+
+export type MyPurchaseItem = {
+  id: string;
+  status: PaymentStatus;
+  amount: number;
+  currency: string;
+  provider: string;
+  paymentMethodType?: string | null;
+  createdAt: string;
+  paidAt?: string | null;
+  failureReason?: string | null;
+  course: MyPurchaseCourse;
+};
+
+export type MyPurchasesResponse = {
+  total: number;
+  page: number;
+  pageSize: number;
+  successfulCount: number;
+  paidTotal: number;
+  items: MyPurchaseItem[];
+};
+
+export type MyPurchaseDetailResponse = {
+  id: string;
+  status: PaymentStatus;
+  amount: number;
+  currency: string;
+  provider: string;
+  paymentMethodType?: string | null;
+  providerReference?: string | null;
+  paymentIntentId?: string | null;
+  checkoutSessionId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  paidAt?: string | null;
+  failureReason?: string | null;
+  course: {
+    courseId: string;
+    title: string;
+    shortDescription?: string | null;
+    thumbnailUrl?: string | null;
+    category?: string | null;
+  };
+};
+
+export type FlashcardDto = {
+  id?: string | null;
+  lessonId?: string;
+  question: string;
+  answer: string;
+  orderIndex: number;
+  isPublished: boolean;
 };
 
 @Injectable({ providedIn: 'root' })
@@ -204,7 +294,6 @@ export class StudentApi {
 
   constructor(private http: HttpClient) {}
 
-  // Public
   academyCourses(slug: string, q = '', tag = '', sort = 'newest', page = 1, pageSize = 12) {
     const params = new URLSearchParams();
     if (q) params.set('q', q);
@@ -230,13 +319,16 @@ export class StudentApi {
     return this.http.get<PublicAcademy[]>(`${this.api}/api/catalog/academies?${params.toString()}`);
   }
 
-  // Student (auth)
   enroll(courseId: string) {
     return this.http.post<{ message: string }>(`${this.api}/api/learning/courses/${courseId}/enroll`, {});
   }
 
   myLearning() {
     return this.http.get<MyLearningItem[]>(`${this.api}/api/learning/me/enrollments`);
+  }
+
+  myAcademy() {
+    return this.http.get<StudentAcademy>(`${this.api}/api/learning/me/academy`);
   }
 
   courseContent(courseId: string) {
@@ -250,10 +342,6 @@ export class StudentApi {
   setLastLesson(courseId: string, lessonId: string) {
     return this.http.post(`${this.api}/api/learning/me/courses/${courseId}/last-lesson/${lessonId}`, {});
   }
-
-  /* =========================
-      Certificates API 
-  ========================= */
 
   issueCertificate(courseId: string) {
     return this.http.post<CertificateIssueResponse>(
@@ -274,7 +362,30 @@ export class StudentApi {
     );
   }
 
-  // Quiz
+  createCheckoutSession(courseId: string) {
+    const payload: CreateCheckoutSessionPayload = { courseId };
+    return this.http.post<CheckoutSessionResponse>(`${this.api}/api/payments/checkout-session`, payload);
+  }
+
+  getCheckoutSessionStatus(sessionId: string) {
+    return this.http.get<CheckoutSessionStatusResponse>(
+      `${this.api}/api/payments/session/${encodeURIComponent(sessionId)}`
+    );
+  }
+
+  myPurchases(status = '', page = 1, pageSize = 20) {
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    params.set('page', String(page));
+    params.set('pageSize', String(pageSize));
+
+    return this.http.get<MyPurchasesResponse>(`${this.api}/api/payments/my?${params.toString()}`);
+  }
+
+  myPurchaseDetail(paymentId: string) {
+    return this.http.get<MyPurchaseDetailResponse>(`${this.api}/api/payments/my/${paymentId}`);
+  }
+
   getLessonQuiz(lessonId: string) {
     return this.http.get<any>(`${this.api}/api/quizzes/student/lesson/${lessonId}`);
   }
@@ -287,9 +398,13 @@ export class StudentApi {
     return this.http.post<any>(`${this.api}/api/quizzes/${quizId}/attempts/save`, payload);
   }
 
-  /* =========================
-      Reviews API 
-  ========================= */
+  retakeQuizAttempt(quizId: string) {
+    return this.http.post<any>(`${this.api}/api/quizzes/${quizId}/attempts/retake`, {});
+  }
+
+  getLessonFlashcards(lessonId: string) {
+    return this.http.get<FlashcardDto[]>(`${this.api}/api/flashcards/student/lesson/${lessonId}`);
+  }
 
   listCourseReviews(courseId: string, page = 1, pageSize = 10) {
     const params = new URLSearchParams();
@@ -319,9 +434,5 @@ export class StudentApi {
 
   upsertAcademyReview(academyId: string, payload: UpsertReviewPayload) {
     return this.http.post<ReviewItem>(`${this.api}/api/reviews/academies/${academyId}`, payload);
-  }
-
-  retakeQuizAttempt(quizId: string) {
-    return this.http.post<any>(`${this.api}/api/quizzes/${quizId}/attempts/retake`, {});
   }
 }

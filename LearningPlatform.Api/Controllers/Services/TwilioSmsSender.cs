@@ -1,3 +1,4 @@
+using LearningPlatform.Application.Common.Interfaces;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Types;
@@ -13,7 +14,7 @@ public class TwilioSmsSender : ISmsSender
         _opt = opt;
     }
 
-    public async Task SendAsync(string toPhoneE164, string message)
+    public async Task SendAsync(string toPhoneE164, string message, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(_opt.AccountSid) ||
             string.IsNullOrWhiteSpace(_opt.AuthToken))
@@ -26,8 +27,7 @@ public class TwilioSmsSender : ISmsSender
 
         TwilioClient.Init(_opt.AccountSid, _opt.AuthToken);
 
-        // ✅ Prefer Messaging Service (best for international + OTP)
-        CreateMessageOptions options = new CreateMessageOptions(new PhoneNumber(toPhoneE164))
+        var options = new CreateMessageOptions(new PhoneNumber(toPhoneE164))
         {
             Body = message
         };
@@ -38,7 +38,6 @@ public class TwilioSmsSender : ISmsSender
         }
         else
         {
-            // Fallback to FromPhone only if MessagingServiceSid not configured
             if (string.IsNullOrWhiteSpace(_opt.FromPhone))
                 throw new Exception("Missing Sms config: set MessagingServiceSid OR FromPhone.");
 
@@ -47,7 +46,6 @@ public class TwilioSmsSender : ISmsSender
 
         var msg = await MessageResource.CreateAsync(options);
 
-        // Optional: basic failure detection
         if (msg.ErrorCode != null)
             throw new Exception($"Twilio SMS failed: {msg.ErrorMessage} (code {msg.ErrorCode})");
     }

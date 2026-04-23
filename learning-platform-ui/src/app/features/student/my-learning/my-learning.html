@@ -5,22 +5,22 @@
     <div class="hero-left">
       <div class="eyebrow">
         <div class="eyebrow-dot"></div>
-        <span class="eyebrow-text">Student · Dashboard</span>
+        <span class="eyebrow-text">{{ 'studentDashboard' | translate }}</span>
       </div>
-      <h1 class="page-title">My <em>Learning</em></h1>
-      <p class="page-desc">Your enrolled courses, progress, and certificates — all in one place.</p>
+      <h1 class="page-title">{{ 'my' | translate }} <em>{{ 'myLearning' | translate }}</em></h1>
+      <p class="page-desc">{{ 'myLearningDesc' | translate }}</p>
     </div>
     <div class="hero-right">
       <div class="action-group">
-        <button class="btn btn-ghost" type="button" (click)="reload()">Refresh</button>
-        <a class="btn btn-primary" routerLink="/academies">Explore academies</a>
+        <button class="btn btn-ghost" type="button" (click)="reload()">{{ 'refresh' | translate }}</button>
+        <a class="btn btn-primary" routerLink="/academies">{{ 'exploreAcademies' | translate }}</a>
       </div>
     </div>
   </div>
 
   <ng-container *ngIf="state$ | async as st">
     <div class="state-loading" *ngIf="st.loading">
-      <span class="loading-dot"></span>Loading your courses…
+      <span class="loading-dot"></span>{{ 'loadingCourses' | translate }}
     </div>
     <div class="alert-error" *ngIf="st.error && !st.loading">
       <span>⚠</span> {{ st.error }}
@@ -32,38 +32,38 @@
       <div class="kpi-strip">
         <div class="kpi-card">
           <div class="kpi-header">
-            <span class="kpi-label">Enrolled</span>
+            <span class="kpi-label">{{ 'enrolled' | translate }}</span>
             <span class="kpi-icon">📚</span>
           </div>
           <div class="kpi-value">{{ st.data.length }}</div>
-          <div class="kpi-sub">Total courses</div>
+          <div class="kpi-sub">{{ 'totalCourses' | translate }}</div>
         </div>
 
         <div class="kpi-card kpi-success">
           <div class="kpi-header">
-            <span class="kpi-label">Active</span>
+            <span class="kpi-label">{{ 'active' | translate }}</span>
             <span class="kpi-icon">▶️</span>
           </div>
           <div class="kpi-value">{{ activeCount(st.data) }}</div>
-          <div class="kpi-sub">In progress</div>
+          <div class="kpi-sub">{{ 'inProgress' | translate }}</div>
         </div>
 
         <div class="kpi-card kpi-gold">
           <div class="kpi-header">
-            <span class="kpi-label">Avg Progress</span>
+            <span class="kpi-label">{{ 'avgProgress' | translate }}</span>
             <span class="kpi-icon">📊</span>
           </div>
           <div class="kpi-value">{{ avgProgress(st.data) }}%</div>
-          <div class="kpi-sub">Across all courses</div>
+          <div class="kpi-sub">{{ 'acrossAllCourses' | translate }}</div>
         </div>
 
         <div class="kpi-card kpi-danger" *ngIf="hiddenCount(st.data) > 0">
           <div class="kpi-header">
-            <span class="kpi-label">Unavailable</span>
+            <span class="kpi-label">{{ 'unavailable' | translate }}</span>
             <span class="kpi-icon">⛔</span>
           </div>
           <div class="kpi-value">{{ hiddenCount(st.data) }}</div>
-          <div class="kpi-sub">Hidden by admin</div>
+          <div class="kpi-sub">{{ 'hiddenByAdmin' | translate }}</div>
         </div>
       </div>
 
@@ -76,19 +76,19 @@
               <circle cx="10.5" cy="10.5" r="7.5"/><path d="M21 21l-4.3-4.3"/>
             </svg>
             <input class="input search-input" type="text"
-              placeholder="Search your courses…"
+              [placeholder]="'searchCourses' | translate"
               [value]="query"
               (input)="query = $any($event.target).value" />
             <button class="search-clear" type="button" *ngIf="query" (click)="query=''">✕</button>
           </div>
 
           <div class="filter-field">
-            <label class="filter-label">Sort</label>
+            <label class="filter-label">{{ 'sort' | translate }}</label>
             <select class="input select-input" [value]="sort"
               (change)="sort = $any($event.target).value">
-              <option value="recent">Recent</option>
-              <option value="progress">Progress</option>
-              <option value="title">Title A–Z</option>
+              <option value="recent">{{ 'recent' | translate }}</option>
+              <option value="progress">{{ 'progress' | translate }}</option>
+              <option value="title">{{ 'titleAZ' | translate }}</option>
             </select>
           </div>
 
@@ -98,14 +98,14 @@
                 (change)="hideUnavailable = $any($event.target).checked" />
               <span class="knob"></span>
             </div>
-            <span class="toggle-label">Hide unavailable</span>
+            <span class="toggle-label">{{ 'hideUnavailable' | translate }}</span>
           </label>
         </div>
 
         <div class="toolbar-right">
           <button class="btn btn-ghost btn-sm" type="button"
             (click)="query=''; hideUnavailable=false">
-            Clear filters
+            {{ 'clearFilters' | translate }}
           </button>
         </div>
       </section>
@@ -114,16 +114,14 @@
       <div class="empty" *ngIf="visible(st.data).length === 0">
         <div class="empty-ic">📚</div>
         <div class="empty-title">
-          {{ query ? 'No courses match your search' : 'No courses yet' }}
+          {{ query ? ('noCoursesMatchSearch' | translate) : ('noCoursesYet' | translate) }}
         </div>
         <div class="empty-sub">
-          {{ query
-            ? 'Try different keywords or clear your search.'
-            : 'Browse academies and enroll in a course to start learning.' }}
+          {{ query ? ('tryDifferentKeywords' | translate) : ('browseAcademiesStartLearning' | translate) }}
         </div>
         <div class="empty-actions">
-          <a class="btn btn-primary" routerLink="/academies">Explore academies</a>
-          <button class="btn btn-ghost" type="button" *ngIf="query" (click)="query=''">Clear search</button>
+          <a class="btn btn-primary" routerLink="/academies">{{ 'exploreAcademies' | translate }}</a>
+          <button class="btn btn-ghost" type="button" *ngIf="query" (click)="query=''">{{ 'clearSearch' | translate }}</button>
         </div>
       </div>
 
@@ -144,7 +142,7 @@
             </div>
 
             <div class="cc-unavail-overlay" *ngIf="x.course.isHidden">
-              <div class="cc-unavail-label">Unavailable</div>
+              <div class="cc-unavail-label">{{ 'unavailable' | translate }}</div>
             </div>
 
             <div class="cc-ring-wrap" *ngIf="!x.course.isHidden">
@@ -166,7 +164,7 @@
             </div>
 
             <div class="cc-complete-badge" *ngIf="x.progress.percent >= 100 && !x.course.isHidden">
-              ✓ Done
+              ✓ {{ 'done' | translate }}
             </div>
           </div>
 
@@ -175,20 +173,20 @@
             <div class="cc-top">
               <div class="card-category" *ngIf="x.course.category">{{ x.course.category }}</div>
               <div class="item-title" [title]="x.course.title">{{ x.course.title }}</div>
-              <p class="desc-text">{{ x.course.shortDescription || 'No description available.' }}</p>
+              <p class="desc-text">{{ x.course.shortDescription || ('noDescriptionAvailable' | translate) }}</p>
             </div>
 
             <div class="hidden-info" *ngIf="x.course.isHidden">
               <span class="hidden-icon">⛔</span>
               <div class="meta-text">
-                Hidden by admin<span *ngIf="x.course.hiddenReason"> · {{ x.course.hiddenReason }}</span>
+                {{ 'hiddenByAdmin' | translate }}<span *ngIf="x.course.hiddenReason"> · {{ x.course.hiddenReason }}</span>
               </div>
             </div>
 
             <div class="stats-row" *ngIf="!x.course.isHidden">
               <div class="stat-pill">
                 <span class="stat-icon">📅</span>
-                <span>Enrolled {{ x.enrollment.enrolledAt | date:'MMM d' }}</span>
+                <span>{{ 'enrolledOn' | translate }} {{ x.enrollment.enrolledAt | date:'MMM d' }}</span>
               </div>
               <div class="stat-pill">
                 <span class="stat-icon">📈</span>
@@ -213,12 +211,12 @@
                 *ngIf="!x.course.isHidden && x.progress.percent >= 100"
                 [disabled]="downloading.has(x.course.id)"
                 (click)="downloadCert(x, $event)">
-                🏆 {{ downloading.has(x.course.id) ? 'Generating…' : 'Certificate' }}
+                🏆 {{ downloading.has(x.course.id) ? ('generating' | translate) : ('certificate' | translate) }}
               </button>
 
               <a class="btn btn-ghost btn-sm" [routerLink]="['/course', x.course.id]"
                 (click)="$event.stopPropagation()">
-                Details
+                {{ 'details' | translate }}
               </a>
             </div>
           </div>

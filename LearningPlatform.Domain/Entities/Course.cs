@@ -22,13 +22,17 @@ public class Course
 
     public string? ThumbnailUrl { get; set; }
 
+    public string? InstructorUserId { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public ICollection<Module> Modules { get; set; } = new List<Module>();
+    public ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+    public ICollection<Payment> Payments { get; set; } = new List<Payment>();
+    public ICollection<InstructorEarning> InstructorEarnings { get; set; } = new List<InstructorEarning>();
 
     public bool IsHidden { get; set; } = false;
     public string? HiddenReason { get; set; }
     public DateTimeOffset? HiddenAt { get; set; }
     public string? HiddenByUserId { get; set; }
-
 }

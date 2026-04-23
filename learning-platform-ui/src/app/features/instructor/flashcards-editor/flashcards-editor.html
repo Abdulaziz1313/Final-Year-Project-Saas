@@ -1,0 +1,252 @@
+<div class="flashcards-editor">
+
+  <div class="home-bg" aria-hidden="true"></div>
+
+  <div class="wrap">
+
+    <header class="topbar">
+      <div class="top-left">
+        <div class="kicker">
+          <span class="kicker-dot"></span>
+          Instructor · Flashcards
+        </div>
+        <h1 class="page-title">Flashcards <em>Editor</em></h1>
+        <p class="page-sub">Generate, review, edit, and publish lesson flashcards.</p>
+      </div>
+
+      <div class="top-actions">
+        <!-- FIX 1: routerLink should not be on an <a> without href in Angular; use routerLink directive properly -->
+        <a class="btn btn-ghost btn-sm" routerLink="/instructor">
+          ← Dashboard
+        </a>
+
+        <button
+          class="btn btn-ai btn-sm"
+          type="button"
+          (click)="openAiModal()"
+          [disabled]="loading || saving || aiGenerating || publishLoading">
+          ✨ Generate with AI
+        </button>
+
+        <button
+          class="btn btn-ghost btn-sm"
+          type="button"
+          (click)="addCard()"
+          [disabled]="loading || saving || aiGenerating || publishLoading">
+          + Add card
+        </button>
+
+        <button
+          class="btn btn-ghost btn-sm"
+          type="button"
+          (click)="load()"
+          [disabled]="loading || saving || aiGenerating || publishLoading">
+          Reload
+        </button>
+
+        <button
+          class="btn btn-primary btn-sm"
+          type="button"
+          (click)="save()"
+          [disabled]="loading || saving || aiGenerating || publishLoading">
+          <span class="spinner" *ngIf="saving"></span>
+          {{ saving ? 'Saving…' : 'Save flashcards' }}
+        </button>
+      </div>
+    </header>
+
+    <div class="toolbar-row" *ngIf="!loading">
+      <div class="status-box">
+        <span class="status-pill">{{ cardCount }} card{{ cardCount === 1 ? '' : 's' }}</span>
+      </div>
+
+      <div class="publish-actions">
+        <button
+          class="btn btn-ghost btn-sm"
+          type="button"
+          (click)="unpublishAll()"
+          [disabled]="publishLoading || loading || saving || aiGenerating || !hasCards">
+          {{ publishLoading ? 'Working…' : 'Unpublish all' }}
+        </button>
+
+        <button
+          class="btn btn-publish btn-sm"
+          type="button"
+          (click)="publishAll()"
+          [disabled]="publishLoading || loading || saving || aiGenerating || !hasCards">
+          {{ publishLoading ? 'Working…' : 'Publish all' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="panel skeleton" *ngIf="loading">
+      <div class="sk-head"></div>
+      <div class="sk-line w80"></div>
+      <div class="sk-line w55"></div>
+      <div class="sk-card" *ngFor="let _ of [1,2,3]"></div>
+    </div>
+
+    <section class="panel cards-panel" *ngIf="!loading">
+      <form [formGroup]="form" (ngSubmit)="$event.preventDefault()">
+        <div class="cards-list" formArrayName="cards">
+          <ng-container *ngIf="hasCards; else empty">
+            <article
+              class="card-item"
+              *ngFor="let card of cards.controls; let i = index; trackBy: trackByCard"
+              [formGroupName]="i">
+
+              <header class="card-head">
+                <div class="card-left">
+                  <div class="card-badge">{{ i + 1 }}</div>
+                  <div class="card-meta">
+                    <div class="card-title">Flashcard {{ i + 1 }}</div>
+                    <div class="card-sub">
+                      <span class="mini-pill" [class.published]="card.get('isPublished')?.value">
+                        {{ card.get('isPublished')?.value ? 'Published' : 'Draft' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card-actions">
+                  <button class="icon-btn" type="button" (click)="moveUp(i)" [disabled]="i === 0" aria-label="Move up">↑</button>
+                  <button class="icon-btn" type="button" (click)="moveDown(i)" [disabled]="i === cardCount - 1" aria-label="Move down">↓</button>
+                  <button class="btn-remove" type="button" (click)="removeCard(i)">Remove</button>
+                </div>
+              </header>
+
+              <div class="field">
+                <label>Question</label>
+                <textarea
+                  class="input"
+                  rows="2"
+                  formControlName="question"
+                  placeholder="Write the flashcard question..."></textarea>
+              </div>
+
+              <div class="field">
+                <label>Answer</label>
+                <textarea
+                  class="input"
+                  rows="4"
+                  formControlName="answer"
+                  placeholder="Write the flashcard answer..."></textarea>
+              </div>
+
+            </article>
+          </ng-container>
+
+          <ng-template #empty>
+            <div class="empty-state">
+              <div class="empty-icon">🗂️</div>
+              <div class="empty-title">No flashcards yet</div>
+              <p class="empty-desc">
+                Generate a draft with AI or add cards manually, then save and publish them.
+              </p>
+              <div class="empty-actions">
+                <button class="btn btn-ai btn-sm" type="button" (click)="openAiModal()">✨ Generate with AI</button>
+                <button class="btn btn-ghost btn-sm" type="button" (click)="addCard()">+ Add card</button>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+      </form>
+    </section>
+
+  </div>
+
+  <div class="modal-backdrop" *ngIf="aiModalOpen" (click)="closeAiModal()"></div>
+
+  <div class="modal" *ngIf="aiModalOpen" role="dialog" aria-modal="true" aria-labelledby="ai-modal-title">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+
+      <div class="modal-head">
+        <div>
+          <div class="modal-kicker">AI Flashcards Generator</div>
+          <!-- FIX 2: Added id for aria-labelledby reference -->
+          <div class="modal-title" id="ai-modal-title">Create flashcards with AI</div>
+          <div class="modal-sub">Generate draft flashcards from the current lesson.</div>
+        </div>
+
+        <button
+          class="icon-close"
+          type="button"
+          (click)="closeAiModal()"
+          [disabled]="aiGenerating"
+          aria-label="Close">
+          ✕
+        </button>
+      </div>
+
+      <!-- FIX 3: Added padding class and prevent default submit on Enter -->
+      <form class="form modal-form" [formGroup]="aiForm" (ngSubmit)="$event.preventDefault()">
+        <div class="field">
+          <label for="ai-topic">Topic</label>
+          <input
+            id="ai-topic"
+            class="input"
+            formControlName="topic"
+            placeholder="e.g. Angular Components"
+            autocomplete="off" />
+        </div>
+
+        <!-- FIX 4: Corrected ai-row column order to match visual intent: narrow count, wide difficulty -->
+        <div class="row ai-row">
+          <div class="field">
+            <label for="ai-count">Cards</label>
+            <input
+              id="ai-count"
+              class="input"
+              type="number"
+              min="1"
+              max="20"
+              formControlName="count" />
+          </div>
+
+          <div class="field">
+            <label for="ai-difficulty">Difficulty</label>
+            <select id="ai-difficulty" class="input select" formControlName="difficulty">
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="ai-instructions">Instructions</label>
+          <textarea
+            id="ai-instructions"
+            class="input"
+            rows="4"
+            formControlName="instructions"
+            placeholder="Optional extra instructions for the AI..."></textarea>
+        </div>
+
+        <div class="ai-note">
+          Generated flashcards are added as draft cards only. Review and edit them before publishing.
+        </div>
+      </form>
+
+      <div class="modal-foot">
+        <button
+          class="btn btn-ghost"
+          type="button"
+          (click)="closeAiModal()"
+          [disabled]="aiGenerating">
+          Cancel
+        </button>
+
+        <button
+          class="btn btn-ai"
+          type="button"
+          (click)="generateWithAi()"
+          [disabled]="aiGenerating || aiForm.invalid">
+          <span class="spinner dark" *ngIf="aiGenerating"></span>
+          {{ aiGenerating ? 'Generating…' : 'Generate flashcards' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

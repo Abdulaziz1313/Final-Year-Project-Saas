@@ -1,0 +1,210 @@
+<div
+  class="login-page"
+  [style.--accent]="accentColor"
+  [ngClass]="pageClasses"
+  [style.fontFamily]="fontFamilyPreview">
+
+  <div class="home-bg"></div>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" [routerLink]="academySlug ? ['/academy-home', academySlug] : '/home'">
+        <ng-container *ngIf="academy; else alefBrand">
+          <div class="logo-mark academy-mark" [style.background]="accentColor">
+            <img *ngIf="img(academy.logoUrl)" [src]="img(academy.logoUrl)!" class="academy-mark-img" alt="Academy logo" />
+            <span *ngIf="!img(academy.logoUrl)">{{ (academy.name || 'A').slice(0, 1) }}</span>
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">{{ academy.name }}</span>
+            <span class="brand-sub">{{ academy.orgName || 'Learning Academy' }}</span>
+          </div>
+        </ng-container>
+
+        <ng-template #alefBrand>
+          <div class="logo-mark"><span>الف</span></div>
+          <div class="brand-text">
+            <span class="brand-name">Alef</span>
+            <span class="brand-sub">Learning Commerce</span>
+          </div>
+        </ng-template>
+      </a>
+
+      <nav class="nav-links">
+        <a class="nav-link" [routerLink]="['/academy-home', academySlug]" *ngIf="academySlug">Academy home</a>
+        <div class="nav-sep"></div>
+        <a class="nav-link" routerLink="/academies">Explore</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="layout">
+
+      <div class="copy-panel">
+        <div class="loading-state" *ngIf="step === 'loading'">
+          <div class="spinner-lg"></div>
+          <p>Loading academy…</p>
+        </div>
+
+        <ng-container *ngIf="step === 'form' && academy">
+          <div class="eyebrow">
+            <div class="eyebrow-dot"></div>
+            <span class="eyebrow-text">Instructor Login</span>
+          </div>
+
+          <h1 class="copy-title">
+            Welcome back<br>to <em>{{ academy.name }}.</em>
+          </h1>
+
+          <p class="copy-desc" *ngIf="academy.description">{{ academy.description }}</p>
+          <p class="copy-desc" *ngIf="!academy.description">
+            Sign in to manage your courses and students.
+          </p>
+
+          <ul class="feature-list">
+            <li>
+              <div class="fl-icon">📚</div>
+              <div>
+                <div class="fl-title">Manage your courses</div>
+                <div class="fl-desc">Edit lessons, modules, and course content.</div>
+              </div>
+            </li>
+            <li>
+              <div class="fl-icon">👥</div>
+              <div>
+                <div class="fl-title">Track enrollments</div>
+                <div class="fl-desc">See who's enrolled and monitor student progress.</div>
+              </div>
+            </li>
+            <li>
+              <div class="fl-icon">🔐</div>
+              <div>
+                <div class="fl-title">Secure access</div>
+                <div class="fl-desc">First login may require a password change.</div>
+              </div>
+            </li>
+          </ul>
+
+          <div class="tip-card">
+            <div class="tip-icon">🧑‍🏫</div>
+            <div class="tip-text">
+              <div class="tip-title">No account yet?</div>
+              <div class="tip-desc">
+                Ask your organization admin to create your instructor account.
+              </div>
+            </div>
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="step === 'invalid'">
+          <div class="eyebrow">
+            <div class="eyebrow-dot"></div>
+            <span class="eyebrow-text">Login</span>
+          </div>
+          <h1 class="copy-title">Invalid<br><em>link.</em></h1>
+          <p class="copy-desc">{{ invalidError }}</p>
+        </ng-container>
+      </div>
+
+      <div class="form-panel">
+        <div class="login-card loading-card" *ngIf="step === 'loading'">
+          <div class="skeleton-line w60"></div>
+          <div class="skeleton-line w40"></div>
+          <div class="skeleton-block"></div>
+        </div>
+
+        <div class="login-card" *ngIf="step === 'invalid'">
+          <div class="card-head">
+            <div class="logo-mark sm"><span>الف</span></div>
+            <h2 class="card-title">Invalid Link</h2>
+            <p class="card-sub">{{ invalidError }}</p>
+          </div>
+          <div class="alert-error"><span class="alert-icon">⚠</span> {{ invalidError }}</div>
+          <div style="margin-top: 24px;">
+            <a routerLink="/academies" class="btn btn-ghost btn-full">Browse Academies →</a>
+          </div>
+        </div>
+
+        <div class="login-card" *ngIf="step === 'form' && academy">
+          <div class="card-head">
+            <div class="academy-badge">
+              <img *ngIf="img(academy.logoUrl)" [src]="img(academy.logoUrl)!" class="badge-logo" alt="" />
+              <div *ngIf="!img(academy.logoUrl)" class="badge-placeholder" [style.background]="accentColor">
+                {{ (academy.name || 'A').slice(0, 1) }}
+              </div>
+              <span class="badge-name">{{ academy.name }}</span>
+            </div>
+
+            <h2 class="card-title">Sign in as instructor</h2>
+            <p class="card-sub">Access your instructor dashboard at {{ academy.name }}.</p>
+          </div>
+
+          <div class="alert-success" *ngIf="notice">
+            <span class="alert-icon">✓</span> {{ notice }}
+          </div>
+
+          <form class="form" [formGroup]="form" (ngSubmit)="login()">
+            <div class="field">
+              <label class="label" for="li-email">Email address</label>
+              <input id="li-email" type="email" formControlName="email"
+                     placeholder="you@example.com" class="input"
+                     autocomplete="email" inputmode="email" />
+              <small class="field-error" *ngIf="emailCtrl?.touched && emailCtrl?.invalid">
+                Please enter a valid email address.
+              </small>
+            </div>
+
+            <div class="field">
+              <div class="label-row">
+                <label class="label" for="li-pass">Password</label>
+                <button class="forgot-link" type="button" (click)="forgotPassword()">Forgot password?</button>
+              </div>
+
+              <div class="pw-wrap">
+                <input id="li-pass" class="input"
+                       [type]="showPassword ? 'text' : 'password'"
+                       formControlName="password"
+                       placeholder="••••••••"
+                       autocomplete="current-password" />
+                <button class="pw-toggle" type="button" (click)="togglePassword()">
+                  {{ showPassword ? 'Hide' : 'Show' }}
+                </button>
+              </div>
+
+              <small class="field-error" *ngIf="passCtrl?.touched && passCtrl?.invalid">
+                Password is required.
+              </small>
+            </div>
+
+            <button class="btn btn-primary btn-full"
+                    [ngStyle]="primaryButtonStyle"
+                    type="submit"
+                    [disabled]="loading || form.invalid">
+              <span *ngIf="!loading">Sign in to {{ academy.name }}</span>
+              <span *ngIf="loading" class="loading-row">
+                <span class="spinner"></span>Signing in…
+              </span>
+            </button>
+
+            <div class="security-badge">
+              <span class="sb-dot"></span>
+              Secured by Alef Identity · JWT · OTP
+            </div>
+
+            <div class="alert-error" *ngIf="error">
+              <span class="alert-icon">⚠</span> {{ error }}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <footer class="page-footer">
+      <div class="footer-copy">© {{ year }} Alef Learning Commerce. All rights reserved.</div>
+      <div class="footer-links">
+        <a routerLink="/privacy">Privacy</a>
+        <a routerLink="/terms">Terms</a>
+      </div>
+    </footer>
+  </main>
+</div>

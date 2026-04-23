@@ -1,0 +1,218 @@
+<main class="ml-page">
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">Admin panel</span>
+      </div>
+      <h1 class="page-title">Course <em>Lessons</em></h1>
+      <p class="page-desc">Review lessons and generate AI summaries.</p>
+    </div>
+
+    <div class="hero-right">
+      <div class="action-group">
+        <button class="btn btn-ghost" type="button" (click)="back()">← Back</button>
+        <button class="btn btn-primary" type="button" (click)="reload()">Refresh</button>
+      </div>
+    </div>
+  </div>
+
+  <ng-container *ngIf="state$ | async as st">
+    <div class="state-loading" *ngIf="st.loading">
+      <span class="loading-dot"></span> Loading lessons…
+    </div>
+
+    <div class="alert-error" *ngIf="st.error && !st.loading">
+      <span>⚠</span> {{ st.error }}
+    </div>
+
+    <ng-container *ngIf="!st.loading && !st.error">
+
+      <div class="course-head-card">
+        <div class="course-thumb">
+          <img *ngIf="img(st.data.course.thumbnailUrl)" [src]="img(st.data.course.thumbnailUrl)!" alt="" />
+          <div class="cc-thumb-fallback" *ngIf="!img(st.data.course.thumbnailUrl)">
+            <div class="ctf-letter">{{ (st.data.course.title || 'C').slice(0,1).toUpperCase() }}</div>
+          </div>
+        </div>
+
+        <div class="course-head-content">
+          <div class="card-category" *ngIf="st.data.course.category">{{ st.data.course.category }}</div>
+          <div class="item-title big">{{ st.data.course.title }}</div>
+          <p class="desc-text">{{ st.data.course.shortDescription || 'No description available.' }}</p>
+
+          <div class="hidden-info" *ngIf="st.data.course.isHidden">
+            <span class="hidden-icon">⛔</span>
+            <div class="meta-text">
+              Hidden by admin<span *ngIf="st.data.course.hiddenReason"> · {{ st.data.course.hiddenReason }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-strip">
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Lessons</span>
+            <span class="kpi-icon">📚</span>
+          </div>
+          <div class="kpi-value">{{ st.data.lessons.length }}</div>
+          <div class="kpi-sub">Total lessons</div>
+        </div>
+
+        <div class="kpi-card kpi-success">
+          <div class="kpi-header">
+            <span class="kpi-label">Modules</span>
+            <span class="kpi-icon">🧩</span>
+          </div>
+          <div class="kpi-value">{{ moduleCount(st.data.lessons) }}</div>
+          <div class="kpi-sub">Grouped sections</div>
+        </div>
+
+        <div class="kpi-card kpi-gold">
+          <div class="kpi-header">
+            <span class="kpi-label">AI Summaries</span>
+            <span class="kpi-icon">✨</span>
+          </div>
+          <div class="kpi-value">{{ withSummaryCount(st.data.lessons) }}</div>
+          <div class="kpi-sub">Loaded / generated</div>
+        </div>
+
+        <div class="kpi-card kpi-danger" *ngIf="noContentCount(st.data.lessons) > 0">
+          <div class="kpi-header">
+            <span class="kpi-label">No Content</span>
+            <span class="kpi-icon">⛔</span>
+          </div>
+          <div class="kpi-value">{{ noContentCount(st.data.lessons) }}</div>
+          <div class="kpi-sub">Lessons need content</div>
+        </div>
+      </div>
+
+      <section class="toolbar" aria-label="Lesson filters">
+        <div class="toolbar-main">
+          <div class="search-wrap">
+            <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round">
+              <circle cx="10.5" cy="10.5" r="7.5"></circle>
+              <path d="M21 21l-4.3-4.3"></path>
+            </svg>
+            <input class="input search-input"
+              type="text"
+              placeholder="Search lessons…"
+              [value]="query"
+              (input)="query = $any($event.target).value" />
+            <button class="search-clear" type="button" *ngIf="query" (click)="query=''">✕</button>
+          </div>
+
+          <div class="filter-field">
+            <label class="filter-label">Sort by</label>
+            <select class="input select-input" [value]="sort"
+              (change)="sort = $any($event.target).value">
+              <option value="module">Module order</option>
+              <option value="title">Title A–Z</option>
+              <option value="type">Content type</option>
+            </select>
+          </div>
+
+          <label class="toggle-field">
+            <div class="switch" [class.on]="hideNoContent">
+              <input type="checkbox" [checked]="hideNoContent"
+                (change)="hideNoContent = $any($event.target).checked" />
+              <span class="knob"></span>
+            </div>
+            <span class="toggle-label">Hide no-content</span>
+          </label>
+        </div>
+
+        <div class="toolbar-right">
+          <button class="btn btn-ghost btn-sm" type="button"
+            (click)="query=''; hideNoContent=false">
+            Clear filters
+          </button>
+        </div>
+      </section>
+
+      <div class="empty" *ngIf="visible(st.data.lessons).length === 0">
+        <div class="empty-ic">📚</div>
+        <div class="empty-title">No lessons found</div>
+        <div class="empty-sub">Try adjusting your search or filter.</div>
+      </div>
+
+      <div class="items-grid" *ngIf="visible(st.data.lessons).length > 0">
+        <article class="item-card" *ngFor="let x of sorted(visible(st.data.lessons))">
+          <div class="cc-body">
+            <div class="cc-top">
+              <div class="card-category">{{ x.moduleTitle }}</div>
+              <div class="item-title" [title]="x.title">{{ x.title }}</div>
+            </div>
+
+            <div class="stats-row">
+              <div class="stat-pill">
+                <span class="stat-icon">📄</span>
+                <span>{{ typeLabel(x.type) }}</span>
+              </div>
+
+              <div class="stat-pill"
+                [class.stat-pill-ok]="hasContent(x)"
+                [class.stat-pill-warn]="!hasContent(x)">
+                <span class="stat-icon">{{ hasContent(x) ? '✓' : '!' }}</span>
+                <span>{{ hasContent(x) ? 'Has content' : 'No content' }}</span>
+              </div>
+
+              <div class="stat-pill" *ngIf="x.isPreviewFree">
+                <span class="stat-icon">👁</span>
+                <span>Free preview</span>
+              </div>
+
+              <div class="stat-pill" *ngIf="isQuiz(x) && x.quizId">
+                <span class="stat-icon">📝</span>
+                <span>Quiz attached</span>
+              </div>
+            </div>
+
+            <div class="item-actions">
+              <button class="btn btn-ai btn-sm" type="button"
+                [disabled]="x.aiGenerating || !hasContent(x)"
+                (click)="generateSummary(x, $event)">
+                <span class="ai-spinner" *ngIf="x.aiGenerating"></span>
+                <span>{{ x.aiGenerating ? 'Generating…' : '✦ Generate Summary' }}</span>
+              </button>
+
+              <button class="btn btn-ghost btn-sm" type="button"
+                [disabled]="x.aiLoading"
+                (click)="loadSummary(x, $event)">
+                {{ x.aiLoading ? 'Loading…' : 'Load Summary' }}
+              </button>
+            </div>
+
+            <div class="alert-error" *ngIf="x.aiError">
+              <span>⚠</span> {{ x.aiError }}
+            </div>
+
+            <div class="ai-box" *ngIf="x.aiSummary">
+              <div class="ai-block">
+                <div class="ai-label">Summary</div>
+                <p class="ai-text">{{ x.aiSummary.summary }}</p>
+              </div>
+
+              <div class="ai-block" *ngIf="x.aiSummary.keyPoints.length > 0">
+                <div class="ai-label">Key Points</div>
+                <ul class="ai-list">
+                  <li *ngFor="let p of x.aiSummary.keyPoints">{{ p }}</li>
+                </ul>
+              </div>
+
+              <div class="ai-block" *ngIf="x.aiSummary.importantTerms.length > 0">
+                <div class="ai-label">Important Terms</div>
+                <div class="chip-row">
+                  <span class="chip-btn" *ngFor="let t of x.aiSummary.importantTerms">{{ t }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+    </ng-container>
+  </ng-container>
+</main>

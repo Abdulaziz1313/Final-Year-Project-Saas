@@ -40,7 +40,7 @@
 
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.15); }
-  50%       { box-shadow: 0 0 0 6px rgba(26, 86, 219, 0.08); }
+  50%      { box-shadow: 0 0 0 6px rgba(26, 86, 219, 0.08); }
 }
 
 @keyframes spin {
@@ -111,6 +111,20 @@
   color: inherit;
 }
 
+.brand-logo-full {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.brand-logo-img {
+  display: block;
+  height: 42px;
+  width: auto;
+  max-width: 220px;
+  object-fit: contain;
+}
+
 .logo-mark {
   width: 40px;
   height: 40px;
@@ -141,16 +155,35 @@
     position: relative;
   }
 
-  // Smaller variant for card header
   &.sm {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
     margin: 0 auto 16px;
 
-    &::before { width: 22px; height: 22px; top: -6px; left: -6px; }
-    span { font-size: 13px; }
+    &::before {
+      display: none;
+    }
   }
+}
+
+.logo-mark--image {
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 0;
+  overflow: hidden;
+
+  &::before {
+    display: none;
+  }
+}
+
+.logo-mark-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
 }
 
 .brand-text {
@@ -304,7 +337,6 @@
   margin-bottom: 36px;
 }
 
-// Feature list
 .feature-list {
   list-style: none;
   display: grid;
@@ -343,7 +375,6 @@
   line-height: 1.55;
 }
 
-// Tip card
 .tip-card {
   display: flex;
   align-items: flex-start;
@@ -393,7 +424,6 @@
   padding: 36px;
 }
 
-// Card header
 .card-head {
   text-align: center;
   padding-bottom: 24px;
@@ -821,6 +851,7 @@
   .brand-sub     { display: none; }
   .pw-grid       { grid-template-columns: 1fr; }
   .role-grid     { grid-template-columns: 1fr; }
+  .brand-logo-img { height: 36px; max-width: 180px; }
 }
 
 @media (max-width: 420px) {

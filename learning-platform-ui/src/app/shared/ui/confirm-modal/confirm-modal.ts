@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ConfirmService } from '../confirm.service';
 
 @Component({
@@ -17,16 +18,19 @@ export class ConfirmModalComponent {
   cancelText = 'Cancel';
 
   private resolveFn: ((v: boolean) => void) | null = null;
+  private destroyRef = inject(DestroyRef);
 
   constructor(private confirm: ConfirmService) {
-    this.confirm.requests$.subscribe(req => {
-      this.open = true;
-      this.title = req.title;
-      this.message = req.message;
-      this.confirmText = req.confirmText ?? 'Confirm';
-      this.cancelText = req.cancelText ?? 'Cancel';
-      this.resolveFn = req.resolve;
-    });
+    this.confirm.requests$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(req => {
+        this.open = true;
+        this.title = req.title;
+        this.message = req.message;
+        this.confirmText = req.confirmText ?? 'Confirm';
+        this.cancelText = req.cancelText ?? 'Cancel';
+        this.resolveFn = req.resolve;
+      });
   }
 
   close(result: boolean) {

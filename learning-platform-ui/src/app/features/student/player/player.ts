@@ -1,12 +1,12 @@
 import { Component, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgStyle } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
 import { catchError, finalize, map, shareReplay, startWith, switchMap, tap } from 'rxjs/operators';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FormsModule } from '@angular/forms';
 
-import { StudentApi, PlayerCourse } from '../../../core/services/student-api';
+import { StudentApi, PlayerCourse, FlashcardDto, StudentAcademy } from '../../../core/services/student-api';
 import { ToastService } from '../../../shared/ui/toast.service';
 import { environment } from '../../../../environments/environment';
 import { QuizPlayerComponent } from './quiz-player/quiz-player';
@@ -28,7 +28,7 @@ type FlatLesson = {
 @Component({
   selector: 'app-player',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, QuizPlayerComponent],
+  imports: [CommonModule, RouterModule, FormsModule, QuizPlayerComponent, NgStyle],
   templateUrl: './player.html',
   styleUrl: './player.scss',
 })
@@ -45,12 +45,25 @@ export class PlayerComponent {
   completed = new Set<string>();
   apiBase = environment.apiBaseUrl;
 
-  // UI state
   lessonQuery = '';
   sidebarOpen = true;
   isMobile = false;
 
+  academy: StudentAcademy | null = null;
+
+  brandingVars: Record<string, string> = {
+    '--accent':        '#1a56db',
+    '--accent-light':  '#eff4ff',
+    '--accent-glow':   'rgba(26, 86, 219, 0.12)',
+    '--accent-soft':   'rgba(26, 86, 219, 0.08)',
+    '--accent-strong': '#3b82f6',
+  };
+
   private moduleOpen = new Map<string, boolean>();
+
+  flashcardsByLesson = new Map<string, FlashcardDto[]>();
+  flashcardsLoading = new Set<string>();
+  flashcardFlips = new Map<string, Set<number>>();
 
   constructor(
     private route: ActivatedRoute,
@@ -59,6 +72,8 @@ export class PlayerComponent {
     private sanitizer: DomSanitizer
   ) {
     this.courseId = this.route.snapshot.paramMap.get('courseId') || '';
+
+    this.loadAcademyBranding();
 
     this.updateMobile();
     window.addEventListener('resize', () => this.updateMobile());
@@ -74,12 +89,23 @@ export class PlayerComponent {
               if (!this.moduleOpen.has(m.id)) this.moduleOpen.set(m.id, true);
             }
 
+            // FIX 1: Use lastLessonId to resume where the student left off.
+            // Previously this block only set selectedLessonId when lastLessonId
+            // was absent, meaning returning students always restarted at lesson 1.
             if (!this.selectedLessonId) {
-              const first = this.firstLessonId(res);
-              if (!res.lastLessonId && first) {
-                this.selectedLessonId = first;
-                this.bestEffortSetLastLesson(res.id, first);
+              const resumeId = res.lastLessonId || this.firstLessonId(res);
+              if (resumeId) {
+                this.selectedLessonId = resumeId;
+                // Only persist if it wasn't already saved server-side
+                if (!res.lastLessonId) {
+                  this.bestEffortSetLastLesson(res.id, resumeId);
+                }
               }
+            }
+
+            const active = this.currentLesson(res);
+            if (active) {
+              this.ensureFlashcardsLoaded(active);
             }
 
             if (this.isMobile) this.sidebarOpen = false;
@@ -100,6 +126,48 @@ export class PlayerComponent {
       ),
       shareReplay(1)
     );
+  }
+
+  private loadAcademyBranding() {
+    this.student.myAcademy().subscribe({
+      next: (academy) => {
+        this.academy = academy ?? null;
+        this.applyBranding(academy?.primaryColor || null);
+      },
+      error: () => {
+        this.academy = null;
+        this.applyBranding(null);
+      },
+    });
+  }
+
+  private applyBranding(color?: string | null) {
+    const accent = this.normalizeHex(color) || '#1a56db';
+    const accentStrong = this.mixHex(accent, '#ffffff', 0.18);
+    // FIX 2: --accent-light must be a solid color (used as element backgrounds).
+    // Previously hexToRgba(accent, 0.10) produced an rgba() value which broke
+    // any element that needed an opaque background (e.g. badges, pill buttons).
+    const accentLight = this.mixHex(accent, '#ffffff', 0.90);
+
+    this.brandingVars = {
+      '--accent':        accent,
+      '--accent-light':  accentLight,
+      '--accent-glow':   this.hexToRgba(accent, 0.12),
+      '--accent-soft':   this.hexToRgba(accent, 0.08),
+      '--accent-strong': accentStrong,
+    };
+  }
+
+  academyLogoUrl(): string | null {
+    return this.assetUrl(this.academy?.logoUrl || null);
+  }
+
+  academyInitials(): string {
+    const name = (this.academy?.name || 'Alef').trim();
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (!parts.length) return 'A';
+    if (parts.length === 1) return parts[0].slice(0, 1).toUpperCase();
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
   }
 
   private updateMobile() {
@@ -141,15 +209,15 @@ export class PlayerComponent {
     for (const m of course.modules ?? []) {
       for (const l of m.lessons ?? []) {
         out.push({
-          moduleId: m.id,
-          moduleTitle: m.title,
-          id: l.id,
-          title: l.title,
-          type: this.n(l.type),
-          contentUrl: (l as any).contentUrl ?? null,
-          htmlContent: (l as any).htmlContent ?? null,
+          moduleId:      m.id,
+          moduleTitle:   m.title,
+          id:            l.id,
+          title:         l.title,
+          type:          this.n(l.type),
+          contentUrl:    (l as any).contentUrl ?? null,
+          htmlContent:   (l as any).htmlContent ?? null,
           isPreviewFree: !!(l as any).isPreviewFree,
-          isDownloadable: !!(l as any).isDownloadable,
+          isDownloadable:!!(l as any).isDownloadable,
         });
       }
     }
@@ -228,12 +296,6 @@ export class PlayerComponent {
     return `${done}/${total}`;
   }
 
-  /**
-   * Returns a stroke-dasharray string for SVG circular progress rings.
-   * Circumference = 2π × r
-   *   r = 16 (default) → ~100.53  (my-learning card rings)
-   *   r = 13            → ~81.68   (player topbar ring)
-   */
   ringDash(percent: number, radius = 16): string {
     const circ = 2 * Math.PI * radius;
     const fill = (Math.min(100, Math.max(0, percent)) / 100) * circ;
@@ -244,7 +306,27 @@ export class PlayerComponent {
     this.selectedLessonId = lessonId;
     this.bestEffortSetLastLesson(courseId, lessonId);
 
+    const lesson = this.flatFromCurrentSelection(lessonId);
+    if (lesson) {
+      this.ensureFlashcardsLoaded(lesson);
+      this.resetFlashcards(lesson.id);
+    }
+
     if (this.isMobile) this.sidebarOpen = false;
+  }
+
+  // FIX 3: Capture the subscription reference before unsubscribing so that
+  // if the observable hasn't emitted synchronously the unsubscribe still runs
+  // correctly and doesn't leave a dangling subscriber.
+  private flatFromCurrentSelection(lessonId: string): FlatLesson | null {
+    let found: FlatLesson | null = null;
+    const sub = this.state$.subscribe((st) => {
+      if (st.data && !found) {
+        found = this.flat(st.data).find((l) => l.id === lessonId) ?? null;
+      }
+    });
+    sub.unsubscribe();
+    return found;
   }
 
   prev(course: PlayerCourse) {
@@ -333,5 +415,94 @@ export class PlayerComponent {
           this.toast.error(msg);
         },
       });
+  }
+
+  shouldShowFlashcards(lesson: FlatLesson | null): boolean {
+    if (!lesson) return false;
+    return this.isVideo(lesson.type) || this.isDoc(lesson.type) || this.isText(lesson.type);
+  }
+
+  ensureFlashcardsLoaded(lesson: FlatLesson | null) {
+    if (!lesson) return;
+    if (!this.shouldShowFlashcards(lesson)) return;
+    if (this.flashcardsByLesson.has(lesson.id)) return;
+    if (this.flashcardsLoading.has(lesson.id)) return;
+
+    this.flashcardsLoading.add(lesson.id);
+
+    this.student.getLessonFlashcards(lesson.id).subscribe({
+      next: (items) => {
+        this.flashcardsLoading.delete(lesson.id);
+        this.flashcardsByLesson.set(
+          lesson.id,
+          (items ?? []).sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0))
+        );
+      },
+      error: () => {
+        this.flashcardsLoading.delete(lesson.id);
+        this.flashcardsByLesson.set(lesson.id, []);
+      },
+    });
+  }
+
+  publishedFlashcardsFor(lessonId: string): FlashcardDto[] {
+    return this.flashcardsByLesson.get(lessonId) ?? [];
+  }
+
+  toggleFlashcard(lessonId: string, index: number) {
+    const current = this.flashcardFlips.get(lessonId) ?? new Set<number>();
+    if (current.has(index)) current.delete(index);
+    else current.add(index);
+    this.flashcardFlips.set(lessonId, current);
+  }
+
+  isFlashcardFlipped(lessonId: string, index: number): boolean {
+    return this.flashcardFlips.get(lessonId)?.has(index) ?? false;
+  }
+
+  resetFlashcards(lessonId: string) {
+    this.flashcardFlips.set(lessonId, new Set<number>());
+  }
+
+  private normalizeHex(color?: string | null): string | null {
+    if (!color) return null;
+    const value = color.trim();
+
+    if (/^#([0-9a-fA-F]{6})$/.test(value)) return value;
+
+    if (/^#([0-9a-fA-F]{3})$/.test(value)) {
+      const m = value.slice(1);
+      return `#${m[0]}${m[0]}${m[1]}${m[1]}${m[2]}${m[2]}`;
+    }
+
+    return null;
+  }
+
+  private hexToRgba(hex: string, alpha: number): string {
+    const normalized = this.normalizeHex(hex) || '#1a56db';
+    const raw = normalized.replace('#', '');
+    const r = parseInt(raw.slice(0, 2), 16);
+    const g = parseInt(raw.slice(2, 4), 16);
+    const b = parseInt(raw.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  private mixHex(hexA: string, hexB: string, weightB: number): string {
+    const a = (this.normalizeHex(hexA) || '#1a56db').replace('#', '');
+    const b = (this.normalizeHex(hexB) || '#ffffff').replace('#', '');
+
+    const ar = parseInt(a.slice(0, 2), 16);
+    const ag = parseInt(a.slice(2, 4), 16);
+    const ab = parseInt(a.slice(4, 6), 16);
+
+    const br = parseInt(b.slice(0, 2), 16);
+    const bg = parseInt(b.slice(2, 4), 16);
+    const bb = parseInt(b.slice(4, 6), 16);
+
+    const mix = (x: number, y: number) => Math.round(x * (1 - weightB) + y * weightB);
+
+    return `#${[mix(ar, br), mix(ag, bg), mix(ab, bb)]
+      .map((n) => n.toString(16).padStart(2, '0'))
+      .join('')}`;
   }
 }

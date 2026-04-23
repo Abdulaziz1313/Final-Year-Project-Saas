@@ -34,7 +34,6 @@ export class AcademyCatalogComponent implements OnDestroy {
   page = 1;
   pageSize = 24;
 
-  // Branding
   brandColor = '#7c3aed';
   brandFontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif';
 
@@ -46,7 +45,11 @@ export class AcademyCatalogComponent implements OnDestroy {
 
   private customFontStyleId = 'alef-academy-font-style';
 
-  constructor(private route: ActivatedRoute, private router: Router, private student: StudentApi) {
+  constructor(
+    private route: ActivatedRoute,
+    private router: Router,
+    private student: StudentApi
+  ) {
     this.slug = this.route.snapshot.paramMap.get('slug') || '';
 
     const qp = this.route.snapshot.queryParamMap;
@@ -77,7 +80,6 @@ export class AcademyCatalogComponent implements OnDestroy {
     this.clearCustomFontStyle();
   }
 
-  // ---------- UI handlers ----------
   onQInput(v: string) {
     this.qInput$.next(v);
   }
@@ -110,8 +112,7 @@ export class AcademyCatalogComponent implements OnDestroy {
 
   loadMore() {
     const st = this.stateSubject.value;
-    if (st.loading) return;
-    if (!st.data) return;
+    if (st.loading || !st.data) return;
     if (st.data.items.length >= st.data.total) return;
 
     this.page += 1;
@@ -121,18 +122,17 @@ export class AcademyCatalogComponent implements OnDestroy {
 
   get canLoadMore(): boolean {
     const st = this.stateSubject.value;
-    if (st.loading) return false;
-    if (!st.data) return false;
+    if (st.loading || !st.data) return false;
     return st.data.items.length < st.data.total;
   }
 
-  // ---------- loading ----------
   private async loadInitialUpToPage(targetPage: number) {
     const safeTarget = Math.max(1, Math.min(targetPage, 10));
     this.page = 1;
     this.syncUrl();
 
     await this.load(true);
+
     for (let p = 2; p <= safeTarget; p++) {
       this.page = p;
       this.syncUrl();
@@ -170,6 +170,7 @@ export class AcademyCatalogComponent implements OnDestroy {
           typeof err?.error === 'string'
             ? err.error
             : `Failed to load catalog: ${err?.status ?? ''} ${err?.statusText ?? ''}`.trim();
+
         this.stateSubject.next({ loading: false, data: prev ?? null, error: msg });
         return of(null as any);
       })
@@ -178,7 +179,9 @@ export class AcademyCatalogComponent implements OnDestroy {
     const res = await firstValueFrom(call$);
     if (!res) return;
 
-    const nextItems = reset ? (res.items ?? []) : ([...(prev?.items ?? []), ...(res.items ?? [])]);
+    const nextItems = reset
+      ? (res.items ?? [])
+      : ([...(prev?.items ?? []), ...(res.items ?? [])]);
 
     const vm: CatalogVm = {
       academy: res.academy,
@@ -191,7 +194,6 @@ export class AcademyCatalogComponent implements OnDestroy {
     this.stateSubject.next({ loading: false, data: vm, error: null });
   }
 
-  // ---------- helpers ----------
   img(url?: string | null) {
     if (!url) return null;
     return url.startsWith('http') ? url : `${this.api}${url}`;
@@ -209,6 +211,7 @@ export class AcademyCatalogComponent implements OnDestroy {
   tagList(c: any): string[] {
     const raw = String(c?.tagsJson ?? '').trim();
     if (!raw) return [];
+
     try {
       const arr = JSON.parse(raw);
       return Array.isArray(arr) ? arr.map((x) => String(x)).filter(Boolean) : [];
@@ -221,7 +224,6 @@ export class AcademyCatalogComponent implements OnDestroy {
     return item?.id;
   }
 
-  // ---------- Branding ----------
   private applyBrandingFromAcademy(academy: any) {
     if (!academy) return;
 

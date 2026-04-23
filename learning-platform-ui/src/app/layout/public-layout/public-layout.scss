@@ -1,8 +1,3 @@
-// ─────────────────────────────────────────────
-//  public-layout.component.scss
-//  Alef Learning Commerce — Public Layout
-// ─────────────────────────────────────────────
-
 :host {
   --text:          #0a0f1e;
   --muted:         #6b7280;
@@ -17,7 +12,6 @@
   --shadow-sm:     0 2px 8px rgba(10, 15, 30, 0.07), 0 1px 2px rgba(10, 15, 30, 0.04);
 }
 
-// ── ROOT ────────────────────────────────────────
 .public {
   min-height: 100vh;
   font-family: 'DM Sans', sans-serif;
@@ -25,7 +19,6 @@
   -webkit-font-smoothing: antialiased;
 }
 
-// ── TOPBAR ──────────────────────────────────────
 .pub-top {
   position: sticky;
   top: 0;
@@ -47,7 +40,6 @@
   gap: 8px;
 }
 
-// ── BRAND ───────────────────────────────────────
 .brand {
   display: inline-flex;
   align-items: center;
@@ -89,6 +81,49 @@
   }
 }
 
+.logo-mark.alef-logo-mark {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 5px;
+
+  &::before {
+    display: none;
+  }
+
+  .alef-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+}
+
+.academy-brand-mark {
+  background: transparent;
+
+  &::before { display: none; }
+
+  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  span {
+    font-family: 'DM Sans', sans-serif;
+    font-style: normal;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    position: relative;
+    letter-spacing: -0.01em;
+  }
+}
+
 .brand-text {
   display: flex;
   flex-direction: column;
@@ -98,7 +133,6 @@
 .brand-name { font-size: 14px; font-weight: 700; letter-spacing: -0.02em; }
 .brand-sub  { font-size: 10.5px; color: var(--muted); font-weight: 500; margin-top: 2px; }
 
-// ── NAV ─────────────────────────────────────────
 .nav {
   display: flex;
   align-items: center;
@@ -121,10 +155,9 @@
 }
 
 .nav-sep {
-  flex: 1; // pushes right-side nav links to the right
+  flex: 1;
 }
 
-// ── BUTTONS ─────────────────────────────────────
 .btn {
   display: inline-flex;
   align-items: center;
@@ -171,7 +204,6 @@
   }
 }
 
-// ── RIGHT ACTIONS ───────────────────────────────
 .pub-actions {
   display: flex;
   align-items: center;
@@ -179,11 +211,9 @@
   flex-shrink: 0;
 }
 
-// ── CONTENT ─────────────────────────────────────
 .pub-content { padding: 0; }
 .pub-content.no-topbar { padding-top: 0; }
 
-// ── RESPONSIVE ──────────────────────────────────
 @media (max-width: 768px) {
   .pub-inner { padding: 0 16px; }
   .brand-sub { display: none; }
@@ -192,7 +222,12 @@
 @media (max-width: 560px) {
   .pub-inner { height: 56px; }
 
-  // Hide less-important nav links, keep Sign in + Create account
+  .logo-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+  }
+
   .nav .nav-link[routerLink="/home"] { display: none; }
 
   .pub-actions .nav-link:not(:last-of-type) { display: none; }

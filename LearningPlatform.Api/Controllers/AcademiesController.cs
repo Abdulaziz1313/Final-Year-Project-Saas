@@ -31,6 +31,8 @@ public class AcademiesController : ControllerBase
         string? Website,
         string? PrimaryColor,
         string? FontKey,
+        string? BrandingJson,
+        string? LayoutJson,
         bool? IsPublished
     );
 
@@ -52,6 +54,7 @@ public class AcademiesController : ControllerBase
         string FontKey,
         string? CustomFontUrl,
         string? CustomFontFamily,
+        string? OrgName,
         string BrandingJson,
         string LayoutJson,
         bool IsPublished,
@@ -100,7 +103,6 @@ public class AcademiesController : ControllerBase
         var orgId = await GetMyOrganizationIdAsync(userId);
         if (orgId is null) return Forbid("Instructor is not assigned to an organization.");
 
-        // ✅ NEW: org must be active
         var orgActive = await IsOrganizationActiveAsync(orgId.Value);
         if (!orgActive) return BadRequest("Your organization is disabled. Contact an admin.");
 
@@ -113,29 +115,26 @@ public class AcademiesController : ControllerBase
         if (string.IsNullOrWhiteSpace(slug))
             return BadRequest("Slug is invalid.");
 
-        // Slug uniqueness (global)
         if (await _db.Academies.AnyAsync(a => a.Slug == slug))
             slug = $"{slug}-{Guid.NewGuid().ToString("N")[..6]}";
 
         var fontKey = NormalizeFontKey(req.FontKey);
-
         var publish = req.IsPublished ?? false;
 
         var academy = new Academy
         {
             OrganizationId = orgId.Value,
-
             Name = req.Name.Trim(),
             Slug = slug,
             Description = string.IsNullOrWhiteSpace(req.Description) ? null : req.Description.Trim(),
             Website = string.IsNullOrWhiteSpace(req.Website) ? null : req.Website.Trim(),
             PrimaryColor = string.IsNullOrWhiteSpace(req.PrimaryColor) ? "#7c3aed" : req.PrimaryColor.Trim(),
             FontKey = fontKey,
+            BrandingJson = string.IsNullOrWhiteSpace(req.BrandingJson) ? "{}" : req.BrandingJson.Trim(),
+            LayoutJson = string.IsNullOrWhiteSpace(req.LayoutJson) ? "{}" : req.LayoutJson.Trim(),
             OwnerUserId = userId,
-
             IsPublished = publish,
             PublishedAt = publish ? DateTimeOffset.UtcNow : null,
-
             IsHidden = false,
             HiddenReason = null,
             HiddenAt = null,
@@ -153,19 +152,37 @@ public class AcademiesController : ControllerBase
             $"/instructor/courses/{academy.Id}"
         );
 
-        return CreatedAtAction(nameof(GetBySlug), new { slug = academy.Slug },
-            new { academy.Id, academy.Slug });
+        return CreatedAtAction(
+            nameof(GetBySlug),
+            new { slug = academy.Slug },
+            new
+            {
+                academy.Id,
+                academy.Name,
+                academy.Slug,
+                academy.Description,
+                academy.Website,
+                academy.PrimaryColor,
+                academy.LogoUrl,
+                academy.BannerUrl,
+                academy.FontKey,
+                academy.BrandingJson,
+                academy.LayoutJson
+            }
+        );
     }
 
-    // ✅ Public endpoint includes branding and publish state
     [HttpGet("by-slug/{slug}")]
     [AllowAnonymous]
     public async Task<ActionResult<AcademyPublicDto>> GetBySlug(string slug)
     {
-        var a = await _db.Academies.AsNoTracking().FirstOrDefaultAsync(x => x.Slug == slug);
+        var a = await _db.Academies
+            .AsNoTracking()
+            .Include(x => x.Organization)
+            .FirstOrDefaultAsync(x => x.Slug == slug);
+
         if (a is null) return NotFound();
 
-        // ✅ NEW: if org disabled, academy is not publicly visible (admin can still view)
         if (a.OrganizationId != Guid.Empty)
         {
             var orgActive = await _db.Organizations.AsNoTracking()
@@ -180,15 +197,12 @@ public class AcademiesController : ControllerBase
             }
         }
 
-        // ✅ Moderation: hidden academies should NOT be visible publicly.
         if (a.IsHidden)
         {
             var isAdmin = User.IsInRole("Admin");
             if (!isAdmin) return NotFound();
         }
 
-        // ✅ Hide drafts from anonymous/public users.
-        // Allow owner (authenticated) to preview their own draft.
         if (!a.IsPublished)
         {
             var userId = UserId();
@@ -209,14 +223,14 @@ public class AcademiesController : ControllerBase
             a.FontKey ?? "system",
             a.CustomFontUrl,
             a.CustomFontFamily,
-            a.BrandingJson,
-            a.LayoutJson,
+            a.Organization?.Name,
+            string.IsNullOrWhiteSpace(a.BrandingJson) ? "{}" : a.BrandingJson,
+            string.IsNullOrWhiteSpace(a.LayoutJson) ? "{}" : a.LayoutJson,
             a.IsPublished,
             a.PublishedAt
         );
     }
 
-    // ✅ Publish/Unpublish
     [HttpPut("{academyId:guid}/publish")]
     [Authorize(Roles = "Instructor,Admin")]
     public async Task<IActionResult> SetPublish(Guid academyId, PublishRequest req)
@@ -229,14 +243,12 @@ public class AcademiesController : ControllerBase
 
         if (!User.IsInRole("Admin"))
         {
-            // Instructor must own + match org
             var orgId = await GetMyOrganizationIdAsync(userId);
             if (orgId is null) return Forbid("Instructor is not assigned to an organization.");
 
             if (academy.OwnerUserId != userId || academy.OrganizationId != orgId.Value)
                 return Forbid("You don't own this academy.");
 
-            // ✅ NEW: org must be active to publish
             var orgActive = await IsOrganizationActiveAsync(orgId.Value);
             if (!orgActive && req.IsPublished)
                 return BadRequest("Your organization is disabled. Contact an admin.");
@@ -252,7 +264,6 @@ public class AcademiesController : ControllerBase
         return NoContent();
     }
 
-    // ✅ Update branding like Salla (color/font selection)
     [HttpPut("{academyId:guid}/branding")]
     [Authorize(Roles = "Instructor")]
     public async Task<IActionResult> UpdateBranding(Guid academyId, UpdateBrandingRequest req)
@@ -263,7 +274,6 @@ public class AcademiesController : ControllerBase
         var academy = await LoadOwnedAcademyForInstructor(academyId, userId);
         if (academy is null) return Forbid("You don't own this academy (or you're not assigned to an organization).");
 
-        // ✅ NEW: org must be active to modify
         var orgId = await GetMyOrganizationIdAsync(userId);
         if (orgId is null) return Forbid("Instructor is not assigned to an organization.");
         var orgActive = await IsOrganizationActiveAsync(orgId.Value);
@@ -288,104 +298,6 @@ public class AcademiesController : ControllerBase
         return NoContent();
     }
 
-    // ✅ Upload custom font file
-    [HttpPost("{academyId:guid}/font")]
-    [Authorize(Roles = "Instructor")]
-    [RequestSizeLimit(10 * 1024 * 1024)]
-    public async Task<IActionResult> UploadFont(Guid academyId, IFormFile file)
-    {
-        var userId = UserId();
-        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
-
-        var academy = await LoadOwnedAcademyForInstructor(academyId, userId);
-        if (academy is null) return Forbid("You don't own this academy (or you're not assigned to an organization).");
-
-        // ✅ NEW: org must be active
-        var orgId = await GetMyOrganizationIdAsync(userId);
-        if (orgId is null) return Forbid("Instructor is not assigned to an organization.");
-        var orgActive = await IsOrganizationActiveAsync(orgId.Value);
-        if (!orgActive) return BadRequest("Your organization is disabled. Contact an admin.");
-
-        if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
-
-        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-        var allowed = new HashSet<string> { ".woff2", ".woff", ".ttf", ".otf" };
-        if (!allowed.Contains(ext))
-            return BadRequest("Invalid font type. Allowed: .woff2, .woff, .ttf, .otf");
-
-        if (file.Length > 10 * 1024 * 1024)
-            return BadRequest("Font file is too large (max 10MB).");
-
-        var webRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-        var folder = Path.Combine(webRoot, "uploads", "academies", "fonts", academyId.ToString("N"));
-        Directory.CreateDirectory(folder);
-
-        var safeName = $"font-{Guid.NewGuid():N}{ext}";
-        var fullPath = Path.Combine(folder, safeName);
-
-        await using (var stream = System.IO.File.Create(fullPath))
-        {
-            await file.CopyToAsync(stream);
-        }
-
-        var urlPath = $"/uploads/academies/fonts/{academyId:N}/{safeName}";
-
-        academy.FontKey = "custom";
-        academy.CustomFontUrl = urlPath;
-        academy.CustomFontFamily = "AlefCustomFont";
-
-        await _db.SaveChangesAsync();
-
-        return Ok(new { academy.FontKey, academy.CustomFontUrl, academy.CustomFontFamily });
-    }
-
-    // ✅ Upload banner
-    [HttpPost("{academyId:guid}/banner")]
-    [Authorize(Roles = "Instructor")]
-    [RequestSizeLimit(5 * 1024 * 1024)]
-    public async Task<IActionResult> UploadBanner(Guid academyId, IFormFile file)
-    {
-        var userId = UserId();
-        if (string.IsNullOrWhiteSpace(userId)) return Unauthorized();
-
-        var academy = await LoadOwnedAcademyForInstructor(academyId, userId);
-        if (academy is null) return Forbid("You don't own this academy (or you're not assigned to an organization).");
-
-        // ✅ NEW: org must be active
-        var orgId = await GetMyOrganizationIdAsync(userId);
-        if (orgId is null) return Forbid("Instructor is not assigned to an organization.");
-        var orgActive = await IsOrganizationActiveAsync(orgId.Value);
-        if (!orgActive) return BadRequest("Your organization is disabled. Contact an admin.");
-
-        if (file == null || file.Length == 0) return BadRequest("No file uploaded.");
-
-        if (!new[] { "image/jpeg", "image/png", "image/webp" }.Contains(file.ContentType))
-            return BadRequest("Invalid image type. Allowed: JPG, PNG, WEBP");
-
-        if (file.Length > 5 * 1024 * 1024)
-            return BadRequest("Max 5MB");
-
-        var webRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-        var folder = Path.Combine(webRoot, "uploads", "academies", "banners", academyId.ToString("N"));
-        Directory.CreateDirectory(folder);
-
-        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-        var safeName = $"banner-{Guid.NewGuid():N}{ext}";
-        var fullPath = Path.Combine(folder, safeName);
-
-        await using (var stream = System.IO.File.Create(fullPath))
-        {
-            await file.CopyToAsync(stream);
-        }
-
-        var urlPath = $"/uploads/academies/banners/{academyId:N}/{safeName}";
-        academy.BannerUrl = urlPath;
-
-        await _db.SaveChangesAsync();
-
-        return Ok(new { bannerUrl = academy.BannerUrl });
-    }
-
     [HttpDelete("{academyId:guid}")]
     [Authorize(Roles = "Instructor")]
     public async Task<IActionResult> Delete(Guid academyId)
@@ -396,7 +308,6 @@ public class AcademiesController : ControllerBase
         var academy = await LoadOwnedAcademyForInstructor(academyId, userId);
         if (academy is null) return Forbid("You don't own this academy (or you're not assigned to an organization).");
 
-        // ✅ NEW: org must be active to delete (optional, but consistent)
         var orgId = await GetMyOrganizationIdAsync(userId);
         if (orgId is null) return Forbid("Instructor is not assigned to an organization.");
         var orgActive = await IsOrganizationActiveAsync(orgId.Value);

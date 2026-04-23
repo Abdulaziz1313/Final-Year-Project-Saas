@@ -1,0 +1,233 @@
+<main class="edit-page">
+
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="page-eyebrow">
+        <div class="page-eyebrow-dot"></div>
+        <span>Organization panel</span>
+      </div>
+      <h1 class="page-title">Edit <em>Academy</em></h1>
+      <p class="page-desc">Update academy details, branding, banner, logo, and publishing identity.</p>
+    </div>
+    <div class="hero-right">
+      <button class="btn btn-ghost" type="button" (click)="goBack()">← Back</button>
+    </div>
+  </div>
+
+  <ng-container *ngIf="state$ | async as st">
+    <div class="state-loading" *ngIf="st.loading">
+      <span class="loading-dot"></span>Loading academy…
+    </div>
+
+    <div class="alert-error" *ngIf="st.error">{{ st.error }}</div>
+
+    <ng-container *ngIf="!st.loading && !st.error && st.data as academy">
+
+      <!-- ── PREVIEW BANNER ── -->
+      <section class="preview-card">
+        <div
+          class="preview-banner"
+          [style.background-image]="bannerPreview ? 'url(' + bannerPreview + ')' : null"
+          [style.background-color]="form.value.primaryColor || '#1a56db'">
+
+          <div class="preview-top">
+            <div class="preview-logo">
+              <img *ngIf="logoPreview; else logoFallback" [src]="logoPreview" alt="Academy logo" />
+              <ng-template #logoFallback>
+                <span>{{ academyInitial() }}</span>
+              </ng-template>
+            </div>
+            <div class="preview-title-wrap">
+              <div class="preview-title">{{ form.value.name || 'Academy name' }}</div>
+              <div class="preview-slug">/{{ form.value.slug || 'academy-slug' }}</div>
+            </div>
+            <div class="preview-status">
+              <span class="status-chip" *ngIf="academy.isHidden">Hidden</span>
+              <span class="status-chip chip-live" *ngIf="!academy.isHidden && academy.isPublished">Published</span>
+              <span class="status-chip chip-draft" *ngIf="!academy.isHidden && !academy.isPublished">Draft</span>
+            </div>
+          </div>
+
+          <div class="preview-bottom">
+            <p class="preview-desc">
+              {{ form.value.description || 'Your academy description will appear here.' }}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── FORM CARD ── -->
+      <form class="form-card" [formGroup]="form" (ngSubmit)="submit()">
+
+        <!-- Brand identity -->
+        <div class="card-section">
+          <div class="section-head">
+            <div class="section-tag">Brand identity</div>
+            <p class="section-desc-text">Manage how your academy appears across the platform.</p>
+          </div>
+
+          <div class="asset-grid">
+            <div class="asset-card">
+              <div class="asset-title">Logo</div>
+              <div class="asset-sub">Square brand mark for cards and headers.</div>
+
+              <div class="asset-preview logo-preview">
+                <img *ngIf="logoPreview; else logoBoxFallback" [src]="logoPreview" alt="Academy logo" />
+                <ng-template #logoBoxFallback>
+                  <span>{{ academyInitial() }}</span>
+                </ng-template>
+              </div>
+
+              <div class="asset-actions">
+                <label class="btn btn-ghost btn-sm">
+                  <input type="file" accept="image/*" hidden (change)="onLogoSelected($event)" />
+                  {{ uploadingLogo ? 'Uploading…' : (logoPreview ? 'Replace logo' : 'Upload logo') }}
+                </label>
+
+                <button
+                  class="btn btn-danger btn-sm"
+                  type="button"
+                  (click)="removeLogo()"
+                  [disabled]="removingLogo || uploadingLogo || !logoPreview">
+                  {{ removingLogo ? 'Removing…' : 'Delete logo' }}
+                </button>
+              </div>
+
+              <div class="inline-msg error-msg" *ngIf="logoError">{{ logoError }}</div>
+              <div class="inline-msg success-msg" *ngIf="logoMessage">{{ logoMessage }}</div>
+            </div>
+
+            <div class="asset-card">
+              <div class="asset-title">Banner</div>
+              <div class="asset-sub">Wide cover image for a premium academy look.</div>
+
+              <div
+                class="asset-preview banner-preview"
+                [style.background-image]="bannerPreview ? 'url(' + bannerPreview + ')' : null"
+                [style.background-color]="form.value.primaryColor || '#1a56db'">
+                <span *ngIf="!bannerPreview">No banner uploaded</span>
+              </div>
+
+              <div class="asset-actions">
+                <label class="btn btn-ghost btn-sm">
+                  <input type="file" accept="image/*" hidden (change)="onBannerSelected($event)" />
+                  {{ uploadingBanner ? 'Uploading…' : (bannerPreview ? 'Replace banner' : 'Upload banner') }}
+                </label>
+
+                <button
+                  class="btn btn-danger btn-sm"
+                  type="button"
+                  (click)="removeBanner()"
+                  [disabled]="removingBanner || uploadingBanner || !bannerPreview">
+                  {{ removingBanner ? 'Removing…' : 'Delete banner' }}
+                </button>
+              </div>
+
+              <div class="inline-msg error-msg" *ngIf="bannerError">{{ bannerError }}</div>
+              <div class="inline-msg success-msg" *ngIf="bannerMessage">{{ bannerMessage }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Academy details -->
+        <div class="card-section">
+          <div class="section-head">
+            <div class="section-tag">Academy details</div>
+            <p class="section-desc-text">Control the name, URL, color, and typography style.</p>
+          </div>
+          <div class="form-grid">
+            <label class="field full">
+              <span class="label">Academy name</span>
+              <input class="input" type="text" formControlName="name" placeholder="Enter academy name" />
+            </label>
+
+            <label class="field">
+              <span class="label">Slug</span>
+              <div class="input-row">
+                <input class="input" type="text" formControlName="slug" placeholder="academy-slug" />
+                <button class="btn btn-ghost btn-sm" type="button" (click)="slugifyFromName()">Generate</button>
+              </div>
+            </label>
+
+            <label class="field">
+              <span class="label">Primary color</span>
+              <div class="color-row">
+                <input class="input color-input" type="text" formControlName="primaryColor" placeholder="#1a56db" />
+                <input
+                  class="native-color"
+                  type="color"
+                  [value]="form.value.primaryColor || '#1a56db'"
+                  (input)="form.patchValue({ primaryColor: $any($event.target).value })" />
+              </div>
+            </label>
+
+            <label class="field">
+              <span class="label">Font style</span>
+              <select class="input" formControlName="fontKey">
+                <option value="system">System</option>
+                <option value="inter">Inter</option>
+                <option value="poppins">Poppins</option>
+                <option value="cairo">Cairo</option>
+                <option value="tajawal">Tajawal</option>
+                <option value="ibmplexar">IBM Plex Arabic</option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="label">Website</span>
+              <input class="input" type="text" formControlName="website" placeholder="https://example.com" />
+            </label>
+
+            <label class="field full">
+              <span class="label">Description</span>
+              <textarea
+                class="textarea"
+                rows="4"
+                formControlName="description"
+                placeholder="Write a short academy description"></textarea>
+            </label>
+          </div>
+        </div>
+
+        <!-- Info strip -->
+        <div class="card-section">
+          <div class="info-strip">
+            <div class="info-pill">
+              <span class="info-pill-label">Courses</span>
+              <span class="info-pill-val">{{ academy.courseCount }}</span>
+            </div>
+            <div class="info-pill">
+              <span class="info-pill-label">Instructors</span>
+              <span class="info-pill-val">{{ academy.instructorCount }}</span>
+            </div>
+            <div class="info-pill">
+              <span class="info-pill-label">Created</span>
+              <span class="info-pill-val">{{ academy.createdAt | date:'mediumDate' }}</span>
+            </div>
+            <div class="info-pill" *ngIf="academy.publishedAt">
+              <span class="info-pill-label">Published</span>
+              <span class="info-pill-val">{{ academy.publishedAt | date:'mediumDate' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Feedback -->
+        <div class="card-section feedback-section" *ngIf="saveMessage || saveError">
+          <div class="inline-msg success-msg" *ngIf="saveMessage">{{ saveMessage }}</div>
+          <div class="inline-msg error-msg" *ngIf="saveError">{{ saveError }}</div>
+        </div>
+
+        <!-- Actions -->
+        <div class="form-actions">
+          <button class="btn btn-ghost" type="button" (click)="goBack()">Cancel</button>
+          <button class="btn btn-primary" type="submit" [disabled]="saving">
+            {{ saving ? 'Saving…' : 'Save changes' }}
+          </button>
+        </div>
+
+      </form>
+
+    </ng-container>
+  </ng-container>
+</main>

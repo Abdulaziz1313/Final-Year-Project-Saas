@@ -27,13 +27,13 @@ public class CatalogController : ControllerBase
         page = page < 1 ? 1 : page;
         pageSize = pageSize is < 1 or > 50 ? 12 : pageSize;
 
-        // ✅ Only allow published + not hidden academies in public catalog
+        // Only allow published + not hidden academies in public catalog
         var academy = await _db.Academies.AsNoTracking()
             .FirstOrDefaultAsync(a => a.Slug == slug && a.IsPublished && !a.IsHidden);
 
         if (academy is null) return NotFound("Academy not found.");
 
-        // ✅ Only published + not hidden courses
+        // Only published + not hidden courses
         var query = _db.Courses.AsNoTracking()
             .Where(c => c.AcademyId == academy.Id
                         && c.Status == LearningPlatform.Domain.Entities.CourseStatus.Published
@@ -94,7 +94,7 @@ public class CatalogController : ControllerBase
                 academy.PrimaryColor,
                 academy.Description,
 
-                // ✅ font branding
+                // font branding
                 academy.FontKey,
                 academy.CustomFontUrl,
                 academy.CustomFontFamily,
@@ -123,14 +123,14 @@ public async Task<IActionResult> CourseDetail(Guid id)
 
     if (course is null) return NotFound();
 
-    // ✅ If hidden, show reason (students will see this message)
+    // If hidden, show reason 
     if (course.IsHidden)
     {
         var reason = string.IsNullOrWhiteSpace(course.HiddenReason) ? "Policy violation" : course.HiddenReason;
         return StatusCode(StatusCodes.Status410Gone, $"This course is not available. Hidden by admin. Reason: {reason}");
     }
 
-    // ✅ Academy must be published + not hidden
+    // Academy must be published + not hidden
     var academy = await _db.Academies.AsNoTracking()
         .FirstOrDefaultAsync(a => a.Id == course.AcademyId && a.IsPublished && !a.IsHidden);
 
@@ -184,7 +184,7 @@ return Ok(dto);
 }
 
 
-    // ✅ Shows ALL published academies even if they have 0 published courses, AND not hidden
+    // Shows ALL published academies even if they have 0 published courses, AND not hidden
     // GET /api/catalog/academies?q=&sort=
     [HttpGet("academies")]
     [AllowAnonymous]
@@ -217,8 +217,6 @@ return Ok(dto);
                 a.LogoUrl,
                 a.BannerUrl,
                 a.PrimaryColor,
-
-                // ✅ font branding
                 a.FontKey,
                 a.CustomFontUrl,
                 a.CustomFontFamily,

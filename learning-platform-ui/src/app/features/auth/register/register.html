@@ -3,18 +3,18 @@
 
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="brand" routerLink="/home">
-        <div class="logo-mark"><span>الف</span></div>
-        <div class="brand-text">
-          <span class="brand-name">Alef</span>
-          <span class="brand-sub">Learning Commerce</span>
-        </div>
+      <a class="brand brand-logo-full" routerLink="/home" aria-label="Alef home">
+        <img
+          src="/branding/alef-logo.svg"
+          alt="Alef Learning Commerce"
+          class="brand-logo-img" />
       </a>
+
       <nav class="nav">
         <a class="nav-link" routerLink="/academies">Explore</a>
         <div class="nav-sep"></div>
-        <a class="nav-link" routerLink="/login">Sign in</a>
-        <a class="btn btn-ghost btn-sm" routerLink="/home">← Home</a>
+        <a class="nav-link" routerLink="/home">Home</a>
+        <a class="btn btn-primary btn-sm" routerLink="/login">Sign in</a>
       </nav>
     </div>
   </header>
@@ -22,7 +22,6 @@
   <main class="wrap">
     <div class="layout">
 
-      <!-- LEFT: Copy -->
       <div class="copy-panel">
         <div class="eyebrow">
           <div class="eyebrow-dot"></div>
@@ -66,12 +65,16 @@
         </div>
       </div>
 
-      <!-- RIGHT: Card -->
       <div class="form-panel">
         <div class="register-card">
 
           <div class="card-head">
-            <div class="logo-mark sm"><span>الف</span></div>
+            <div class="logo-mark logo-mark--image sm">
+              <img
+                src="/branding/alef-logo.svg"
+                alt="Alef logo"
+                class="logo-mark-img" />
+            </div>
             <h2 class="card-title">
               <ng-container *ngIf="step === 'start'">Create organization account</ng-container>
               <ng-container *ngIf="step === 'org-details'">Organization details</ng-container>
@@ -84,7 +87,6 @@
             </p>
           </div>
 
-          <!-- Stepper -->
           <div class="stepper">
             <div class="step-item" [class.active]="step === 'start'" [class.done]="step === 'org-details' || step === 'verify'">
               <div class="step-num">
@@ -108,7 +110,6 @@
             </div>
           </div>
 
-          <!-- ── STEP 1: Credentials ── -->
           <form class="form" *ngIf="step === 'start'" [formGroup]="startForm" (ngSubmit)="goToOrgDetails()">
             <div class="field">
               <label class="label" for="email">Email address</label>
@@ -145,7 +146,6 @@
             <div class="terms-note">By continuing you agree to our <a routerLink="/terms" class="terms-link">Terms</a> and <a routerLink="/privacy" class="terms-link">Privacy Policy</a>.</div>
           </form>
 
-          <!-- ── STEP 2: Org details ── -->
           <form class="form" *ngIf="step === 'org-details'" [formGroup]="orgForm" (ngSubmit)="sendCode()">
             <div class="field">
               <label class="label" for="orgName">Organization name *</label>
@@ -170,7 +170,6 @@
             <div class="alert-error" *ngIf="error"><span class="alert-icon">⚠</span> {{ error }}</div>
           </form>
 
-          <!-- ── STEP 3: Verify OTP ── -->
           <form class="form" *ngIf="step === 'verify'" [formGroup]="verifyForm" (ngSubmit)="submitVerify()">
             <div class="field">
               <label class="label">Verification code</label>

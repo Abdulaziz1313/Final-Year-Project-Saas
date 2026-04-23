@@ -3,19 +3,26 @@
   <!-- ── PAGE HERO ── -->
   <div class="page-hero">
     <div class="hero-left">
+      <div class="brand-chip">
+        <img src="/branding/alef-logo.svg" alt="Alef" class="brand-chip-logo" />
+      </div>
+
       <div class="eyebrow">
         <div class="eyebrow-dot"></div>
         <span class="eyebrow-text">Organization</span>
       </div>
+
       <h1 class="page-title" *ngIf="!setupMode">Instructors &amp; <em>Members</em></h1>
       <h1 class="page-title" *ngIf="setupMode">Create your <em>Organization</em></h1>
-      <p class="page-desc" *ngIf="!setupMode">People who have joined your organization.</p>
+
+      <p class="page-desc" *ngIf="!setupMode">
+        Manage instructors created by your org. Instructors must change their password on first login.
+      </p>
       <p class="page-desc" *ngIf="setupMode">
-        You don't have an organization yet. Create one to generate an invite code for instructors.
+        You don't have an organization yet. Create one to start managing academies and members.
       </p>
     </div>
 
-    <!-- Search + Refresh (normal mode) -->
     <div class="page-actions" *ngIf="!setupMode">
       <div class="search-wrap">
         <input
@@ -26,15 +33,20 @@
           (keyup.enter)="load()"
         />
       </div>
+      <button class="btn btn-primary" type="button" (click)="openCreateInstructor()" [disabled]="loading">
+        + Create instructor
+      </button>
       <button class="btn btn-ghost" type="button" (click)="load()" [disabled]="loading">
         {{ loading ? 'Loading…' : 'Refresh' }}
       </button>
     </div>
   </div>
 
-  <!-- ── Error ── -->
+  <!-- ── ERROR ── -->
   <div class="alert-error" *ngIf="error">
-    <div class="err-icon">⚠</div>
+    <svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
     <div class="err-body">
       <div class="err-title">Error</div>
       <div class="err-msg">{{ error }}</div>
@@ -45,7 +57,9 @@
   <section class="panel setup-panel" *ngIf="setupMode">
 
     <div class="panel-head">
-      <div class="panel-head-icon">🏢</div>
+      <div class="panel-head-logo">
+        <img src="/branding/alef-logo.svg" alt="Alef" class="panel-head-logo-img" />
+      </div>
       <div>
         <div class="panel-eyebrow">Get started</div>
         <div class="panel-title">Organization details</div>
@@ -54,14 +68,15 @@
     </div>
 
     <div class="alert-error setup-err" *ngIf="createError">
-      <div class="err-icon">⚠</div>
+      <svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
       <div class="err-body">
         <div class="err-msg">{{ createError }}</div>
       </div>
     </div>
 
     <div class="form">
-
       <div class="field">
         <label class="field-label">Organization name</label>
         <input class="input" [(ngModel)]="form.name" name="name" placeholder="e.g. Alef Academy" />
@@ -100,57 +115,53 @@
           {{ createLoading ? 'Creating…' : 'Create organization' }}
         </button>
       </div>
-
     </div>
   </section>
 
-  <!-- ── INVITE CARD (normal mode) ── -->
+  <!-- ── INVITE CARD ── -->
   <div class="invite-card" *ngIf="!setupMode && inviteCode as code">
-
     <div class="invite-left">
       <div class="invite-icon">🔑</div>
       <div>
-        <div class="invite-label">Invite code</div>
+        <div class="invite-label">Invite code (legacy)</div>
         <div class="invite-hint">
-          Share with instructors so they can join via <strong>/join-org</strong>.
+          You can still use <strong>/join-org</strong> if you keep that flow.
+          For instructors, the recommended flow is <strong>Create instructor</strong>.
         </div>
       </div>
     </div>
-
     <div class="invite-right">
       <code class="invite-code">{{ code }}</code>
       <button class="btn btn-ghost btn-sm" type="button" (click)="copyInvite(code)">📋 Copy</button>
       <button class="btn btn-ghost btn-sm" type="button" (click)="rotateInvite()" [disabled]="loading">↺ Rotate</button>
     </div>
-
   </div>
 
-  <!-- ── MEMBERS TABLE (normal mode) ── -->
+  <!-- ── MEMBERS TABLE ── -->
   <section class="panel members-panel" *ngIf="!setupMode && !error">
 
     <div class="panel-head flat">
       <div>
         <div class="panel-eyebrow">Team</div>
         <div class="panel-title">Members</div>
+        <div class="panel-sub">Create instructors, then share credentials securely.</div>
       </div>
       <div class="member-count-badge">{{ items.length }}</div>
     </div>
 
-    <!-- Loading skeleton -->
     <div class="skeleton" *ngIf="loading">
       <div class="sk-row" *ngFor="let _ of [1,2,3]"></div>
     </div>
 
     <ng-container *ngIf="!loading">
 
-      <!-- Table head -->
       <div class="table-head">
         <div>Member</div>
         <div>Roles</div>
+        <div>Academy</div>
         <div>Status</div>
       </div>
 
-      <!-- Rows -->
       <div class="table-row" *ngFor="let u of items">
         <div class="user-cell">
           <div class="user-avatar">{{ (u.displayName || u.email)?.[0]?.toUpperCase() }}</div>
@@ -164,19 +175,139 @@
           <span class="pill" *ngFor="let r of (u.roles || [])">{{ r }}</span>
         </div>
 
+        <div class="academy-cell">
+          <span class="pill pill-muted" *ngIf="$any(u).academyName">{{ $any(u).academyName }}</span>
+          <span class="pill pill-muted" *ngIf="!$any(u).academyName">—</span>
+        </div>
+
         <div class="status-cell">
-          <span class="pill pill-ok">Active</span>
+          <ng-container *ngIf="$any(u).mustChangePassword; else activeTpl">
+            <span class="pill pill-warn">Change password required</span>
+          </ng-container>
+          <ng-template #activeTpl>
+            <span class="pill pill-ok">Active</span>
+          </ng-template>
         </div>
       </div>
 
-      <!-- Empty state -->
       <div class="empty-state" *ngIf="items.length === 0">
-        <div class="empty-icon">👥</div>
+        <img src="/branding/alef-logo.svg" alt="Alef" class="empty-brand-logo" />
         <div class="empty-title">No members yet</div>
-        <p class="empty-desc">Share the invite code above so instructors can join your organization.</p>
+        <p class="empty-desc">Create your first instructor using the button above.</p>
       </div>
 
     </ng-container>
   </section>
+
+  <!-- ═══════════════════════════════════════════
+       CREATE INSTRUCTOR MODAL
+  ═══════════════════════════════════════════ -->
+  <div class="modal-backdrop" *ngIf="createInstructorOpen" (click)="closeCreateInstructor()"></div>
+
+  <div class="modal" *ngIf="createInstructorOpen" (click)="$event.stopPropagation()">
+    <div class="modal-card">
+
+      <div class="modal-head">
+        <div>
+          <div class="modal-title">Create instructor</div>
+          <div class="modal-sub">Creates a login with a temporary password. Instructor must change it on first login.</div>
+        </div>
+        <button class="icon-btn" type="button" (click)="closeCreateInstructor()" aria-label="Close">
+          <svg viewBox="0 0 12 12" fill="none" width="10" height="10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <path d="M1 1l10 10M11 1L1 11"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="alert-error" *ngIf="createInstructorError" style="margin: 16px 22px 0;">
+        <svg class="err-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <div class="err-body">
+          <div class="err-msg">{{ createInstructorError }}</div>
+        </div>
+      </div>
+
+      <div class="modal-body">
+
+        <div class="field">
+          <label class="field-label">Academy</label>
+          <select class="input" [(ngModel)]="ci.academyId" name="academyId">
+            <option value="" disabled>Select academy…</option>
+            <option *ngFor="let a of academies" [value]="a.id">{{ a.name }}</option>
+          </select>
+          <small class="hint" *ngIf="academies.length === 0">
+            No academies found. Create an academy first.
+          </small>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Email</label>
+          <input class="input" [(ngModel)]="ci.email" name="email" placeholder="instructor@example.com" />
+        </div>
+
+        <div class="field">
+          <label class="field-label">Display name <span class="opt-badge">optional</span></label>
+          <input class="input" [(ngModel)]="ci.displayName" name="displayName" placeholder="e.g. John Smith" />
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label class="field-label">Temporary password</label>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="generateTempPassword()">🎲 Generate</button>
+          </div>
+          <input class="input mono" [(ngModel)]="ci.tempPassword" name="tempPassword" placeholder="e.g. Ab7!xQ9@Lm2#Rt" />
+          <small class="hint">
+            Must include at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.
+          </small>
+
+          <div class="password-checklist">
+            <div class="pw-check" [class.ok]="passwordChecks.length">
+              <span class="pw-dot"></span>
+              <span>At least 8 characters</span>
+            </div>
+            <div class="pw-check" [class.ok]="passwordChecks.upper">
+              <span class="pw-dot"></span>
+              <span>Uppercase letter</span>
+            </div>
+            <div class="pw-check" [class.ok]="passwordChecks.lower">
+              <span class="pw-dot"></span>
+              <span>Lowercase letter</span>
+            </div>
+            <div class="pw-check" [class.ok]="passwordChecks.digit">
+              <span class="pw-dot"></span>
+              <span>Number</span>
+            </div>
+            <div class="pw-check" [class.ok]="passwordChecks.special">
+              <span class="pw-dot"></span>
+              <span>Special character</span>
+            </div>
+          </div>
+
+          <small class="hint">Give this to the instructor securely. They will be forced to change it on first login.</small>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" [(ngModel)]="ci.sendEmail" />
+          <span>Send credentials by email (optional)</span>
+        </label>
+
+      </div>
+
+      <div class="modal-foot">
+        <button class="btn btn-ghost" type="button" (click)="closeCreateInstructor()">Cancel</button>
+        <button class="btn btn-primary" type="button" (click)="createInstructor()" [disabled]="createInstructorLoading">
+          <span class="spinner" *ngIf="createInstructorLoading"></span>
+          {{ createInstructorLoading ? 'Creating…' : 'Create instructor' }}
+        </button>
+      </div>
+
+      <div class="modal-tip" *ngIf="lastCreatedCreds">
+        <div class="tip-title">Credentials (copied)</div>
+        <div class="tip-body mono">{{ lastCreatedCreds }}</div>
+      </div>
+
+    </div>
+  </div>
 
 </main>

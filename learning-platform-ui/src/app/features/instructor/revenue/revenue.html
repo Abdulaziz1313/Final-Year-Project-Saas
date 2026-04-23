@@ -1,0 +1,161 @@
+<main class="revenue-page">
+
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">Instructor panel</span>
+      </div>
+      <h1 class="page-title">Revenue &amp; <em>Analytics</em></h1>
+      <p class="page-desc">Track sales, customers, and top-performing courses.</p>
+    </div>
+    <div class="hero-right">
+      <div class="action-group">
+        <button type="button" class="btn btn-ghost" (click)="openAcademySales()">View all sales</button>
+      </div>
+    </div>
+  </div>
+
+  <ng-container *ngIf="state$ | async as st">
+
+    <!-- Loading -->
+    <div class="state-loading" *ngIf="st.loading">
+      <span class="loading-dot"></span>Loading revenue analytics…
+    </div>
+
+    <!-- Error -->
+    <div class="alert-error" *ngIf="st.error && !st.loading">
+      <span>⚠</span> {{ st.error }}
+    </div>
+
+    <ng-container *ngIf="!st.loading && st.data as vm">
+
+      <!-- ── KPI STRIP ── -->
+      <div class="kpi-strip">
+        <div class="kpi-card kpi-success">
+          <div class="kpi-header">
+            <span class="kpi-label">Total revenue</span>
+            <span class="kpi-icon">💰</span>
+          </div>
+          <div class="kpi-value">{{ money(vm.totalRevenue) }}</div>
+          <div class="kpi-sub">All-time earnings</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Total sales</span>
+            <span class="kpi-icon">🛒</span>
+          </div>
+          <div class="kpi-value">{{ vm.totalSales }}</div>
+          <div class="kpi-sub">Completed transactions</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Customers</span>
+            <span class="kpi-icon">👥</span>
+          </div>
+          <div class="kpi-value">{{ vm.totalCustomers }}</div>
+          <div class="kpi-sub">Unique buyers</div>
+        </div>
+
+        <div class="kpi-card kpi-warn">
+          <div class="kpi-header">
+            <span class="kpi-label">Pending</span>
+            <span class="kpi-icon">⏳</span>
+          </div>
+          <div class="kpi-value">{{ vm.pendingCount }}</div>
+          <div class="kpi-sub">Awaiting confirmation</div>
+        </div>
+      </div>
+
+      <!-- ── TOP GRID ── -->
+      <div class="grid-2">
+
+        <!-- Revenue trend -->
+        <section class="item-card">
+          <div class="item-head">
+            <div>
+              <div class="item-title-lg">Revenue <em>trend</em></div>
+              <div class="item-sub">{{ vm.dailyRevenue.length }} data points</div>
+            </div>
+          </div>
+
+          <div class="chart" *ngIf="vm.dailyRevenue.length > 0; else noRevenueChart">
+            <div class="bar-wrap" *ngFor="let p of vm.dailyRevenue">
+              <div class="bar" [style.height.px]="trackHeight(p.revenue, trackMax(vm.dailyRevenue))"></div>
+              <div class="bar-label">{{ shortDate(p.date) }}</div>
+            </div>
+          </div>
+
+          <ng-template #noRevenueChart>
+            <div class="empty">
+              <div class="empty-title">No data yet</div>
+              <div class="empty-sub">No paid sales data to display.</div>
+            </div>
+          </ng-template>
+        </section>
+
+        <!-- Status overview -->
+        <section class="item-card">
+          <div class="item-head">
+            <div>
+              <div class="item-title-lg">Status <em>overview</em></div>
+              <div class="item-sub">Payment breakdown</div>
+            </div>
+          </div>
+
+          <div class="status-grid">
+            <div class="status-box status-box-paid">
+              <span class="status-box-label">Paid</span>
+              <strong class="status-box-value">{{ vm.totalSales }}</strong>
+            </div>
+            <div class="status-box status-box-pending">
+              <span class="status-box-label">Pending</span>
+              <strong class="status-box-value">{{ vm.pendingCount }}</strong>
+            </div>
+            <div class="status-box status-box-failed">
+              <span class="status-box-label">Failed</span>
+              <strong class="status-box-value">{{ vm.failedCount }}</strong>
+            </div>
+            <div class="status-box status-box-cancelled">
+              <span class="status-box-label">Cancelled</span>
+              <strong class="status-box-value">{{ vm.cancelledCount }}</strong>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- ── TOP COURSES ── -->
+      <section class="item-card">
+        <div class="item-head">
+          <div>
+            <div class="item-title-lg">Top <em>courses</em></div>
+            <div class="item-sub">Best performers by revenue</div>
+          </div>
+        </div>
+
+        <div class="top-courses" *ngIf="vm.topCourses.length > 0; else noTopCourses">
+          <button type="button" class="course-row" *ngFor="let c of vm.topCourses" (click)="openCourseSales(c.courseId)">
+            <div class="course-text">
+              <strong class="course-title">{{ c.title }}</strong>
+              <span class="meta-text">{{ c.salesCount }} sales</span>
+            </div>
+            <div class="course-revenue">{{ money(c.revenue) }}</div>
+          </button>
+        </div>
+
+        <ng-template #noTopCourses>
+          <div class="empty">
+            <div class="empty-title">No courses yet</div>
+            <div class="empty-sub">No paid courses to display.</div>
+          </div>
+        </ng-template>
+      </section>
+
+    </ng-container>
+  </ng-container>
+
+</main>

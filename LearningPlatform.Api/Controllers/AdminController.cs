@@ -147,6 +147,77 @@ public class AdminController : ControllerBase
         return NoContent();
     }
 
+    public record SetUserAcademyRequest(Guid? AcademyId);
+
+[HttpPut("users/{userId}/academy")]
+public async Task<IActionResult> SetUserAcademy(string userId, [FromBody] SetUserAcademyRequest req)
+{
+    var adminId = AdminId();
+    if (string.IsNullOrWhiteSpace(adminId)) return Unauthorized();
+
+    var u = await _users.FindByIdAsync(userId);
+    if (u is null) return NotFound();
+
+    var roles = await _users.GetRolesAsync(u);
+    if (!roles.Contains("Instructor"))
+        return BadRequest("Only instructors can be assigned to an academy.");
+
+    Guid? academyId = req.AcademyId;
+
+    Academy? academy = null;
+    if (academyId.HasValue)
+    {
+        academy = await _db.Academies
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == academyId.Value);
+
+        if (academy is null)
+            return BadRequest("Academy not found.");
+
+        if (academy.IsHidden)
+            return BadRequest("Cannot assign instructor to a hidden academy.");
+
+        if (academy.OrganizationId == null)
+            return BadRequest("Academy is not linked to an organization.");
+
+        // keep org + academy in sync
+        u.OrganizationId = academy.OrganizationId;
+    }
+    else
+    {
+        // unassign academy only
+        u.OrganizationId = null;
+    }
+
+    var beforeAcademyId = u.AcademyId;
+    var beforeOrganizationId = u.OrganizationId;
+
+    u.AcademyId = academyId;
+
+    var res = await _users.UpdateAsync(u);
+    if (!res.Succeeded)
+        return BadRequest("Failed to update user academy.");
+
+    await _audit.Add(
+        actorUserId: adminId,
+        action: "user.academy",
+        targetType: "user",
+        targetId: u.Id,
+        targetLabel: u.Email,
+        reason: null,
+        meta: new
+        {
+            beforeAcademyId,
+            afterAcademyId = academyId,
+            academyName = academy?.Name,
+            beforeOrganizationId,
+            afterOrganizationId = u.OrganizationId
+        }
+    );
+
+    return NoContent();
+}
+
     // ✅ lock supports duration + permanent
     public record SetUserLockRequest(bool Locked, int? Days = null, bool Permanent = false);
 
@@ -970,4 +1041,55 @@ public class AdminController : ControllerBase
 
         return Ok(new { total, page, pageSize, items });
     }
+
+
+    [HttpGet("courses/{courseId:guid}/lessons")]
+public async Task<IActionResult> GetCourseLessons(Guid courseId)
+{
+    var course = await _db.Courses
+        .AsNoTracking()
+        .Include(c => c.Modules)
+            .ThenInclude(m => m.Lessons)
+        .FirstOrDefaultAsync(c => c.Id == courseId);
+
+    if (course is null) return NotFound();
+
+    return Ok(new
+    {
+        course.Id,
+        course.Title,
+        course.ShortDescription,
+        course.FullDescription,
+        course.Category,
+        course.ThumbnailUrl,
+        course.Status,
+        course.IsHidden,
+        course.HiddenReason,
+        Modules = course.Modules
+            .OrderBy(m => m.SortOrder)
+            .Select(m => new
+            {
+                m.Id,
+                m.Title,
+                m.SortOrder,
+                Lessons = m.Lessons
+                .OrderBy(l => l.SortOrder)
+                .Select(l => new
+                {
+                    l.Id,
+                    l.Title,
+                    l.Type,
+                    l.ContentUrl,
+                    l.HtmlContent,
+                    QuizId = _db.Quizzes
+                        .Where(q => q.LessonId == l.Id)
+                        .Select(q => (Guid?)q.Id)
+                        .FirstOrDefault(),
+                    l.SortOrder,
+                    l.IsPreviewFree,
+                    l.IsDownloadable
+                })
+            })
+    });
+}
 }

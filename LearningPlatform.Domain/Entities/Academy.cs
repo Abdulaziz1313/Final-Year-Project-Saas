@@ -17,12 +17,12 @@ public class Academy
     public string? LogoUrl { get; set; }
     public string? BannerUrl { get; set; }
 
-
     public string FontKey { get; set; } = "system";
 
     public string? CustomFontUrl { get; set; }
     public string? CustomFontFamily { get; set; }
 
+    // Website-builder settings are stored as JSON only.
     public string BrandingJson { get; set; } = "{}";
     public string LayoutJson { get; set; } = "{}";
 
@@ -38,6 +38,10 @@ public class Academy
     public DateTimeOffset? HiddenAt { get; set; }
     public string? HiddenByUserId { get; set; }
 
-    
+    public ICollection<Course> Courses { get; set; } = new List<Course>();
+    public ICollection<InstructorEarning> InstructorEarnings { get; set; } = new List<InstructorEarning>();
+    public ICollection<InstructorPayout> InstructorPayouts { get; set; } = new List<InstructorPayout>();
+    public ICollection<InstructorPayoutRequest> InstructorPayoutRequests { get; set; } = new List<InstructorPayoutRequest>();
 
+    public AcademyPayoutSettings? PayoutSettings { get; set; }
 }

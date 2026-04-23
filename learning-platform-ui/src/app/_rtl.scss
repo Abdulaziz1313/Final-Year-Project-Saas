@@ -1,0 +1,170 @@
+// ─────────────────────────────────────────────────────────────────
+//  _rtl.scss  (add @import to your global styles.scss)
+//  App-wide RTL rules applied when LanguageService sets lang='ar'
+//  Uses .lang-ar class on <body> set by LanguageService
+// ─────────────────────────────────────────────────────────────────
+
+// ── Arabic font ────────────────────────────────────────────────────
+// Cairo is injected dynamically by LanguageService on first Arabic use.
+// This rule ensures all text switches to it once the class is applied.
+body.lang-ar {
+  font-family: 'Cairo', 'DM Sans', system-ui, sans-serif;
+}
+
+// ── Global direction overrides ──────────────────────────────────────
+// Most layout flipping is handled automatically by dir="rtl" on <html>.
+// The rules below handle edge cases that CSS logical properties don't
+// cover yet in all browsers, or where we need explicit overrides.
+
+body.lang-ar {
+
+  // Instrument Serif italic headings — keep them but adjust tracking
+  h1 em, h2 em, .page-title em {
+    font-style: normal; // italic doesn't read well in Arabic
+    font-weight: 600;
+  }
+
+  // Monospaced content (IDs, slugs, URLs, code) stays LTR
+  .mono,
+  .aside-footer-id,
+  .info-value.mono,
+  .link-val,
+  .foot-url,
+  .aside-footer-id,
+  code, pre {
+    direction: ltr;
+    text-align: left;
+    unicode-bidi: embed;
+  }
+
+  // Progress bars always fill left-to-right
+  .progress-track,
+  .hcp-bar,
+  .hcp-fill {
+    direction: ltr;
+  }
+
+  // Range inputs always LTR
+  input[type="range"] {
+    direction: ltr;
+  }
+
+  // Select dropdowns: move the arrow to the left
+  select {
+    background-position: left 12px center !important;
+    padding-right: 12px !important;
+    padding-left: 32px !important;
+  }
+
+  // Password toggle button flips to the left side
+  .pw-toggle {
+    right: auto !important;
+    left: 10px !important;
+  }
+
+  .pw-wrap .input {
+    padding-right: 12px !important;
+    padding-left: 70px !important;
+  }
+
+  // Nav items right-aligned
+  .aside-nav-item,
+  .step {
+    text-align: right;
+  }
+
+  // Topbar nav links
+  .nav-link,
+  .pv-link {
+    direction: rtl;
+  }
+
+  // Stepper steps in the create page
+  .stepper-foot .foot-url {
+    direction: ltr;
+    text-align: left;
+  }
+
+  // Section card gradient slides from right
+  .section-card::before,
+  .item-card::before,
+  .kpi-card::before,
+  .feat-card::before {
+    transform-origin: right !important;
+  }
+
+  // Avatar decorative glow flips
+  .aside-avatar::before,
+  .profile-avatar::before,
+  .logo-mark::before,
+  .badge::before {
+    left: auto !important;
+    right: -5px !important;
+  }
+
+  // Hero eyebrow pill stays inline-flex but text direction is rtl
+  .eyebrow,
+  .page-eyebrow,
+  .hero-eyebrow {
+    direction: rtl;
+  }
+
+  // Form inline-field: button stays on the left in RTL
+  .inline-field {
+    direction: rtl;
+  }
+
+  // Action groups — buttons flow from right
+  .action-group,
+  .hero-actions,
+  .form-actions,
+  .crop-actions,
+  .success-actions,
+  .content-bar-actions,
+  .navrow,
+  .item-actions {
+    direction: rtl;
+  }
+
+  // Stats row in org academies stays LTR for numbers
+  .stats-row .stat-pill,
+  .kpi-value,
+  .stat-n {
+    direction: ltr;
+    display: inline-flex;
+  }
+
+  // Color hex input stays LTR
+  .color-hex,
+  .color-input,
+  input[type="color"] {
+    direction: ltr;
+    text-align: left;
+  }
+
+  // Segmented controls — keep buttons flowing RTL
+  .segmented,
+  .seg-tabs {
+    direction: rtl;
+  }
+
+  // Info cells — labels uppercase, text right
+  .info-label,
+  .stat-label,
+  .kpi-label,
+  .aside-nav-label,
+  .aside-footer-label,
+  .section-label,
+  .link-label {
+    letter-spacing: 0; // Arabic doesn't use letter-spacing
+  }
+
+  // Page titles
+  .page-title,
+  .hero-title,
+  .section-title,
+  .card-title,
+  .empty-title {
+    letter-spacing: 0;
+  }
+}

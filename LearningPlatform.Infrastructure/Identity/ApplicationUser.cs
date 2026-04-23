@@ -11,9 +11,15 @@ public class ApplicationUser : IdentityUser
     public Guid? OrganizationId { get; set; }
 
     /// <summary>
-    /// Set for Instructor users at registration time.
-    /// Links them to the specific academy they signed up under.
+    /// Set for Instructor/Student users.
+    /// Links them to the specific academy they belong to.
     /// Their OrganizationId is also set = Academy.OrganizationId.
     /// </summary>
     public Guid? AcademyId { get; set; }
+
+    /// <summary>
+    /// If true, user must change password before using the account normally.
+    /// Used for instructors created by OrgAdmin with a temporary password.
+    /// </summary>
+    public bool MustChangePassword { get; set; } = false;
 }

@@ -1,0 +1,140 @@
+<main class="purchase-detail-page">
+  <ng-container *ngIf="state$ | async as st">
+
+    <!-- Loading -->
+    <div class="state-loading" *ngIf="st.loading">
+      <span class="loading-dot"></span>Loading purchase details…
+    </div>
+
+    <!-- Error -->
+    <div class="alert-error" *ngIf="st.error && !st.loading">
+      <span>⚠</span> {{ st.error }}
+    </div>
+
+    <ng-container *ngIf="!st.loading && st.data as vm">
+
+      <!-- ── PAGE HERO ── -->
+      <div class="page-hero">
+        <div class="hero-left">
+          <div class="eyebrow">
+            <div class="eyebrow-dot"></div>
+            <span class="eyebrow-text">Purchase detail</span>
+          </div>
+          <h1 class="page-title">{{ vm.course.title }}</h1>
+          <p class="page-desc">Payment record and transaction details.</p>
+        </div>
+        <div class="hero-right">
+          <div class="action-group">
+            <span class="status-badge" [ngClass]="statusClass(vm.status)">{{ vm.status }}</span>
+            <button type="button" class="btn btn-ghost" (click)="goPurchases()">← Back to purchases</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── LAYOUT ── -->
+      <div class="detail-layout">
+
+        <!-- Main card -->
+        <div class="item-card main-card">
+
+          <!-- Course section -->
+          <div class="detail-section">
+            <div class="item-head">
+              <div>
+                <div class="item-title-lg">Course <em>info</em></div>
+                <div class="item-sub">What you purchased</div>
+              </div>
+            </div>
+            <div class="course-block">
+              <div class="course-title">{{ vm.course.title }}</div>
+              <div class="meta-text" *ngIf="vm.course.category">{{ vm.course.category }}</div>
+              <div class="course-desc" *ngIf="vm.course.shortDescription">{{ vm.course.shortDescription }}</div>
+            </div>
+          </div>
+
+          <!-- Payment section -->
+          <div class="detail-section">
+            <div class="item-head">
+              <div>
+                <div class="item-title-lg">Payment <em>details</em></div>
+                <div class="item-sub">Transaction breakdown</div>
+              </div>
+            </div>
+            <div class="payment-grid">
+              <div class="payment-field">
+                <div class="field-label">Amount</div>
+                <div class="field-value">{{ money(vm.amount, vm.currency) }}</div>
+              </div>
+              <div class="payment-field">
+                <div class="field-label">Provider</div>
+                <div class="field-value">{{ vm.provider }}</div>
+              </div>
+              <div class="payment-field">
+                <div class="field-label">Method</div>
+                <div class="field-value">{{ vm.paymentMethodType || '—' }}</div>
+              </div>
+              <div class="payment-field">
+                <div class="field-label">Paid at</div>
+                <div class="field-value">{{ when(vm.paidAt) }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Failure reason -->
+          <div class="detail-section" *ngIf="vm.failureReason">
+            <div class="item-head">
+              <div>
+                <div class="item-title-lg">Failure <em>reason</em></div>
+              </div>
+            </div>
+            <div class="failure-box">
+              <span>⚠</span> {{ vm.failureReason }}
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Side card -->
+        <aside class="item-card side-card">
+          <div class="item-head">
+            <div>
+              <div class="item-title-lg">Transaction <em>IDs</em></div>
+              <div class="item-sub">Reference numbers</div>
+            </div>
+          </div>
+
+          <div class="meta-rows">
+            <div class="meta-row-item">
+              <div class="field-label">Payment ID</div>
+              <code class="mono-val">{{ vm.id }}</code>
+            </div>
+            <div class="meta-row-item">
+              <div class="field-label">Created</div>
+              <div class="field-value">{{ when(vm.createdAt) }}</div>
+            </div>
+            <div class="meta-row-item">
+              <div class="field-label">Updated</div>
+              <div class="field-value">{{ when(vm.updatedAt) }}</div>
+            </div>
+            <div class="meta-row-item">
+              <div class="field-label">Session</div>
+              <code class="mono-val">{{ vm.checkoutSessionId || '—' }}</code>
+            </div>
+            <div class="meta-row-item">
+              <div class="field-label">Payment intent</div>
+              <code class="mono-val">{{ vm.paymentIntentId || '—' }}</code>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <button type="button" class="btn btn-primary" (click)="goCourse(vm.course.courseId)">
+            Open course →
+          </button>
+        </aside>
+
+      </div>
+
+    </ng-container>
+  </ng-container>
+</main>

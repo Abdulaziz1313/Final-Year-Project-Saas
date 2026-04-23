@@ -5,15 +5,15 @@
     <div class="hero-left">
       <div class="eyebrow">
         <div class="eyebrow-dot"></div>
-        <span class="eyebrow-text">Instructor panel</span>
+        <span class="eyebrow-text">{{ 'instructor' | translate }}</span>
       </div>
-      <h1 class="page-title">Dashboard &amp; <em>Overview</em></h1>
-      <p class="page-desc">Quick overview of academies, publishing status, and activity.</p>
+      <h1 class="page-title">{{ 'dashboard' | translate }} &amp; <em>{{ 'overview' | translate }}</em></h1>
+      <p class="page-desc">{{ 'dashboardDesc' | translate }}</p>
     </div>
 
     <div class="hero-right">
       <div class="action-group">
-        <button class="btn btn-ghost" type="button" (click)="reload()">Refresh</button>
+        <button class="btn btn-ghost" type="button" (click)="reload()">{{ 'refresh' | translate }}</button>
       </div>
     </div>
   </div>
@@ -22,7 +22,7 @@
 
     <!-- Loading -->
     <div class="state-loading" *ngIf="st.loading">
-      <span class="loading-dot"></span>Loading dashboard…
+      <span class="loading-dot"></span>{{ 'loadingDashboard' | translate }}
     </div>
 
     <!-- Error -->
@@ -36,38 +36,38 @@
       <div class="kpi-strip">
         <div class="kpi-card">
           <div class="kpi-header">
-            <span class="kpi-label">Academies</span>
+            <span class="kpi-label">{{ 'academies' | translate }}</span>
             <span class="kpi-icon">🏛️</span>
           </div>
           <div class="kpi-value">{{ vm.academiesCount }}</div>
-          <div class="kpi-sub">Total academies</div>
+          <div class="kpi-sub">{{ 'totalAcademies' | translate }}</div>
         </div>
 
         <div class="kpi-card kpi-success">
           <div class="kpi-header">
-            <span class="kpi-label">Published</span>
+            <span class="kpi-label">{{ 'published' | translate }}</span>
             <span class="kpi-icon">✅</span>
           </div>
           <div class="kpi-value">{{ vm.publishedCount }}</div>
-          <div class="kpi-sub">Visible to students</div>
+          <div class="kpi-sub">{{ 'visibleStudents' | translate }}</div>
         </div>
 
         <div class="kpi-card">
           <div class="kpi-header">
-            <span class="kpi-label">Draft</span>
+            <span class="kpi-label">{{ 'draft' | translate }}</span>
             <span class="kpi-icon">📝</span>
           </div>
           <div class="kpi-value">{{ vm.draftCount }}</div>
-          <div class="kpi-sub">Not published</div>
+          <div class="kpi-sub">{{ 'notPublished' | translate }}</div>
         </div>
 
         <div class="kpi-card kpi-danger">
           <div class="kpi-header">
-            <span class="kpi-label">Hidden</span>
+            <span class="kpi-label">{{ 'hidden' | translate }}</span>
             <span class="kpi-icon">⛔</span>
           </div>
           <div class="kpi-value">{{ vm.hiddenCount }}</div>
-          <div class="kpi-sub">Moderated by admin</div>
+          <div class="kpi-sub">{{ 'moderatedByAdmin' | translate }}</div>
         </div>
       </div>
 
@@ -78,16 +78,16 @@
         <section class="item-card">
           <div class="item-head">
             <div>
-              <div class="item-title-lg">Quick <em>actions</em></div>
-              <div class="item-sub">Common tasks</div>
+              <div class="item-title-lg">{{ 'quick' | translate }} <em>{{ 'actions' | translate }}</em></div>
+              <div class="item-sub">{{ 'commonTasks' | translate }}</div>
             </div>
           </div>
 
           <a class="qa-row" routerLink="/instructor/academies">
             <div class="qa-ico">📚</div>
             <div class="qa-text">
-              <div class="qa-title">Manage academies</div>
-              <div class="qa-sub">Edit, publish, hide</div>
+              <div class="qa-title">{{ 'manageAcademies' | translate }}</div>
+              <div class="qa-sub">{{ 'manageAcademiesSub' | translate }}</div>
             </div>
             <div class="qa-go">→</div>
           </a>
@@ -95,8 +95,8 @@
           <a class="qa-row" routerLink="/me">
             <div class="qa-ico">👤</div>
             <div class="qa-text">
-              <div class="qa-title">My account</div>
-              <div class="qa-sub">Profile &amp; security</div>
+              <div class="qa-title">{{ 'account' | translate }}</div>
+              <div class="qa-sub">{{ 'profileSecurity' | translate }}</div>
             </div>
             <div class="qa-go">→</div>
           </a>
@@ -106,10 +106,10 @@
         <section class="item-card">
           <div class="item-head">
             <div>
-              <div class="item-title-lg">Recent <em>activity</em></div>
-              <div class="item-sub">Last academy activity</div>
+              <div class="item-title-lg">{{ 'recent' | translate }} <em>{{ 'activity' | translate }}</em></div>
+              <div class="item-sub">{{ 'lastAcademyActivity' | translate }}</div>
             </div>
-            <a class="btn btn-ghost btn-sm" routerLink="/instructor/academies">View all</a>
+            <a class="btn btn-ghost btn-sm" routerLink="/instructor/academies">{{ 'viewAll' | translate }}</a>
           </div>
 
           <ng-container *ngIf="vm.recent as r; else noRecent">
@@ -124,8 +124,8 @@
                   {{ r.pillText }}
                 </span>
                 <div class="recent-actions">
-                  <a class="btn btn-primary btn-sm" [routerLink]="r.href">Open</a>
-                  <a class="btn btn-ghost btn-sm" routerLink="/instructor/academies">All academies</a>
+                  <a class="btn btn-primary btn-sm" [routerLink]="r.href">{{ 'open' | translate }}</a>
+                  <a class="btn btn-ghost btn-sm" routerLink="/instructor/academies">{{ 'allAcademies' | translate }}</a>
                 </div>
               </div>
             </div>
@@ -133,9 +133,9 @@
 
           <ng-template #noRecent>
             <div class="empty">
-              <div class="empty-title">No activity yet</div>
-              <div class="empty-sub">Create your first academy to get started.</div>
-              <a class="btn btn-primary" routerLink="/instructor/academy/create">Create academy</a>
+              <div class="empty-title">{{ 'noActivityYet' | translate }}</div>
+              <div class="empty-sub">{{ 'createFirstAcademyStart' | translate }}</div>
+              <a class="btn btn-primary" routerLink="/instructor/academy/create">{{ 'createAcademy' | translate }}</a>
             </div>
           </ng-template>
         </section>
@@ -149,10 +149,10 @@
         <section class="item-card">
           <div class="item-head">
             <div>
-              <div class="item-title-lg">Your <em>profile</em></div>
-              <div class="item-sub">Signed in</div>
+              <div class="item-title-lg">{{ 'your' | translate }} <em>{{ 'profile' | translate }}</em></div>
+              <div class="item-sub">{{ 'signedIn' | translate }}</div>
             </div>
-            <a class="btn btn-ghost btn-sm" routerLink="/me">Manage</a>
+            <a class="btn btn-ghost btn-sm" routerLink="/me">{{ 'manage' | translate }}</a>
           </div>
 
           <div class="profile">
@@ -168,15 +168,15 @@
               <div class="proles">
                 <span class="role-pill" *ngFor="let r of vm.roles">{{ r }}</span>
               </div>
-              <div class="pmono">ID: <code>{{ vm.userId }}</code></div>
+              <div class="pmono">{{ 'userId' | translate }}: <code>{{ vm.userId }}</code></div>
             </div>
           </div>
 
           <div class="divider"></div>
 
           <div class="row-actions">
-            <button class="btn btn-ghost btn-sm" type="button" (click)="copyUserId(vm.userId)">Copy ID</button>
-            <button class="btn btn-ghost btn-sm" type="button" (click)="logout()">Logout</button>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="copyUserId(vm.userId)">{{ 'copyId' | translate }}</button>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="logout()">{{ 'logout' | translate }}</button>
           </div>
         </section>
 
@@ -184,16 +184,16 @@
         <section class="item-card">
           <div class="item-head">
             <div>
-              <div class="item-title-lg">Your <em>academies</em></div>
-              <div class="item-sub">Manage and publish</div>
+              <div class="item-title-lg">{{ 'your' | translate }} <em>{{ 'academies' | translate }}</em></div>
+              <div class="item-sub">{{ 'manageAndPublish' | translate }}</div>
             </div>
-            <a class="btn btn-ghost btn-sm" routerLink="/instructor/academies">View all</a>
+            <a class="btn btn-ghost btn-sm" routerLink="/instructor/academies">{{ 'viewAll' | translate }}</a>
           </div>
 
           <div class="empty" *ngIf="vm.academiesCount === 0">
-            <div class="empty-title">No academies yet</div>
-            <div class="empty-sub">Create an academy to start publishing courses.</div>
-            <a class="btn btn-primary" routerLink="/instructor/academy/create">Create academy</a>
+            <div class="empty-title">{{ 'noAcademiesYet' | translate }}</div>
+            <div class="empty-sub">{{ 'createAcademyStartPublishing' | translate }}</div>
+            <a class="btn btn-primary" routerLink="/instructor/academy/create">{{ 'createAcademy' | translate }}</a>
           </div>
 
           <div class="items-grid" *ngIf="vm.academiesCount > 0">
@@ -205,25 +205,25 @@
                 <span class="status-badge"
                       [class.status-hidden]="a.isHidden"
                       [class.status-good]="!a.isHidden && a.isPublished">
-                  {{ a.isHidden ? 'Hidden' : (a.isPublished ? 'Published' : 'Draft') }}
+                  {{ a.isHidden ? ('hidden' | translate) : (a.isPublished ? ('published' | translate) : ('draft' | translate)) }}
                 </span>
               </div>
 
               <div class="meta-text">{{ a.description || a.slug }}</div>
 
               <div class="meta-row">
-                <span class="meta-text">Courses: <code>{{ a.courseCount || 0 }}</code></span>
-                <span class="meta-text">Slug: <code>{{ a.slug }}</code></span>
+                <span class="meta-text">{{ 'courses' | translate }}: <code>{{ a.courseCount || 0 }}</code></span>
+                <span class="meta-text">{{ 'slug' | translate }}: <code>{{ a.slug }}</code></span>
               </div>
 
               <div class="hidden-info" *ngIf="a.isHidden">
-                <div class="meta-text"><strong>Hidden by admin</strong></div>
+                <div class="meta-text"><strong>{{ 'hiddenByAdmin' | translate }}</strong></div>
                 <div class="meta-text">{{ hiddenMessage(a) }}</div>
                 <div class="item-actions">
                   <button class="btn btn-ghost btn-sm" type="button"
                     (click)="requestReview($event, a)"
                     [disabled]="isPublishing(a.id)">
-                    Request review
+                    {{ 'requestReview' | translate }}
                   </button>
                 </div>
               </div>
@@ -232,11 +232,11 @@
                 <button class="btn btn-ghost btn-sm" type="button"
                   (click)="togglePublish($event, a)"
                   [disabled]="isPublishing(a.id)"
-                  [attr.aria-label]="a.isPublished ? 'Unpublish academy' : 'Publish academy'">
-                  {{ a.isPublished ? 'Unpublish' : 'Publish' }}
+                  [attr.aria-label]="a.isPublished ? ('unpublishAcademy' | translate) : ('publishAcademy' | translate)">
+                  {{ a.isPublished ? ('unpublish' | translate) : ('published' | translate) }}
                 </button>
-                <span class="meta-text" *ngIf="isPublishing(a.id)">Saving…</span>
-                <span class="meta-text" *ngIf="!isPublishing(a.id)">Open →</span>
+                <span class="meta-text" *ngIf="isPublishing(a.id)">{{ 'saving' | translate }}</span>
+                <span class="meta-text" *ngIf="!isPublishing(a.id)">{{ 'open' | translate }} →</span>
               </div>
             </article>
           </div>

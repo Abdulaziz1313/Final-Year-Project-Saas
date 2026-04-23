@@ -1,0 +1,25 @@
+<svg width="1600" height="500" viewBox="0 0 1600 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gPink" x1="120" y1="40" x2="260" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F6A08F"/>
+      <stop offset="1" stop-color="#EC4FA1"/>
+    </linearGradient>
+    <linearGradient id="gPurple" x1="250" y1="120" x2="420" y2="430" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6D3EF0"/>
+      <stop offset="1" stop-color="#C7A5F5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Mark -->
+  <g transform="translate(40,20)">
+    <path d="M175 18C143 36 121 54 106 76C89 102 80 132 80 174V322C80 360 104 394 141 409L243 451V52C243 30 220 15 200 15C191 15 183 16 175 18Z" fill="url(#gPink)"/>
+    <path d="M277 129C311 136 343 149 372 171C405 196 422 229 422 274V331C422 384 396 419 346 438L271 466C254 472 236 460 236 442V322C236 301 253 284 274 284H282C317 284 339 256 339 214V204C339 168 318 145 277 129Z" fill="url(#gPurple)"/>
+    <path d="M260 129C298 141 330 157 356 181C383 206 397 236 397 272V329C397 367 381 397 350 417L299 451C285 460 267 450 267 433V316C267 296 283 280 303 280H307C337 280 356 258 356 225V212C356 175 324 147 260 129Z" fill="#7A4BEA" opacity="0.22"/>
+  </g>
+
+  <!-- Wordmark -->
+  <g fill="#351C96">
+    <text x="520" y="250" font-family="Inter, Arial, Helvetica, sans-serif" font-size="230" font-weight="700" letter-spacing="-8">Alef</text>
+    <text x="535" y="385" font-family="Inter, Arial, Helvetica, sans-serif" font-size="105" font-weight="400" letter-spacing="-2">Learning Commerce</text>
+  </g>
+</svg>

@@ -1,11 +1,9 @@
 // LearningPlatform.Api/Services/CertificatePdfService.cs
-// Redesigned to match the Alef home page design system:
-//   • Instrument Serif display + DM Sans body typography hierarchy
-//   • Dark navy gradient header band (home logo-mark feel)
-//   • Blue/sky gradient accent bars (home feat-card style)
-//   • Gold radial glow detail on the seal
-//   • Elevated card-in-card layout matching home hero-card
-//   • Consistent shadow/border tokens throughout
+// Updated:
+//   • Uses academy logo when available
+//   • Uses academy name in the certificate header/seal/signature area
+//   • Falls back gracefully to academy initial if no logo exists
+//   • Keeps the Alef-inspired visual design language
 
 using System.Text;
 using QuestPDF.Fluent;
@@ -21,27 +19,46 @@ public interface ICertificatePdfService
         string studentName,
         string courseTitle,
         string academyName,
-        DateTimeOffset completedAt
+        DateTimeOffset completedAt,
+        string? academyLogoPath = null
     );
 }
 
 public class CertificatePdfService : ICertificatePdfService
 {
-    // Inserts soft break opportunities into unbreakable tokens/URLs.
     private static string BreakLongText(string? input, int chunk = 18)
     {
         if (string.IsNullOrWhiteSpace(input)) return string.Empty;
         input = input.Trim();
+
         var sb = new StringBuilder(input.Length + input.Length / chunk);
         int run = 0;
+
         foreach (var ch in input)
         {
             sb.Append(ch);
+
             if (char.IsWhiteSpace(ch) || ch is '-' or '_' or '/' or '\\' or '.' or ',' or ':' or ';' or '|')
-            { run = 0; continue; }
-            if (++run >= chunk) { sb.Append(' '); run = 0; }
+            {
+                run = 0;
+                continue;
+            }
+
+            if (++run >= chunk)
+            {
+                sb.Append(' ');
+                run = 0;
+            }
         }
+
         return sb.ToString();
+    }
+
+    private static string AcademyInitial(string academyName)
+    {
+        return string.IsNullOrWhiteSpace(academyName)
+            ? "A"
+            : academyName.Trim().Substring(0, 1).ToUpperInvariant();
     }
 
     public byte[] Generate(
@@ -49,52 +66,52 @@ public class CertificatePdfService : ICertificatePdfService
         string studentName,
         string courseTitle,
         string academyName,
-        DateTimeOffset completedAt)
+        DateTimeOffset completedAt,
+        string? academyLogoPath = null)
     {
         QuestPDF.Settings.License = LicenseType.Community;
 
-        studentName       = string.IsNullOrWhiteSpace(studentName)       ? "Student"     : studentName.Trim();
-        courseTitle       = string.IsNullOrWhiteSpace(courseTitle)        ? "Course"      : courseTitle.Trim();
-        academyName       = string.IsNullOrWhiteSpace(academyName)        ? "Alef"        : academyName.Trim();
-        certificateNumber = string.IsNullOrWhiteSpace(certificateNumber)  ? "ALF-UNKNOWN" : certificateNumber.Trim();
+        studentName = string.IsNullOrWhiteSpace(studentName) ? "Student" : studentName.Trim();
+        courseTitle = string.IsNullOrWhiteSpace(courseTitle) ? "Course" : courseTitle.Trim();
+        academyName = string.IsNullOrWhiteSpace(academyName) ? "Academy" : academyName.Trim();
+        certificateNumber = string.IsNullOrWhiteSpace(certificateNumber) ? "CERT-UNKNOWN" : certificateNumber.Trim();
 
-        var safeStudentName       = BreakLongText(studentName,       16);
-        var safeCourseTitle       = BreakLongText(courseTitle,       20);
-        var safeAcademyName       = BreakLongText(academyName,       18);
+        var safeStudentName = BreakLongText(studentName, 16);
+        var safeCourseTitle = BreakLongText(courseTitle, 20);
+        var safeAcademyName = BreakLongText(academyName, 18);
         var safeCertificateNumber = BreakLongText(certificateNumber, 14);
 
         var dateText = completedAt.UtcDateTime.ToString("MMMM dd, yyyy");
+        var academyInitial = AcademyInitial(academyName);
 
-        // ── DESIGN TOKENS (home-aligned) ────────────────────────────────
-        //  Accent
-        var accentBlue   = "#1A56DB";   // --accent
-        var accentSky    = "#3B82F6";   // lighter blue for gradients
-        var accentLight  = "#EFF4FF";   // --accent-light
-        var gold         = "#D97706";   // --gold
-        var goldLight    = "#FFFBEB";   // --gold-light
+        var hasAcademyLogo =
+            !string.IsNullOrWhiteSpace(academyLogoPath) &&
+            File.Exists(academyLogoPath);
 
-        //  Surfaces
-        var pageBg       = "#FAFBFC";   // home background
-        var cardBg       = "#FFFFFF";   // --surface
-        var surface2     = "#F8F9FB";   // --surface-2
+        // ── DESIGN TOKENS ────────────────────────────────────────────────
+        var accentBlue = "#1A56DB";
+        var accentSky = "#3B82F6";
+        var accentLight = "#EFF4FF";
+        var gold = "#D97706";
+        var goldLight = "#FFFBEB";
 
+        var pageBg = "#FAFBFC";
+        var cardBg = "#FFFFFF";
+        var surface2 = "#F8F9FB";
 
-        //  Text
-        var ink          = "#0A0F1E";   // --text
-        var muted        = "#6B7280";   // --muted
-        var muted2       = "#9CA3AF";   // --muted-2
-        var borderColor  = "#E5E7EB";   // ~rgba(10,15,30,0.10) on white
-        var borderStrong = "#D1D5DB";   // ~rgba(10,15,30,0.16) on white
+        var ink = "#0A0F1E";
+        var muted = "#6B7280";
+        var muted2 = "#9CA3AF";
+        var borderColor = "#E5E7EB";
+        var borderStrong = "#D1D5DB";
 
-        //  Navy gradient for header band (home logo-mark feel)
-        var navyDark     = "#0A0F1E";   // --text used as brand dark
-        var navyMid      = "#1E3A8A";   // home logo-mark gradient end
+        var navyDark = "#0A0F1E";
+        var navyMid = "#1E3A8A";
 
-        //  Dynamic title font size
         var titleFont =
             courseTitle.Length > 110 ? 13 :
-            courseTitle.Length > 80  ? 15 :
-            courseTitle.Length > 55  ? 17 :
+            courseTitle.Length > 80 ? 15 :
+            courseTitle.Length > 55 ? 17 :
             19;
 
         var verifyUrl = "https://alef.app/verify";
@@ -110,18 +127,15 @@ public class CertificatePdfService : ICertificatePdfService
 
                 page.Content().Layers(layers =>
                 {
-                    // ── BACKGROUND: subtle radial tints (home-bg feel) ──────────
                     layers.Layer().Extend().Element(bg =>
                     {
-                        // Blue tint top-left, gold tint top-right — mirrors home
                         bg.Row(r =>
                         {
-                            r.RelativeItem().Background("#EFF6FF"); // blue-50 tint
-                            r.RelativeItem().Background("#FFF7ED"); // amber-50 tint
+                            r.RelativeItem().Background("#EFF6FF");
+                            r.RelativeItem().Background("#FFF7ED");
                         });
                     });
 
-                    // ── FOREGROUND CARD ─────────────────────────────────────────
                     layers.PrimaryLayer().Padding(8).ScaleToFit().Element(host =>
                     {
                         host
@@ -130,7 +144,6 @@ public class CertificatePdfService : ICertificatePdfService
                             .BorderColor(borderColor)
                             .Column(card =>
                             {
-                                // ── TOP ACCENT BAR: blue→sky gradient (home feat-card) ──
                                 card.Item().Height(6).Row(r =>
                                 {
                                     r.RelativeItem(2).Background(accentBlue);
@@ -138,48 +151,61 @@ public class CertificatePdfService : ICertificatePdfService
                                     r.RelativeItem(1).Background(gold);
                                 });
 
-                                // ── HEADER BAND: dark navy (home logo-mark) ─────────────
+                                // ── HEADER BAND ───────────────────────────────────────
                                 card.Item().Background(navyDark).Padding(18).Row(row =>
                                 {
-                                    // Logo mark — dark navy + Instrument Serif (exact home style)
-                                    row.ConstantItem(52).AlignMiddle().Element(mark =>
+                                    row.ConstantItem(54).Height(54).AlignMiddle().Element(mark =>
                                     {
-                                        mark
-                                            .Background(navyMid)
-                                            .Border(1)
-                                            .BorderColor("#1E3A8A")
-                                            .Padding(10)
-                                            .AlignCenter()
-                                            .Text("الف")
-                                            .FontFamily("Instrument Serif")
-                                            .Italic()
-                                            .FontSize(18)
-                                            .FontColor(Colors.White);
+                                        if (hasAcademyLogo)
+                                        {
+                                            mark
+                                                .Background(Colors.White)
+                                                .Border(1)
+                                                .BorderColor("#30456B")
+                                                .Padding(4)
+                                                .AlignCenter()
+                                                .AlignMiddle()
+                                                .Image(academyLogoPath!, ImageScaling.FitArea);
+                                        }
+                                        else
+                                        {
+                                            mark
+                                                .Background(navyMid)
+                                                .Border(1)
+                                                .BorderColor("#30456B")
+                                                .Padding(10)
+                                                .AlignCenter()
+                                                .AlignMiddle()
+                                                .Text(academyInitial)
+                                                .FontFamily("DM Sans")
+                                                .Bold()
+                                                .FontSize(20)
+                                                .FontColor(Colors.White);
+                                        }
                                     });
 
                                     row.Spacing(14);
 
-                                    // Brand name + platform label
                                     row.RelativeItem().AlignMiddle().Column(brand =>
                                     {
-                                        brand.Item().Text("Alef")
+                                        brand.Item().Text(safeAcademyName)
                                             .FontFamily("Instrument Serif")
                                             .FontSize(22)
-                                            .FontColor(Colors.White);
+                                            .FontColor(Colors.White)
+                                            .ClampLines(2);
 
-                                        brand.Item().Text("Learning Commerce")
+                                        brand.Item().Text("Learning Academy")
                                             .FontSize(10)
-                                            .FontColor("#99AEC8"); // white @60% on navy
+                                            .FontColor("#99AEC8");
                                     });
 
                                     row.Spacing(24);
 
-                                    // Certificate label — right-aligned pill treatment
                                     row.AutoItem().AlignMiddle().Column(label =>
                                     {
                                         label.Item().Text("CERTIFICATE OF COMPLETION")
                                             .FontSize(9)
-                                            .FontColor("#8CA5C0") // white @55% on navy
+                                            .FontColor("#8CA5C0")
                                             .LetterSpacing(2f);
 
                                         label.Item().PaddingTop(4).Row(r =>
@@ -198,12 +224,11 @@ public class CertificatePdfService : ICertificatePdfService
                                     });
                                 });
 
-                                // ── BODY ────────────────────────────────────────────────
+                                // ── BODY ─────────────────────────────────────────────
                                 card.Item().Padding(22).Column(col =>
                                 {
                                     col.Spacing(10);
 
-                                    // ── META ROW: cert no + date ────────────────────────
                                     col.Item().Row(row =>
                                     {
                                         row.RelativeItem().Column(x =>
@@ -237,20 +262,17 @@ public class CertificatePdfService : ICertificatePdfService
                                         });
                                     });
 
-                                    // Divider
                                     col.Item().Height(1).Background(borderColor);
 
-                                    // ── CENTRE: eyebrow + display title ────────────────
                                     col.Item().PaddingVertical(2).AlignCenter().Column(t =>
                                     {
                                         t.Spacing(5);
 
-                                        // Eyebrow (home hero-eyebrow style)
                                         t.Item().AlignCenter().Row(r =>
                                         {
                                             r.AutoItem()
                                                 .Border(1)
-                                                .BorderColor("#BFDBFE") // blue-200
+                                                .BorderColor("#BFDBFE")
                                                 .Background(accentLight)
                                                 .PaddingHorizontal(12)
                                                 .PaddingVertical(4)
@@ -259,19 +281,16 @@ public class CertificatePdfService : ICertificatePdfService
                                                 .FontColor(accentBlue);
                                         });
 
-                                        // Student name — Instrument Serif display (home hero-title feel)
                                         t.Item().AlignCenter().Text(safeStudentName)
                                             .FontFamily("Instrument Serif")
                                             .FontSize(36)
                                             .FontColor(ink)
                                             .ClampLines(2);
 
-                                        // Subline
                                         t.Item().AlignCenter().Text("has successfully completed")
                                             .FontSize(11)
                                             .FontColor(muted);
 
-                                        // Course title card (home hero-card inner stat feel)
                                         t.Item().PaddingTop(2).AlignCenter().Row(r =>
                                         {
                                             r.RelativeItem();
@@ -299,20 +318,17 @@ public class CertificatePdfService : ICertificatePdfService
                                             .ClampLines(2);
                                     });
 
-                                    // Divider
                                     col.Item().Height(1).Background(borderColor);
 
-                                    // ── BOTTOM ROW: seal + signatures + verification ─────
+                                    // ── BOTTOM ROW ────────────────────────────────────
                                     col.Item().PaddingTop(4).Row(row =>
                                     {
-                                        // Seal block — gold border with radial glow feel
                                         row.ConstantItem(160).AlignCenter().Element(seal =>
                                         {
                                             seal.Column(s =>
                                             {
                                                 s.Spacing(6);
 
-                                                // Outer gold ring
                                                 s.Item().AlignCenter()
                                                     .Border(3)
                                                     .BorderColor(gold)
@@ -328,23 +344,31 @@ public class CertificatePdfService : ICertificatePdfService
                                                             .FontColor(gold)
                                                             .Bold();
 
-                                                        // Inner navy mark (logo-mark inside seal)
                                                         x.Item().AlignCenter()
                                                             .Background(navyDark)
                                                             .PaddingHorizontal(14)
-                                                            .PaddingVertical(6)
+                                                            .PaddingVertical(8)
                                                             .Column(inner =>
                                                             {
-                                                                inner.Item().AlignCenter().Text("الف")
-                                                                    .FontFamily("Instrument Serif")
-                                                                    .Italic()
-                                                                    .FontSize(20)
-                                                                    .FontColor(Colors.White);
+                                                                if (hasAcademyLogo)
+                                                                {
+                                                                    inner.Item().AlignCenter().Height(26)
+                                                                        .Image(academyLogoPath!, ImageScaling.FitHeight);
+                                                                }
+                                                                else
+                                                                {
+                                                                    inner.Item().AlignCenter().Text(academyInitial)
+                                                                        .FontFamily("DM Sans")
+                                                                        .Bold()
+                                                                        .FontSize(18)
+                                                                        .FontColor(Colors.White);
+                                                                }
 
-                                                                inner.Item().AlignCenter().Text("ALEF")
-                                                                    .FontSize(8)
-                                                                    .LetterSpacing(2f)
-                                                                    .FontColor("#B3C4D4"); // white @70% on navy
+                                                                inner.Item().AlignCenter().Text(safeAcademyName)
+                                                                    .FontSize(7)
+                                                                    .LetterSpacing(1.3f)
+                                                                    .FontColor("#B3C4D4")
+                                                                    .ClampLines(2);
                                                             });
 
                                                         x.Item().AlignCenter().Text("CERTIFIED")
@@ -354,7 +378,7 @@ public class CertificatePdfService : ICertificatePdfService
                                                             .Bold();
                                                     });
 
-                                                s.Item().AlignCenter().Text("Verified by Alef Platform")
+                                                s.Item().AlignCenter().Text("Verified certificate")
                                                     .FontSize(8)
                                                     .FontColor(muted2)
                                                     .ClampLines(1);
@@ -363,12 +387,10 @@ public class CertificatePdfService : ICertificatePdfService
 
                                         row.Spacing(20);
 
-                                        // Signatures + verification card
                                         row.RelativeItem().Column(right =>
                                         {
                                             right.Spacing(10);
 
-                                            // Signature lines
                                             right.Item().Row(r =>
                                             {
                                                 r.RelativeItem().Column(x =>
@@ -408,7 +430,6 @@ public class CertificatePdfService : ICertificatePdfService
                                                 });
                                             });
 
-                                            // Verification card — home hcs-item style
                                             right.Item()
                                                 .Border(1)
                                                 .BorderColor(borderColor)
@@ -429,7 +450,7 @@ public class CertificatePdfService : ICertificatePdfService
                                                                 .FontColor(muted2)
                                                                 .LetterSpacing(1.2f);
 
-                                                            left.Item().Text($"{verifyUrl}")
+                                                            left.Item().Text(verifyUrl)
                                                                 .FontSize(9)
                                                                 .FontColor(accentBlue)
                                                                 .ClampLines(1);
@@ -440,11 +461,10 @@ public class CertificatePdfService : ICertificatePdfService
                                                                 .ClampLines(2);
                                                         });
 
-                                                        // Status pill (home hcc-status live style)
                                                         rr.AutoItem().AlignMiddle()
                                                             .Border(1)
-                                                            .BorderColor("#BBF7D0") // green-200
-                                                            .Background("#DCFCE7") // green-100
+                                                            .BorderColor("#BBF7D0")
+                                                            .Background("#DCFCE7")
                                                             .PaddingHorizontal(10)
                                                             .PaddingVertical(6)
                                                             .Column(s =>
@@ -452,7 +472,7 @@ public class CertificatePdfService : ICertificatePdfService
                                                                 s.Item().AlignCenter().Text("VALID")
                                                                     .FontSize(11)
                                                                     .Bold()
-                                                                    .FontColor("#15803D"); // green-700
+                                                                    .FontColor("#15803D");
                                                             });
                                                     });
 
@@ -467,7 +487,6 @@ public class CertificatePdfService : ICertificatePdfService
                                     });
                                 });
 
-                                // ── BOTTOM ACCENT BAR: reversed gold→sky (mirroring top) ──
                                 card.Item().Height(6).Row(r =>
                                 {
                                     r.RelativeItem(1).Background(gold);
@@ -478,9 +497,8 @@ public class CertificatePdfService : ICertificatePdfService
                     });
                 });
 
-                // Footer outside the card
                 page.Footer().AlignCenter().PaddingTop(4)
-                    .Text("© Alef (الف) Learning Commerce · alef.app")
+                    .Text($"© {academyName} · Powered by Alef")
                     .FontSize(8)
                     .FontColor(muted2);
             });

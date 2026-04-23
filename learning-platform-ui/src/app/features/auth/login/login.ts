@@ -19,11 +19,9 @@ export class LoginComponent {
   error: string | null = null;
 
   showPassword = false;
-
   rememberMe = localStorage.getItem('alef_remember') === '1';
 
   form;
-
   loginNotice: string | null = null;
 
   year = new Date().getFullYear();
@@ -53,12 +51,12 @@ export class LoginComponent {
     return !!this.auth.isLoggedIn?.();
   }
 
-  get isInstructor(): boolean {
-    try { return this.auth.hasRole?.('Instructor'); } catch { return false; }
+  get isOrgAdmin(): boolean {
+    try { return this.auth.hasRole?.('OrgAdmin'); } catch { return false; }
   }
 
-  get isStudent(): boolean {
-    try { return this.auth.hasRole?.('Student'); } catch { return false; }
+  get isAdmin(): boolean {
+    try { return this.auth.hasRole?.('Admin'); } catch { return false; }
   }
 
   togglePassword() {
@@ -70,20 +68,24 @@ export class LoginComponent {
     localStorage.setItem('alef_remember', v ? '1' : '0');
   }
 
+  // ✅ UPDATED: real navigation (backoffice forgot flow)
   forgotPassword() {
-    this.toast.info('Forgot password is coming soon.');
+    this.router.navigateByUrl('/forgot-password');
   }
 
-  
-private postLoginRedirect() {
-  const returnUrl = sessionStorage.getItem('return_url');
-  if (returnUrl) { sessionStorage.removeItem('return_url'); return returnUrl; }
-  if (this.auth.hasRole('Admin'))    return '/admin';
-  if (this.auth.hasRole('OrgAdmin')) return '/org/academies'; 
-  if (this.auth.hasRole('Instructor')) return '/instructor';
-  if (this.auth.hasRole('Student'))    return '/my-learning';
-  return '/me';
-}
+  private postLoginRedirect() {
+    const returnUrl = sessionStorage.getItem('return_url');
+    if (returnUrl) {
+      sessionStorage.removeItem('return_url');
+      return returnUrl;
+    }
+
+    if (this.auth.hasRole('Admin')) return '/admin';
+    if (this.auth.hasRole('OrgAdmin')) return '/org/academies';
+
+    // fallback (should not happen because backend blocks non-backoffice)
+    return '/me';
+  }
 
   submit() {
     this.error = null;
@@ -96,16 +98,31 @@ private postLoginRedirect() {
     this.loading = true;
     const { email, password } = this.form.value;
 
+    // Backend enforces Admin/OrgAdmin-only on /api/auth/login,
+    // but we still verify on the client as a safety check.
     this.auth.login(email!, password!)
       .pipe(finalize(() => this.zone.run(() => (this.loading = false))))
       .subscribe({
         next: () => {
           this.zone.run(() => {
+            const isBackoffice = this.auth.hasRole('Admin') || this.auth.hasRole('OrgAdmin');
+
+            if (!isBackoffice) {
+              this.auth.logout();
+              this.error = 'This sign-in page is for admins and organizations only. Please use academy sign-in for students/instructors.';
+              return;
+            }
+
             this.router.navigateByUrl(this.postLoginRedirect());
           });
         },
         error: (err) => {
           this.zone.run(() => {
+            // Backend returns clear messages, show string if present
+            if (typeof err?.error === 'string') {
+              this.error = err.error;
+              return;
+            }
             if (err?.status === 401) this.error = 'Incorrect email or password.';
             else this.error = 'Login failed. Please try again.';
           });

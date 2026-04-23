@@ -1,191 +1,254 @@
 <div class="academies">
 
-  <main class="wrap">
+  <!-- ── HERO BAND ── -->
+  <div class="hero-band">
+    <div class="hero-band-bg">
+      <div class="hb-mesh"></div>
+      <div class="hb-grain"></div>
+      <div class="hb-glow hb-glow-1"></div>
+      <div class="hb-glow hb-glow-2"></div>
+    </div>
 
-    <!-- ── PAGE HERO ── -->
-    <div class="page-hero">
-      <div class="page-hero-left">
-        <div class="eyebrow">
-          <div class="eyebrow-dot"></div>
-          <span class="eyebrow-text">Browse all academies</span>
-        </div>
-        <h1 class="page-title">Explore <em>Academies</em></h1>
-        <p class="page-desc">Discover published academies on Alef — browse, filter, and find your next learning experience.</p>
+    <div class="hero-inner">
+      <div class="hero-brand">
+        <img src="/branding/alef-logo.svg" alt="Alef" class="hero-brand-logo" />
       </div>
 
-      <!-- ── FILTERS ── -->
-      <div class="filters">
-        <div class="search-wrap">
-          <svg class="search-ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">
+          <ng-container *ngIf="signinMode === 'instructor'">Instructor sign in</ng-container>
+          <ng-container *ngIf="signinMode === 'student'">Student sign in</ng-container>
+          <ng-container *ngIf="signinMode === null">Alef Learning Network</ng-container>
+        </span>
+      </div>
+
+      <h1 class="hero-title">
+        <ng-container *ngIf="signinMode === 'instructor'">Choose your<br><em>Academy</em></ng-container>
+        <ng-container *ngIf="signinMode === 'student'">Choose your<br><em>Academy</em></ng-container>
+        <ng-container *ngIf="signinMode === null">Explore<br><em>Academies</em></ng-container>
+      </h1>
+
+      <p class="hero-sub" *ngIf="signinMode === null">
+        Discover published academies — browse, filter, and find your next learning experience.
+      </p>
+      <p class="hero-sub" *ngIf="signinMode === 'instructor'">
+        Select the academy you're registered with — we'll take you to the instructor login page.
+      </p>
+      <p class="hero-sub" *ngIf="signinMode === 'student'">
+        Select the academy you're enrolled in — we'll take you to the student login page.
+      </p>
+
+      <div class="hero-search-bar">
+        <div class="hsb-search">
+          <svg class="hsb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <circle cx="10.5" cy="10.5" r="7.5"/>
             <path d="M21 21l-4.3-4.3"/>
           </svg>
           <input
-            class="input search-input"
+            class="hsb-input"
             [value]="q"
             (input)="onSearchInput($any($event.target).value)"
             (keydown)="onEnter($event)"
             placeholder="Search academies…"
+            autocomplete="off"
           />
-          <button class="search-clear" type="button" *ngIf="q" (click)="clearQuery()" aria-label="Clear search">✕</button>
+          <button class="hsb-clear" type="button" *ngIf="q" (click)="clearQuery()" aria-label="Clear">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/></svg>
+          </button>
         </div>
 
-        <select class="input select-sort" [value]="sort" (change)="onSortChange($any($event.target).value)">
-          <option value="newest">Newest first</option>
-          <option value="name">Name A–Z</option>
-        </select>
+        <div class="hsb-controls">
+          <select class="hsb-select" [value]="sort" (change)="onSortChange($any($event.target).value)">
+            <option value="newest">Newest first</option>
+            <option value="name">Name A–Z</option>
+          </select>
 
-        <button
-          class="toggle-btn"
-          type="button"
-          [class.on]="onlyNew"
-          (click)="toggleOnlyNew()"
-          [attr.aria-pressed]="onlyNew"
-        >
-          <span class="toggle-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 6L9 17l-5-5"/>
+          <button
+            class="hsb-toggle"
+            type="button"
+            [class.active]="onlyNew"
+            (click)="toggleOnlyNew()"
+            [attr.aria-pressed]="onlyNew"
+          >
+            <span class="hsb-toggle-dot" [class.on]="onlyNew"></span>
+            New only
+          </button>
+
+          <button class="hsb-btn" type="button" (click)="search()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+              <circle cx="10.5" cy="10.5" r="7.5"/>
+              <path d="M21 21l-4.3-4.3"/>
             </svg>
-          </span>
-          <span>New only</span>
-          <span class="toggle-badge" *ngIf="onlyNew">On</span>
-        </button>
-
-        <div class="filter-actions">
-          <button class="btn btn-primary btn-sm" type="button" (click)="search()">Search</button>
-          <button class="btn btn-ghost btn-sm" type="button" (click)="reset()">Reset</button>
+            Search
+          </button>
         </div>
       </div>
-    </div>
 
-    <!-- ── CONTENT ── -->
+      <div class="signin-ribbon" *ngIf="signinMode !== null">
+        <div class="sr-left">
+          <span class="sr-badge" [class.instructor]="signinMode === 'instructor'">
+            <ng-container *ngIf="signinMode === 'instructor'">🧑‍🏫 Instructor</ng-container>
+            <ng-container *ngIf="signinMode === 'student'">🎓 Student</ng-container>
+          </span>
+          <span class="sr-text">After sign in, switch academies anytime from Explore.</span>
+        </div>
+        <button type="button" class="sr-exit" (click)="clearSigninMode()">
+          Exit sign-in mode
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PAGE CONTENT ── -->
+  <main class="wrap">
     <ng-container *ngIf="state$ | async as st">
 
-      <!-- Loading skeleton -->
       <div *ngIf="st.loading" class="academy-grid">
         <div class="academy-card sk" *ngFor="let _ of skeleton">
           <div class="ac-banner"></div>
           <div class="ac-body">
-            <div class="ac-logo-wrap">
-              <div class="ac-logo"></div>
-            </div>
+            <div class="ac-logo-wrap"><div class="ac-logo"></div></div>
             <div class="sk-lines">
               <div class="sk-line w70"></div>
               <div class="sk-line w50"></div>
-              <div class="sk-chips">
-                <div class="sk-chip"></div>
-                <div class="sk-chip"></div>
-              </div>
+              <div class="sk-chips"><div class="sk-chip"></div><div class="sk-chip"></div></div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Error -->
       <div *ngIf="st.error" class="alert-error">
-        <span>⚠</span> {{ st.error }}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        <div class="alert-error-content">
+          <strong>Something went wrong</strong>
+          <span>{{ st.error }}</span>
+        </div>
       </div>
 
       <ng-container *ngIf="!st.loading && !st.error && st.data as vm">
 
-        <!-- ── FEATURED SECTIONS ── -->
         <ng-container *ngIf="!q">
 
           <section class="featured-section" *ngIf="vm.newItems.length > 0">
             <div class="section-header">
-              <div>
-                <h2 class="section-title">New this week</h2>
-                <p class="section-sub">Recently published academies</p>
+              <div class="sh-left">
+                <span class="sh-label">
+                  <span class="sh-label-dot"></span>
+                  New this week
+                </span>
+                <h2 class="sh-title">Recently published</h2>
               </div>
-              <button class="btn btn-ghost btn-sm" type="button" (click)="toggleOnlyNew()">View all new →</button>
+              <button class="sh-action" type="button" (click)="toggleOnlyNew()">
+                View all new
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </button>
             </div>
 
-            <div class="rail">
-              <a
-                class="mini-card"
-                *ngFor="let a of vm.newItems"
-                [routerLink]="['/academy', a.slug]"
-                [style.--brand]="brand(a)"
-              >
-                <div
-                  class="mc-banner"
-                  [class.has-img]="!!img(a.bannerUrl)"
-                  [style.backgroundImage]="img(a.bannerUrl) ? 'url(' + img(a.bannerUrl) + ')' : null"
+            <div class="rail-wrap">
+              <div class="rail">
+                <a
+                  class="mini-card"
+                  *ngFor="let a of vm.newItems"
+                  [routerLink]="signinMode === 'instructor'
+                    ? ['/login-instructor']
+                    : signinMode === 'student'
+                      ? ['/login-academy']
+                      : ['/academy-home', a.slug]"
+                  [queryParams]="signinMode ? { academy: a.slug } : null"
+                  [style.--brand]="brand(a)"
                 >
-                  <div class="mc-banner-overlay"></div>
-                </div>
-                <div class="mc-body">
-                  <div class="mc-top">
+                  <div class="mc-banner" [class.has-img]="!!img(a.bannerUrl)" [style.backgroundImage]="img(a.bannerUrl) ? 'url(' + img(a.bannerUrl) + ')' : null">
+                    <div class="mc-gradient"></div>
+                    <span class="mc-pill">New</span>
+                  </div>
+                  <div class="mc-body">
                     <div class="mc-logo">
                       <img *ngIf="img(a.logoUrl) as l" [src]="l" alt="" />
                       <div class="mc-fallback" *ngIf="!img(a.logoUrl)">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
                     </div>
-                    <span class="pill pill-new">New</span>
+                    <div class="mc-info">
+                      <div class="mc-name">{{ a.name }}</div>
+                      <div class="mc-sub">{{ subtitle(a) }}</div>
+                    </div>
+                    <svg class="mc-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                   </div>
-                  <div class="mc-name">{{ a.name }}</div>
-                  <div class="mc-sub">{{ subtitle(a) }}</div>
-                </div>
-              </a>
+                </a>
+              </div>
             </div>
           </section>
 
           <section class="featured-section" *ngIf="vm.recentItems.length > 0">
             <div class="section-header">
-              <div>
-                <h2 class="section-title">Recently updated</h2>
-                <p class="section-sub">Latest published updates</p>
+              <div class="sh-left">
+                <span class="sh-label">
+                  <span class="sh-label-dot sh-label-dot--green"></span>
+                  Latest updates
+                </span>
+                <h2 class="sh-title">Recently updated</h2>
               </div>
             </div>
-
-            <div class="rail">
-              <a
-                class="mini-card"
-                *ngFor="let a of vm.recentItems"
-                [routerLink]="['/academy', a.slug]"
-                [style.--brand]="brand(a)"
-              >
-                <div
-                  class="mc-banner"
-                  [class.has-img]="!!img(a.bannerUrl)"
-                  [style.backgroundImage]="img(a.bannerUrl) ? 'url(' + img(a.bannerUrl) + ')' : null"
+            <div class="rail-wrap">
+              <div class="rail">
+                <a
+                  class="mini-card"
+                  *ngFor="let a of vm.recentItems"
+                  [routerLink]="signinMode === 'instructor'
+                    ? ['/login-instructor']
+                    : signinMode === 'student'
+                      ? ['/login-academy']
+                      : ['/academy-home', a.slug]"
+                  [queryParams]="signinMode ? { academy: a.slug } : null"
+                  [style.--brand]="brand(a)"
                 >
-                  <div class="mc-banner-overlay"></div>
-                </div>
-                <div class="mc-body">
-                  <div class="mc-top">
+                  <div class="mc-banner" [class.has-img]="!!img(a.bannerUrl)" [style.backgroundImage]="img(a.bannerUrl) ? 'url(' + img(a.bannerUrl) + ')' : null">
+                    <div class="mc-gradient"></div>
+                    <span class="mc-pill mc-pill-pub">Updated</span>
+                  </div>
+                  <div class="mc-body">
                     <div class="mc-logo">
                       <img *ngIf="img(a.logoUrl) as l" [src]="l" alt="" />
                       <div class="mc-fallback" *ngIf="!img(a.logoUrl)">{{ (a.name || 'A').slice(0,1).toUpperCase() }}</div>
                     </div>
-                    <span class="pill pill-pub">Published</span>
+                    <div class="mc-info">
+                      <div class="mc-name">{{ a.name }}</div>
+                      <div class="mc-sub">{{ subtitle(a) }}</div>
+                    </div>
+                    <svg class="mc-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                   </div>
-                  <div class="mc-name">{{ a.name }}</div>
-                  <div class="mc-sub">{{ subtitle(a) }}</div>
-                </div>
-              </a>
+                </a>
+              </div>
             </div>
           </section>
 
         </ng-container>
 
-        <!-- ── RESULTS COUNT ── -->
-        <div class="results-meta" *ngIf="vm.total > 0">
-          <span>Showing <strong>{{ vm.showing }}</strong> of {{ vm.total }} academies</span>
+        <div class="results-header" *ngIf="vm.total > 0">
+          <div class="rh-left">
+            <h2 class="rh-title">All academies</h2>
+            <span class="rh-count">{{ vm.showing }} of {{ vm.total }}</span>
+          </div>
+          <button class="btn-reset" type="button" (click)="reset()" *ngIf="q || onlyNew || sort !== 'newest'">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Reset filters
+          </button>
         </div>
 
-        <!-- ── MAIN GRID ── -->
         <div class="academy-grid" *ngIf="vm.filtered.length > 0; else emptyState">
           <a
             class="academy-card"
-            *ngFor="let a of vm.filtered"
-            [routerLink]="['/academy', a.slug]"
+            *ngFor="let a of vm.filtered; let i = index"
+            [routerLink]="signinMode === 'instructor'
+              ? ['/login-instructor']
+              : signinMode === 'student'
+                ? ['/login-academy']
+                : ['/academy-home', a.slug]"
+            [queryParams]="signinMode ? { academy: a.slug } : null"
             [style.--brand]="brand(a)"
+            [style.--delay]="(i % 12) * 0.04 + 's'"
           >
-            <div
-              class="ac-banner"
-              [class.has-img]="!!img(a.bannerUrl)"
-              [style.backgroundImage]="img(a.bannerUrl) ? 'url(' + img(a.bannerUrl) + ')' : null"
-            >
+            <div class="ac-banner" [class.has-img]="!!img(a.bannerUrl)" [style.backgroundImage]="img(a.bannerUrl) ? 'url(' + img(a.bannerUrl) + ')' : null">
               <div class="ac-banner-overlay"></div>
               <div class="ac-badges">
                 <span class="pill pill-new" *ngIf="isNew(a)">New</span>
@@ -204,28 +267,34 @@
               <div class="ac-info">
                 <div class="ac-name">{{ a.name }}</div>
                 <div class="ac-sub">{{ subtitle(a) }}</div>
-                <div class="ac-meta">
-                  <span class="ac-badge">Explore →</span>
-                  <span class="ac-badge ghost" *ngIf="updatedLabel(a)">Updated</span>
-                </div>
               </div>
+            </div>
+
+            <div class="ac-footer">
+              <span class="ac-cta">
+                <ng-container *ngIf="signinMode === 'instructor'">Sign in as instructor</ng-container>
+                <ng-container *ngIf="signinMode === 'student'">Sign in as student</ng-container>
+                <ng-container *ngIf="signinMode === null">View academy</ng-container>
+              </span>
+              <svg class="ac-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
             </div>
           </a>
         </div>
 
-        <!-- ── EMPTY STATE ── -->
         <ng-template #emptyState>
           <div class="empty-state">
-            <div class="empty-icon">🏫</div>
+            <img src="/branding/alef-logo.svg" alt="Alef" class="empty-brand-logo" />
             <h3 class="empty-title">No academies found</h3>
-            <p class="empty-desc">Try a different search term or reset your filters.</p>
-            <button class="btn btn-ghost" type="button" (click)="reset()">Reset filters</button>
+            <p class="empty-desc">Try a different search term or reset your filters to explore all available academies.</p>
+            <button class="empty-btn" type="button" (click)="reset()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              Reset all filters
+            </button>
           </div>
         </ng-template>
 
       </ng-container>
     </ng-container>
-
   </main>
 
 </div>

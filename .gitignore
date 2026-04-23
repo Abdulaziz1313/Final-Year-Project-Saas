@@ -1,0 +1,11 @@
+﻿**/bin/
+**/obj/
+publish/
+dist/
+node_modules/
+.angular/
+*.zip
+*.user
+*.suo
+.env
+.env.*

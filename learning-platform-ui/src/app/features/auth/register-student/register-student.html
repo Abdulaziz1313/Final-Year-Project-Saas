@@ -1,19 +1,44 @@
-<div class="register-page" [style.--accent]="accentColor">
+<div
+  class="register-page"
+  [style.--accent]="accentColor"
+  [ngClass]="pageClasses"
+  [style.fontFamily]="fontFamilyPreview">
+
   <div class="home-bg"></div>
 
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="brand" routerLink="/home">
-        <div class="logo-mark"><span>الف</span></div>
-        <div class="brand-text">
-          <span class="brand-name">Alef</span>
-          <span class="brand-sub">Learning Commerce</span>
-        </div>
+      <a class="brand" [routerLink]="academySlug ? ['/academy-home', academySlug] : '/home'">
+        <ng-container *ngIf="academy; else alefBrand">
+          <div class="logo-mark academy-mark" [style.background]="accentColor">
+            <img *ngIf="img(academy.logoUrl)" [src]="img(academy.logoUrl)!" class="academy-mark-img" alt="Academy logo" />
+            <span *ngIf="!img(academy.logoUrl)">{{ (academy.name || 'A').slice(0, 1) }}</span>
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">{{ academy.name }}</span>
+            <span class="brand-sub">{{ academy.orgName || 'Learning Academy' }}</span>
+          </div>
+        </ng-container>
+
+        <ng-template #alefBrand>
+          <div class="logo-mark"><span>الف</span></div>
+          <div class="brand-text">
+            <span class="brand-name">Alef</span>
+            <span class="brand-sub">Learning Commerce</span>
+          </div>
+        </ng-template>
       </a>
+
       <nav class="nav-links">
+        <a class="nav-link" [routerLink]="['/academy-home', academySlug]" *ngIf="academySlug">Academy home</a>
         <a class="nav-link" routerLink="/academies">Explore</a>
         <div class="nav-sep"></div>
-        <a class="nav-link" [routerLink]="['/login-academy']" [queryParams]="{academy: academySlug}">Sign in</a>
+        <a class="btn btn-primary btn-sm"
+           [ngStyle]="primaryButtonStyle"
+           [routerLink]="['/login-academy']"
+           [queryParams]="{ academy: academySlug }">
+          Sign in
+        </a>
       </nav>
     </div>
   </header>
@@ -21,32 +46,14 @@
   <main class="wrap">
     <div class="layout">
 
-      <!-- ══════════════════════════════
-           LEFT PANEL
-      ══════════════════════════════ -->
       <div class="copy-panel">
 
-        <!-- Loading -->
         <div class="loading-state" *ngIf="step === 'loading'">
           <div class="spinner-lg"></div>
           <p>Loading academy…</p>
         </div>
 
-        <!-- Loaded -->
         <ng-container *ngIf="step !== 'loading' && step !== 'invalid' && academy">
-
-          <!-- Academy branding card -->
-          <div class="academy-branding">
-            <img *ngIf="academy.logoUrl" [src]="academy.logoUrl" class="academy-logo" alt="" />
-            <div *ngIf="!academy.logoUrl" class="academy-logo-placeholder" [style.background]="accentColor">
-              {{ academy.name[0] }}
-            </div>
-            <div class="academy-branding-text">
-              <div class="academy-branding-name">{{ academy.name }}</div>
-              <div class="academy-branding-org" *ngIf="academy.orgName">{{ academy.orgName }}</div>
-            </div>
-          </div>
-
           <div class="eyebrow">
             <div class="eyebrow-dot"></div>
             <span class="eyebrow-text">Student Registration</span>
@@ -90,40 +97,33 @@
             <div class="tip-text">
               <div class="tip-title">Already have an account?</div>
               <div class="tip-desc">
-                <a [routerLink]="['/login-academy']" [queryParams]="{academy: academySlug}" class="tip-link">
+                <a [routerLink]="['/login-academy']" [queryParams]="{ academy: academySlug }" class="tip-link">
                   Sign in here →
                 </a>
               </div>
             </div>
           </div>
-
         </ng-container>
 
-        <!-- Invalid -->
         <ng-container *ngIf="step === 'invalid'">
           <div class="eyebrow">
             <div class="eyebrow-dot"></div>
             <span class="eyebrow-text">Registration</span>
           </div>
           <h1 class="copy-title">Invalid<br><em>link.</em></h1>
-          <p class="copy-desc">This registration link is not valid or has expired.</p>
+          <p class="copy-desc">{{ invalidError }}</p>
         </ng-container>
 
       </div>
 
-      <!-- ══════════════════════════════
-           RIGHT PANEL
-      ══════════════════════════════ -->
       <div class="form-panel">
 
-        <!-- Loading skeleton -->
         <div class="register-card loading-card" *ngIf="step === 'loading'">
           <div class="skeleton-line w60"></div>
           <div class="skeleton-line w40"></div>
           <div class="skeleton-block"></div>
         </div>
 
-        <!-- Invalid state -->
         <div class="register-card" *ngIf="step === 'invalid'">
           <div class="card-head">
             <div class="logo-mark sm"><span>الف</span></div>
@@ -136,21 +136,19 @@
           </div>
         </div>
 
-        <!-- Main form card -->
         <div class="register-card" *ngIf="step === 'credentials' || step === 'verify'">
 
           <div class="card-head">
-            <!-- Academy badge -->
             <div class="academy-badge" *ngIf="academy">
-              <img *ngIf="academy.logoUrl" [src]="academy.logoUrl" class="badge-logo" alt="" />
-              <div *ngIf="!academy.logoUrl" class="badge-placeholder" [style.background]="accentColor">
-                {{ academy.name[0] }}
+              <img *ngIf="img(academy.logoUrl)" [src]="img(academy.logoUrl)!" class="badge-logo" alt="" />
+              <div *ngIf="!img(academy.logoUrl)" class="badge-placeholder" [style.background]="accentColor">
+                {{ (academy.name || 'A').slice(0, 1) }}
               </div>
               <span class="badge-name">{{ academy.name }}</span>
             </div>
 
             <h2 class="card-title">
-              <ng-container *ngIf="step === 'credentials'">Create your account</ng-container>
+              <ng-container *ngIf="step === 'credentials'">Create your student account</ng-container>
               <ng-container *ngIf="step === 'verify'">Verify your phone</ng-container>
             </h2>
             <p class="card-sub">
@@ -163,7 +161,6 @@
             </p>
           </div>
 
-          <!-- Stepper -->
           <div class="stepper">
             <div class="step-item"
                  [class.active]="step === 'credentials'"
@@ -181,7 +178,6 @@
             </div>
           </div>
 
-          <!-- ── STEP 1: Credentials ── -->
           <form class="form" *ngIf="step === 'credentials'" [formGroup]="credForm" (ngSubmit)="sendCode()">
 
             <div class="field">
@@ -244,7 +240,9 @@
               </div>
             </div>
 
-            <button class="btn btn-primary btn-full" type="submit"
+            <button class="btn btn-primary btn-full"
+                    [ngStyle]="primaryButtonStyle"
+                    type="submit"
                     [disabled]="loading || credForm.invalid">
               <span *ngIf="!loading">Send Verification Code →</span>
               <span *ngIf="loading" class="loading-row">
@@ -264,7 +262,6 @@
 
           </form>
 
-          <!-- ── STEP 2: OTP ── -->
           <form class="form" *ngIf="step === 'verify'" [formGroup]="verifyForm" (ngSubmit)="submitVerify()">
 
             <div class="field">
@@ -286,7 +283,9 @@
               <p class="sent-hint">Code sent to <strong>{{ credForm.value.phone }}</strong></p>
             </div>
 
-            <button class="btn btn-primary btn-full" type="submit"
+            <button class="btn btn-primary btn-full"
+                    [ngStyle]="primaryButtonStyle"
+                    type="submit"
                     [disabled]="loading || verifyForm.invalid">
               <span *ngIf="!loading">Create Student Account</span>
               <span *ngIf="loading" class="loading-row">
@@ -310,14 +309,13 @@
 
           <div class="card-foot">
             <span class="card-foot-muted">Already have an account?</span>
-            <a [routerLink]="['/login-academy']" [queryParams]="{academy: academySlug}" class="card-foot-link">
+            <a [routerLink]="['/login-academy']" [queryParams]="{ academy: academySlug }" class="card-foot-link">
               Log in →
             </a>
           </div>
 
         </div>
 
-        <!-- Success card -->
         <div class="register-card success-card" *ngIf="step === 'done'">
           <div class="card-head">
             <span class="success-emoji">🎉</span>
@@ -343,13 +341,13 @@
             </div>
           </div>
 
-          <button class="btn btn-primary btn-full" (click)="goToLogin()">
+          <button class="btn btn-primary btn-full" [ngStyle]="primaryButtonStyle" (click)="goToLogin()">
             Go to Login →
           </button>
 
           <div class="card-foot">
             <span class="card-foot-muted">Explore more?</span>
-            <a routerLink="/academies" class="card-foot-link">Browse academies →</a>
+            <a [routerLink]="['/academy-home', academySlug]" class="card-foot-link">Back to academy →</a>
           </div>
         </div>
 

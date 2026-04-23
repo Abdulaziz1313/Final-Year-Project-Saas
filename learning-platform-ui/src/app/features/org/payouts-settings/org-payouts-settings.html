@@ -1,0 +1,96 @@
+<main class="payout-settings-page">
+
+  <!-- ── PAGE HERO ── -->
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">Admin panel</span>
+      </div>
+      <h1 class="page-title">Payout <em>Settings</em></h1>
+      <p class="page-desc">Configure the split between platform, organization, and instructor.</p>
+    </div>
+    <div class="hero-right">
+      <div class="action-group">
+        <button type="button" class="btn btn-ghost" (click)="goPayouts()">← Back to payouts</button>
+      </div>
+    </div>
+  </div>
+
+  <ng-container *ngIf="state$ | async as st">
+
+    <!-- Loading -->
+    <div class="state-loading" *ngIf="st.loading">
+      <span class="loading-dot"></span>Loading settings…
+    </div>
+
+    <!-- Error -->
+    <div class="alert-error" *ngIf="st.error && !st.loading">
+      <span>⚠</span> {{ st.error }}
+    </div>
+
+    <section class="item-card" *ngIf="!st.loading" [formGroup]="form">
+
+      <div class="item-head">
+        <div>
+          <div class="item-title-lg">Split <em>configuration</em></div>
+          <div class="item-sub">Percentages must total 100%</div>
+        </div>
+      </div>
+
+      <div class="fields-grid">
+
+        <div class="field">
+          <label class="field-label">Platform fee %</label>
+          <input class="input" type="number" formControlName="platformFeePercent" min="0" max="100" />
+        </div>
+
+        <div class="field">
+          <label class="field-label">Organization fee %</label>
+          <input class="input" type="number" formControlName="organizationFeePercent" min="0" max="100" />
+        </div>
+
+        <div class="field">
+          <label class="field-label">Instructor fee %</label>
+          <input class="input" type="number" formControlName="instructorFeePercent" min="0" max="100" />
+        </div>
+
+        <div class="field">
+          <label class="field-label">Currency</label>
+          <input class="input" type="text" formControlName="currency" />
+        </div>
+
+        <div class="field field-full">
+          <label class="field-label">Weekly release day</label>
+          <select class="input select-input" formControlName="weeklyReleaseDay">
+            <option *ngFor="let d of days" [ngValue]="d.value">{{ d.label }}</option>
+          </select>
+        </div>
+
+        <label class="toggle-row field-full">
+          <input class="toggle-cb" type="checkbox" formControlName="weeklyAutoReleaseEnabled" />
+          <span class="toggle-label">Enable weekly auto release</span>
+        </label>
+
+      </div>
+
+      <div class="total-bar" [class.total-bad]="totalPercent !== 100">
+        <span class="total-label">Total split</span>
+        <span class="total-value">{{ totalPercent }}%</span>
+        <span class="total-hint" *ngIf="totalPercent !== 100">Must equal 100%</span>
+        <span class="total-hint ok" *ngIf="totalPercent === 100">✓ Balanced</span>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-primary" [disabled]="saving" (click)="save()">
+          {{ saving ? 'Saving…' : 'Save settings' }}
+        </button>
+      </div>
+
+      <div class="inline-msg success-msg" *ngIf="saveMessage">{{ saveMessage }}</div>
+      <div class="inline-msg error-msg"   *ngIf="saveError">{{ saveError }}</div>
+
+    </section>
+
+  </ng-container>
+</main>

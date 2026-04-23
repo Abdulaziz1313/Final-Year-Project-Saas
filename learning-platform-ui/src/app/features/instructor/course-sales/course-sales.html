@@ -1,0 +1,97 @@
+<main class="course-sales-page">
+  <ng-container *ngIf="state$ | async as st">
+
+    <!-- Loading -->
+    <div class="state-loading" *ngIf="st.loading">
+      <span class="loading-dot"></span>Loading course sales…
+    </div>
+
+    <!-- Error -->
+    <div class="alert-error" *ngIf="st.error && !st.loading">
+      <span>⚠</span> {{ st.error }}
+    </div>
+
+    <ng-container *ngIf="!st.loading && st.data as vm">
+
+      <!-- ── PAGE HERO ── -->
+      <div class="page-hero">
+        <div class="hero-left">
+          <div class="eyebrow">
+            <div class="eyebrow-dot"></div>
+            <span class="eyebrow-text">Course sales</span>
+          </div>
+          <h1 class="page-title">{{ vm.course.title }}</h1>
+          <p class="page-desc">Sales and buyers for this course.</p>
+        </div>
+        <div class="hero-right">
+          <div class="action-group">
+            <a class="btn btn-ghost" [routerLink]="['/instructor/revenue', vm.course.academyId]">← Back to revenue</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── KPI STRIP ── -->
+      <div class="kpi-strip">
+        <div class="kpi-card kpi-success">
+          <div class="kpi-header">
+            <span class="kpi-label">Total revenue</span>
+            <span class="kpi-icon">💰</span>
+          </div>
+          <div class="kpi-value">{{ money(vm.totalRevenue) }}</div>
+          <div class="kpi-sub">All-time earnings</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Sales records</span>
+            <span class="kpi-icon">🧾</span>
+          </div>
+          <div class="kpi-value">{{ vm.total }}</div>
+          <div class="kpi-sub">Total transactions</div>
+        </div>
+      </div>
+
+      <!-- ── SALES LIST ── -->
+      <section class="item-card sales-card">
+        <div class="item-head">
+          <div>
+            <div class="item-title-lg">Buyer <em>records</em></div>
+            <div class="item-sub">All sales for this course</div>
+          </div>
+        </div>
+
+        <div class="sales-list" *ngIf="vm.items.length > 0; else noSales">
+          <div class="sale-row" *ngFor="let item of vm.items">
+
+            <div class="buyer">
+              <div class="buyer-avatar">
+                {{ (item.buyer.displayName || item.buyer.email || 'U').slice(0,1).toUpperCase() }}
+              </div>
+              <div class="buyer-info">
+                <div class="buyer-name">{{ item.buyer.displayName || item.buyer.email || 'Buyer' }}</div>
+                <div class="buyer-email">{{ item.buyer.email || '—' }}</div>
+              </div>
+            </div>
+
+            <div class="sale-meta">
+              <span class="status-badge" [ngClass]="statusClass(item.status)">
+                {{ item.status }}
+              </span>
+              <span class="sale-amount">{{ money(item.amount, item.currency) }}</span>
+              <span class="meta-text">{{ when(item.paidAt || item.createdAt) }}</span>
+            </div>
+
+          </div>
+        </div>
+
+        <ng-template #noSales>
+          <div class="empty">
+            <div class="empty-title">No sales yet</div>
+            <div class="empty-sub">No sales found for this course yet.</div>
+          </div>
+        </ng-template>
+      </section>
+
+    </ng-container>
+  </ng-container>
+</main>

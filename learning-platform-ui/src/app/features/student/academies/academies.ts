@@ -10,19 +10,13 @@ import { environment } from '../../../../environments/environment';
 
 type LoadState<T> = { loading: boolean; data: T; error: string | null };
 type SortKey = 'newest' | 'name';
+type SigninMode = 'instructor' | 'student' | null;
 
 type Vm = {
-  // raw
   items: PublicAcademy[];
-
-  // featured
   newItems: PublicAcademy[];
   recentItems: PublicAcademy[];
-
-  // main list
   filtered: PublicAcademy[];
-
-  // counts
   total: number;
   showing: number;
 };
@@ -37,15 +31,17 @@ type Vm = {
 export class AcademiesComponent implements OnDestroy {
   api = environment.apiBaseUrl;
 
-  // ---- Auth state (used by topbar) ----
-  get isLoggedIn(): boolean  { return this.auth.isLoggedIn(); }
+  get isLoggedIn(): boolean { return this.auth.isLoggedIn(); }
   get isInstructor(): boolean { return this.auth.isInstructor(); }
-  get isStudent(): boolean    { return this.auth.isStudent(); }
+  get isStudent(): boolean { return this.auth.isStudent(); }
 
   q = '';
   sort: SortKey = 'newest';
   onlyNew = false;
   year = new Date().getFullYear();
+
+  // ✅ NEW: sign-in mode coming from home dropdown
+  signinMode: SigninMode = null;
 
   skeleton = Array.from({ length: 9 });
 
@@ -61,11 +57,13 @@ export class AcademiesComponent implements OnDestroy {
     private router: Router,
     private route: ActivatedRoute
   ) {
-    // hydrate from URL
     this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe((pm) => {
       const q = (pm.get('q') ?? '').trim();
       const sort = (pm.get('sort') ?? 'newest') as SortKey;
       const onlyNew = (pm.get('new') ?? '0') === '1';
+
+      const signin = (pm.get('signin') ?? '').toLowerCase();
+      this.signinMode = (signin === 'instructor' || signin === 'student') ? (signin as any) : null;
 
       this.q = q;
       this.sort = (sort === 'name' || sort === 'newest') ? sort : 'newest';
@@ -74,7 +72,6 @@ export class AcademiesComponent implements OnDestroy {
       this.reload$.next();
     });
 
-    // debounce typing
     this.inputChanged$
       .pipe(debounceTime(350), takeUntil(this.destroy$))
       .subscribe(() => this.search());
@@ -85,15 +82,9 @@ export class AcademiesComponent implements OnDestroy {
           map((res) => {
             const items = (res ?? []) as PublicAcademy[];
 
-            // featured sections (based on publishedAt)
-            const newItems = items
-              .filter((a) => this.isNew(a))
-              .slice(0, 10);
+            const newItems = items.filter((a) => this.isNew(a)).slice(0, 10);
+            const recentItems = this.sortByPublishedDesc(items).slice(0, 10);
 
-            const recentItems = this.sortByPublishedDesc(items)
-              .slice(0, 10);
-
-            // main list filter
             const filtered = this.onlyNew ? items.filter((a) => this.isNew(a)) : items;
 
             const vm: Vm = {
@@ -128,6 +119,17 @@ export class AcademiesComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+
+  // exit sign-in mode 
+  clearSigninMode() {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { signin: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   // ---- UI ----
@@ -182,7 +184,7 @@ export class AcademiesComponent implements OnDestroy {
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams,
-      queryParamsHandling: 'merge',
+      queryParamsHandling: 'merge', // keeps signin
       replaceUrl: replace,
     });
   }
@@ -190,7 +192,7 @@ export class AcademiesComponent implements OnDestroy {
   // ---- template helpers ----
   img(url?: string | null) {
     if (!url) return null;
-    return `${this.api}${url}`;
+    return url.startsWith('http') ? url : `${this.api}${url}`;
   }
 
   brand(a: PublicAcademy) {

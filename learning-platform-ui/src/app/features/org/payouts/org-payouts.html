@@ -1,0 +1,238 @@
+<main class="org-payouts-page">
+  <div class="page-hero">
+    <div class="hero-left">
+      <div class="eyebrow">
+        <div class="eyebrow-dot"></div>
+        <span class="eyebrow-text">Admin panel</span>
+      </div>
+      <h1 class="page-title">Payout <em>Management</em></h1>
+      <p class="page-desc">Review all instructors across your organization, inspect balances, and manage payout requests.</p>
+    </div>
+    <div class="hero-right">
+      <div class="action-group">
+        <button type="button" class="btn btn-ghost" (click)="openSettings()">Payout settings</button>
+        <button type="button" class="btn btn-ghost" (click)="reload()">Refresh</button>
+      </div>
+    </div>
+  </div>
+
+  <ng-container *ngIf="state$ | async as st">
+    <div class="state-loading" *ngIf="st.loading">
+      <span class="loading-dot"></span>Loading payout data…
+    </div>
+
+    <div class="alert-error" *ngIf="st.error && !st.loading">
+      <span>⚠</span> {{ st.error }}
+    </div>
+
+    <ng-container *ngIf="!st.loading && st.data as vm">
+      <div class="kpi-strip">
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Total gross</span>
+            <span class="kpi-icon">💰</span>
+          </div>
+          <div class="kpi-value">{{ money(vm.summary.totalGross) }}</div>
+          <div class="kpi-sub">All academies</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-label">Platform share</span>
+            <span class="kpi-icon">🏦</span>
+          </div>
+          <div class="kpi-value">{{ money(vm.summary.totalPlatform) }}</div>
+          <div class="kpi-sub">Platform cut</div>
+        </div>
+
+        <div class="kpi-card kpi-success">
+          <div class="kpi-header">
+            <span class="kpi-label">Organization share</span>
+            <span class="kpi-icon">🏛️</span>
+          </div>
+          <div class="kpi-value">{{ money(vm.summary.totalOrganization) }}</div>
+          <div class="kpi-sub">Organization earnings</div>
+        </div>
+
+        <div class="kpi-card kpi-warn">
+          <div class="kpi-header">
+            <span class="kpi-label">Unpaid balance</span>
+            <span class="kpi-icon">⏳</span>
+          </div>
+          <div class="kpi-value">{{ money(vm.summary.unpaidInstructor) }}</div>
+          <div class="kpi-sub">All instructors</div>
+        </div>
+      </div>
+
+      <section class="item-card release-card">
+        <div class="release-body">
+          <div>
+            <div class="item-title-lg">Weekly <em>release</em></div>
+            <div class="item-sub">Release all available instructor balances across the organization.</div>
+          </div>
+          <button type="button" class="btn btn-primary" [disabled]="releasing" (click)="releaseWeekly()">
+            {{ releasing ? 'Releasing…' : 'Release weekly payouts' }}
+          </button>
+        </div>
+      </section>
+
+      <div class="inline-msg success-msg" *ngIf="releaseMessage">{{ releaseMessage }}</div>
+      <div class="inline-msg error-msg" *ngIf="releaseError">{{ releaseError }}</div>
+      <div class="inline-msg success-msg" *ngIf="markMessage">{{ markMessage }}</div>
+      <div class="inline-msg error-msg" *ngIf="markError">{{ markError }}</div>
+
+      <section class="item-card">
+        <div class="item-head">
+          <div>
+            <div class="item-title-lg">All <em>instructors</em></div>
+            <div class="item-sub">Choose an instructor to inspect total balance, academy breakdown, and payout requests.</div>
+          </div>
+        </div>
+
+        <div class="empty" *ngIf="vm.instructors.length === 0">
+          <div class="empty-title">No instructors yet</div>
+          <div class="empty-sub">No instructor balances were found.</div>
+        </div>
+
+        <div class="table-wrap" *ngIf="vm.instructors.length > 0">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Instructor</th>
+                <th>Available</th>
+                <th>Processing</th>
+                <th>Paid out</th>
+                <th>Lifetime</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of vm.instructors">
+                <td>
+                  <div class="person-name">{{ item.instructor.displayName || item.instructor.email || 'Instructor' }}</div>
+                  <div class="person-sub">{{ item.instructor.email || item.instructorUserId }}</div>
+                </td>
+                <td>{{ money(item.availableNow) }}</td>
+                <td>{{ money(item.processing) }}</td>
+                <td>{{ money(item.paidOut) }}</td>
+                <td class="cell-strong">{{ money(item.lifetimeEarned) }}</td>
+                <td>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-sm"
+                    (click)="selectInstructor(item.instructorUserId)">
+                    {{ selectedInstructorUserId === item.instructorUserId ? 'Selected' : 'View details' }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <ng-container *ngIf="selectedInstructor(vm) as current">
+        <section class="item-card">
+          <div class="item-head">
+            <div>
+              <div class="item-title-lg">Instructor <em>detail</em></div>
+              <div class="item-sub">
+                {{ current.instructor.displayName || current.instructor.email || current.instructorUserId }}
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-strip">
+            <div class="kpi-card">
+              <div class="kpi-label">Available</div>
+              <div class="kpi-value">{{ money(current.availableNow) }}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Processing</div>
+              <div class="kpi-value">{{ money(current.processing) }}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Paid out</div>
+              <div class="kpi-value">{{ money(current.paidOut) }}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Lifetime</div>
+              <div class="kpi-value">{{ money(current.lifetimeEarned) }}</div>
+            </div>
+          </div>
+
+          <div class="table-wrap" *ngIf="current.academies.length > 0">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Academy</th>
+                  <th>Available</th>
+                  <th>Processing</th>
+                  <th>Paid out</th>
+                  <th>Lifetime</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let a of current.academies">
+                  <td>{{ a.academyName }}</td>
+                  <td>{{ money(a.availableNow) }}</td>
+                  <td>{{ money(a.processing) }}</td>
+                  <td>{{ money(a.paidOut) }}</td>
+                  <td class="cell-strong">{{ money(a.lifetimeEarned) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="item-card">
+          <div class="item-head">
+            <div>
+              <div class="item-title-lg">Early payout <em>requests</em></div>
+              <div class="item-sub">Requests for the selected instructor</div>
+            </div>
+          </div>
+
+          <div class="note-field" [formGroup]="form">
+            <label class="note-label">Note for mark as paid</label>
+            <input class="note-input" type="text" formControlName="note" placeholder="Optional note…" />
+          </div>
+
+          <div class="empty" *ngIf="vm.requests.length === 0">
+            <div class="empty-title">No requests yet</div>
+            <div class="empty-sub">This instructor has no payout requests.</div>
+          </div>
+
+          <div class="request-list" *ngIf="vm.requests.length > 0">
+            <div class="request-card" *ngFor="let item of vm.requests">
+              <div class="request-top">
+                <div class="request-person">
+                  <div class="person-name">{{ item.academyName }}</div>
+                  <div class="person-sub">{{ item.instructor.displayName || item.instructor.email || item.instructorUserId }}</div>
+                </div>
+                <div class="request-meta">
+                  <span class="status-badge" [ngClass]="requestStatusClass(item.status)">{{ item.status }}</span>
+                  <span class="request-amount">{{ money(item.requestedAmount, item.currency) }}</span>
+                </div>
+              </div>
+
+              <div class="request-note" *ngIf="item.note">{{ item.note }}</div>
+              <div class="request-msg" *ngIf="item.messageToInstructor">{{ item.messageToInstructor }}</div>
+
+              <div class="request-foot">
+                <span class="meta-text">{{ when(item.createdAt) }}</span>
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-sm"
+                  *ngIf="item.payoutId"
+                  [disabled]="markingId === item.payoutId"
+                  (click)="markPaid(item.payoutId)">
+                  {{ markingId === item.payoutId ? 'Saving…' : 'Mark payout paid' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+    </ng-container>
+  </ng-container>
+</main>

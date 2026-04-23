@@ -23,6 +23,7 @@ type AcademyItem = {
   name: string;
   slug: string;
   ownerUserId: string;
+  organizationId?: string | null;
   isPublished: boolean;
   isHidden: boolean;
   hiddenReason?: string | null;
@@ -34,7 +35,7 @@ type CourseItem = {
   title: string;
   academyId: string;
   category?: string | null;
-  status: number; // 0 draft, 1 published, 2 private
+  status: number;
   isHidden: boolean;
   hiddenReason?: string | null;
   hiddenAt?: string | null;
@@ -47,6 +48,8 @@ type UserItem = {
   roles?: string[];
   lockoutEnd?: string | null;
   organizationId?: string | null;
+  academyId?: string | null;
+  academyName?: string | null;
 };
 
 type OrgItem = {
@@ -58,11 +61,8 @@ type OrgItem = {
   logoUrl?: string | null;
   inviteCode?: string | null;
   createdAt?: string | null;
-
   academiesCount?: number;
   usersCount?: number;
-
-  // from backend now
   isActive?: boolean;
 };
 
@@ -76,6 +76,13 @@ type AuditItem = {
   reason?: string | null;
   metaJson?: string | null;
   createdAt: string;
+};
+
+type AcademyLite = {
+  id: string;
+  name: string;
+  slug?: string;
+  organizationId?: string | null;
 };
 
 @Component({
@@ -96,25 +103,21 @@ export class AdminComponent {
   users: UserItem[] = [];
   audit: AuditItem[] = [];
 
-  // orgs
   orgs: OrgItem[] = [];
-  orgsAll: OrgItem[] = []; // for assign dropdown
+  orgsAll: OrgItem[] = [];
+  academiesAll: AcademyLite[] = [];
 
-  // pagination
   page = 1;
   pageSize = 25;
   total = 0;
 
-  // per-item busy state
   busy = new Set<string>();
 
   form!: FormGroup<AdminFilters>;
 
-  // Audit filters
   auditActionCtrl!: FormControl<string>;
   auditTargetCtrl!: FormControl<string>;
 
-  // Moderation drawer
   hideOpen = false;
   hideKind: HideTargetKind = 'academy';
   hideId: string | null = null;
@@ -122,7 +125,6 @@ export class AdminComponent {
   reasonCtrl!: FormControl<string>;
   quickReasons = ['Sexual content', 'Hate or harassment', 'Spam or scam', 'Copyright', 'Other'];
 
-  // Roles drawer
   rolesOpen = false;
   rolesUser: UserItem | null = null;
   rolesSelected = new Set<string>();
@@ -130,13 +132,11 @@ export class AdminComponent {
 
   roleOptions: Array<'Student' | 'Instructor' | 'Admin' | 'Coordinator'> = ['Student', 'Instructor', 'Admin', 'Coordinator'];
 
-  // Lock drawer
   lockOpen = false;
   lockUser: UserItem | null = null;
   lockPreset: '1d' | '7d' | '30d' | 'perm' = '7d';
   lockSaving = false;
 
-  // Delete drawer
   deleteOpen = false;
   deleteKind: DeleteTargetKind = 'academy';
   deleteId: string | null = null;
@@ -144,7 +144,6 @@ export class AdminComponent {
   deleteReasonCtrl!: FormControl<string>;
   deleteQuickReasons = ['Policy violation', 'Spam or scam', 'Copyright infringement', 'Illegal content', 'Other'];
 
-  // Org create/edit drawer 
   orgDrawerOpen = false;
   orgSaving = false;
   editingOrg: OrgItem | null = null;
@@ -156,11 +155,15 @@ export class AdminComponent {
     primaryColor: FormControl<string>;
   }>;
 
-  // Assign org drawer
   assignOrgOpen = false;
   assignOrgUser: UserItem | null = null;
   assignOrgSaving = false;
   assignOrgCtrl!: FormControl<string | null>;
+
+  assignAcademyOpen = false;
+  assignAcademyUser: UserItem | null = null;
+  assignAcademySaving = false;
+  assignAcademyCtrl!: FormControl<string | null>;
 
   constructor(
     private api: AdminApi,
@@ -188,8 +191,8 @@ export class AdminComponent {
     });
 
     this.assignOrgCtrl = this.fb.control<string | null>(null);
+    this.assignAcademyCtrl = this.fb.control<string | null>(null);
 
-    // reload when base filters change
     this.form.valueChanges
       .pipe(debounceTime(350), map((v) => JSON.stringify(v)), distinctUntilChanged())
       .subscribe(() => {
@@ -197,7 +200,6 @@ export class AdminComponent {
         this.load();
       });
 
-    // reload when audit filters change 
     this.auditActionCtrl.valueChanges
       .pipe(debounceTime(250), distinctUntilChanged())
       .subscribe(() => {
@@ -217,22 +219,25 @@ export class AdminComponent {
     this.load();
   }
 
-  // Pagination helpers
   get totalPages(): number {
     const pages = Math.ceil((this.total || 0) / (this.pageSize || 1));
     return Math.max(1, pages);
   }
+
   get canPrev() {
     return this.page > 1;
   }
+
   get canNext() {
     return this.page * this.pageSize < this.total;
   }
+
   nextPage() {
     if (!this.canNext) return;
     this.page += 1;
     this.load();
   }
+
   prevPage() {
     if (!this.canPrev) return;
     this.page -= 1;
@@ -259,8 +264,8 @@ export class AdminComponent {
     this.closeDeleteDrawer();
     this.closeOrgDrawer();
     this.closeAssignOrgDrawer();
+    this.closeAssignAcademyDrawer();
 
-    // reset filters 
     this.form.patchValue({ q: '', status: 'all', role: 'all' }, { emitEvent: false });
     this.auditActionCtrl.setValue('all', { emitEvent: false });
     this.auditTargetCtrl.setValue('all', { emitEvent: false });
@@ -313,8 +318,8 @@ export class AdminComponent {
           this.total = res.total ?? this.users.length;
           this.setLoading(false);
 
-          // keep org list ready for assign dropdown
           this.loadAllOrgsForAssign();
+          this.loadAllAcademiesForAssign();
         },
         error: () => {
           this.error = 'Failed to load users.';
@@ -342,7 +347,6 @@ export class AdminComponent {
       return;
     }
 
-    // audit
     const action = (this.auditActionCtrl.value || 'all').trim();
     const targetType = (this.auditTargetCtrl.value || 'all').trim();
 
@@ -369,6 +373,20 @@ export class AdminComponent {
     });
   }
 
+  private loadAllAcademiesForAssign() {
+    this.api.listAcademies('', 'all', 1, 300).subscribe({
+      next: (res) => {
+        this.academiesAll = (res.items || []).map((a: any) => ({
+          id: a.id,
+          name: a.name,
+          slug: a.slug,
+          organizationId: a.organizationId ?? null,
+        }));
+      },
+      error: () => {},
+    });
+  }
+
   private mergeOrgsAll(items: OrgItem[]) {
     const map = new Map<string, OrgItem>();
     for (const o of [...(this.orgsAll || []), ...(items || [])]) {
@@ -377,35 +395,38 @@ export class AdminComponent {
     return Array.from(map.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }
 
-  // KPI counts
   get kpiTotal(): number {
     return this.total || 0;
   }
+
   get kpiHidden(): number {
     if (this.tab === 'academies') return (this.academies || []).filter((x) => !!x.isHidden).length;
     if (this.tab === 'courses') return (this.courses || []).filter((x) => !!x.isHidden).length;
     return 0;
   }
+
   get kpiPublished(): number {
     if (this.tab === 'academies') return (this.academies || []).filter((x) => !x.isHidden && !!x.isPublished).length;
     if (this.tab === 'courses') return (this.courses || []).filter((x) => !x.isHidden && x.status === 1).length;
     return 0;
   }
+
   get kpiDraft(): number {
     if (this.tab === 'academies') return (this.academies || []).filter((x) => !x.isHidden && !x.isPublished).length;
     if (this.tab === 'courses') return (this.courses || []).filter((x) => !x.isHidden && x.status === 0).length;
     return 0;
   }
+
   get kpiPrivate(): number {
     if (this.tab === 'courses') return (this.courses || []).filter((x) => !x.isHidden && x.status === 2).length;
     return 0;
   }
+
   get kpiLocked(): number {
     if (this.tab === 'users') return (this.users || []).filter((x) => this.isUserLocked(x)).length;
     return 0;
   }
 
-  // ---------------- Moderation Drawer ----------------
   openHideDrawer(kind: HideTargetKind, id: string, title: string, existingReason?: string | null) {
     if (this.isBusy(id)) return;
 
@@ -476,7 +497,6 @@ export class AdminComponent {
     });
   }
 
-  // ---------------- Unhide ----------------
   async unhideAcademy(a: AcademyItem) {
     if (this.isBusy(a.id)) return;
 
@@ -533,7 +553,6 @@ export class AdminComponent {
     });
   }
 
-  // ---------------- Delete Drawer ----------------
   openDeleteDrawer(kind: DeleteTargetKind, id: string, title: string) {
     if (!id || this.isBusy(id)) return;
 
@@ -557,7 +576,6 @@ export class AdminComponent {
     this.deleteReasonCtrl.setValue(r);
   }
 
-  // helper open methods (users/orgs)
   openDeleteUserDrawer(u: UserItem) {
     if (!u?.id || this.isBusy(u.id)) return;
     this.openDeleteDrawer('user', u.id, u.email || u.id);
@@ -634,7 +652,6 @@ export class AdminComponent {
       return;
     }
 
-    // organization
     this.api.deleteOrganization(id, safeReason).subscribe({
       next: () => {
         this.busy.delete(id);
@@ -649,7 +666,6 @@ export class AdminComponent {
     });
   }
 
-  // ---------------- Users ----------------
   isUserLocked(u: UserItem): boolean {
     if (!u?.lockoutEnd) return false;
     const t = Date.parse(u.lockoutEnd);
@@ -749,7 +765,6 @@ export class AdminComponent {
     });
   }
 
-  // ---------------- Roles Drawer ----------------
   openRolesDrawer(u: UserItem) {
     if (!u?.id || this.isBusy(u.id)) return;
 
@@ -818,7 +833,6 @@ export class AdminComponent {
     });
   }
 
-  // ---------------- Organizations ----------------
   openOrgDrawerForCreate() {
     this.editingOrg = null;
     this.orgDrawerOpen = true;
@@ -912,7 +926,6 @@ export class AdminComponent {
     });
   }
 
-  // ✅ NOW IMPLEMENTED (uses backend endpoint)
   async toggleOrgActive(o: OrgItem) {
     if (!o?.id || this.isBusy(o.id)) return;
 
@@ -942,15 +955,11 @@ export class AdminComponent {
     });
   }
 
-  // ---------------- Assign org to user ----------------
   openAssignOrgDrawer(u: UserItem) {
     if (!u?.id || this.isBusy(u.id)) return;
 
-    // ✅ optional: enforce instructor role (avoids backend rejecting silently)
     if (!((u.roles || []).includes('Instructor') || (u.roles || []).includes('OrgAdmin'))) {
       this.toast.error('This user is not an Instructor/OrgAdmin. Assigning an org usually applies to instructors.');
-      // still allow if you want:
-      // return;
     }
 
     this.assignOrgOpen = true;
@@ -972,7 +981,6 @@ export class AdminComponent {
     const u = this.assignOrgUser;
     if (!u?.id || this.isBusy(u.id) || this.assignOrgSaving) return;
 
-    // normalize selection
     let orgId = this.assignOrgCtrl.value ?? null;
     if (typeof orgId === 'string' && !orgId.trim()) orgId = null;
 
@@ -987,9 +995,16 @@ export class AdminComponent {
 
     if (!ok) return;
 
-    // ✅ optimistic UI update (so you instantly see it changed)
     const prev = u.organizationId ?? null;
     u.organizationId = orgId;
+
+    if (u.academyId) {
+      const academy = this.academiesAll.find(a => a.id === u.academyId);
+      if (academy && academy.organizationId !== orgId) {
+        u.academyId = null;
+        u.academyName = null;
+      }
+    }
 
     this.assignOrgSaving = true;
     this.busy.add(u.id);
@@ -1000,13 +1015,9 @@ export class AdminComponent {
         this.assignOrgSaving = false;
         this.toast.success('Organization updated.');
         this.closeAssignOrgDrawer();
-
-        // ✅ keep UI consistent + also refresh from server
-        // (refresh is still good to confirm backend persisted it)
         this.load();
       },
       error: (e) => {
-        // rollback optimistic update
         u.organizationId = prev;
 
         this.busy.delete(u.id);
@@ -1021,7 +1032,96 @@ export class AdminComponent {
     });
   }
 
-  // ---------------- UI helpers ----------------
+  openAssignAcademyDrawer(u: UserItem) {
+    if (!u?.id || this.isBusy(u.id)) return;
+
+    if (!(u.roles || []).includes('Instructor')) {
+      this.toast.error('Only instructors should be assigned to an academy.');
+      return;
+    }
+
+    this.assignAcademyOpen = true;
+    this.assignAcademyUser = u;
+    this.assignAcademySaving = false;
+    this.assignAcademyCtrl.setValue(u.academyId ?? null, { emitEvent: false });
+
+    if (!this.academiesAll.length) {
+      this.loadAllAcademiesForAssign();
+    }
+  }
+
+  closeAssignAcademyDrawer() {
+    this.assignAcademyOpen = false;
+    this.assignAcademyUser = null;
+    this.assignAcademySaving = false;
+    this.assignAcademyCtrl.setValue(null, { emitEvent: false });
+  }
+
+  async saveUserAcademy() {
+    const u = this.assignAcademyUser;
+    if (!u?.id || this.isBusy(u.id) || this.assignAcademySaving) return;
+
+    let academyId = this.assignAcademyCtrl.value ?? null;
+    if (typeof academyId === 'string' && !academyId.trim()) academyId = null;
+
+    const ok = await this.confirm.open({
+      title: 'Assign academy?',
+      message: `Assign academy to "${u.email}"?\n\nAcademy: ${this.academyLabel(academyId)}`,
+      confirmText: 'Yes, save',
+      cancelText: 'Cancel',
+    });
+
+    if (!ok) return;
+
+    const prevAcademyId = u.academyId ?? null;
+    const prevAcademyName = u.academyName ?? null;
+    const prevOrgId = u.organizationId ?? null;
+
+    const selected = (this.academiesAll || []).find(a => a.id === academyId);
+    u.academyId = academyId;
+    u.academyName = selected?.name ?? null;
+    if (selected?.organizationId) {
+      u.organizationId = selected.organizationId;
+    }
+
+    this.assignAcademySaving = true;
+    this.busy.add(u.id);
+
+    this.api.setUserAcademy(u.id, academyId).subscribe({
+      next: () => {
+        this.busy.delete(u.id);
+        this.assignAcademySaving = false;
+        this.toast.success('Academy updated.');
+        this.closeAssignAcademyDrawer();
+        this.load();
+      },
+      error: (e) => {
+        u.academyId = prevAcademyId;
+        u.academyName = prevAcademyName;
+        u.organizationId = prevOrgId;
+
+        this.busy.delete(u.id);
+        this.assignAcademySaving = false;
+        this.toast.error(
+          e?.error?.message ||
+          (typeof e?.error === 'string' ? e.error : null) ||
+          'Update failed.'
+        );
+      },
+    });
+  }
+
+  academyLabel(academyId?: string | null): string {
+    if (!academyId) return '—';
+    const a = (this.academiesAll || []).find(x => x.id === academyId);
+    return a ? `${a.name}${a.slug ? ` (${a.slug})` : ''}` : academyId;
+  }
+
+  availableAcademiesForUser(u: UserItem | null) {
+    if (!u?.organizationId) return this.academiesAll || [];
+    return (this.academiesAll || []).filter(a => a.organizationId === u.organizationId);
+  }
+
   trackById = (_: number, x: any) => x?.id;
   trackByAuditId = (_: number, x: any) => x?.id;
 

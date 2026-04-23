@@ -20,4 +20,9 @@ export class ConfirmService {
       this.reqSubject.next({ ...req, resolve });
     });
   }
+
+  /** Alias for open() — use whichever reads more naturally at the call site. */
+  ask(req: ConfirmRequest): Promise<boolean> {
+    return this.open(req);
+  }
 }

@@ -40,7 +40,7 @@
 
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.15); }
-  50%       { box-shadow: 0 0 0 6px rgba(26, 86, 219, 0.08); }
+  50%      { box-shadow: 0 0 0 6px rgba(26, 86, 219, 0.08); }
 }
 
 @keyframes spin {
@@ -111,6 +111,20 @@
   color: inherit;
 }
 
+.brand-logo-full {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.brand-logo-img {
+  display: block;
+  height: 42px;
+  width: auto;
+  max-width: 220px;
+  object-fit: contain;
+}
+
 .logo-mark {
   width: 40px;
   height: 40px;
@@ -143,16 +157,35 @@
     position: relative;
   }
 
-  // Smaller variant for card header
   &.sm {
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
     margin: 0 auto 16px;
 
-    &::before { width: 22px; height: 22px; top: -6px; left: -6px; }
-    span { font-size: 13px; }
+    &::before {
+      display: none;
+    }
   }
+}
+
+.logo-mark--image {
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 0;
+  overflow: hidden;
+
+  &::before {
+    display: none;
+  }
+}
+
+.logo-mark-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
 }
 
 .brand-text {
@@ -303,7 +336,6 @@
   margin-bottom: 36px;
 }
 
-// Feature list
 .feature-list {
   list-style: none;
   display: grid;
@@ -342,7 +374,6 @@
   line-height: 1.55;
 }
 
-// Tip card
 .tip-card {
   display: flex;
   align-items: flex-start;
@@ -393,7 +424,6 @@
   padding: 36px;
 }
 
-// Card header
 .card-head {
   text-align: center;
   padding-bottom: 28px;
@@ -414,7 +444,6 @@
   color: var(--muted);
 }
 
-// Notice / success banner
 .notice {
   display: flex;
   align-items: center;
@@ -434,7 +463,6 @@
 
 .notice-icon { font-size: 15px; font-weight: 700; }
 
-// Form
 .form {
   display: grid;
   gap: 18px;
@@ -481,7 +509,6 @@
   }
 }
 
-// Password field
 .pw-wrap {
   position: relative;
 }
@@ -530,7 +557,6 @@
   color: var(--danger);
 }
 
-// Remember me
 .remember {
   display: inline-flex;
   align-items: center;
@@ -550,7 +576,6 @@
   }
 }
 
-// Loading spinner
 .loading-row {
   display: inline-flex;
   align-items: center;
@@ -566,7 +591,6 @@
   animation: spin 0.7s linear infinite;
 }
 
-// Security badge
 .security-badge {
   display: flex;
   align-items: center;
@@ -590,7 +614,6 @@
   flex-shrink: 0;
 }
 
-// Error alert
 .alert-error {
   display: flex;
   align-items: center;
@@ -606,7 +629,6 @@
 
 .alert-icon { font-size: 15px; flex-shrink: 0; }
 
-// Card footer
 .card-foot {
   display: flex;
   align-items: center;
@@ -677,4 +699,5 @@
   .login-card { padding: 24px 20px; }
   .topbar-inner { padding: 0 16px; }
   .brand-sub { display: none; }
+  .brand-logo-img { height: 36px; max-width: 180px; }
 }
